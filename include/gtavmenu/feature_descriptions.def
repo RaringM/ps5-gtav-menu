@@ -1,0 +1,318 @@
+/* feature_descriptions.def -- single source of truth for menu row -> footer help text.
+ *
+ * This is an "X-macro" table (see feature_actions.def for the pattern): a plain list of
+ * data, included with the row macro defined differently each time. item_description() in
+ * native_bridge.cpp builds its action -> footer-help lookup from THIS list, so adding a
+ * feature's footer help is a one-line edit here instead of another hand-maintained switch
+ * case that can silently fall through to a blank footer.
+ *
+ *   GTAV_ACTION_DESC(ENUM_SUFFIX, "help")  one action id -> one footer help string
+ *
+ * The name maps to GTAV_NATIVE_SHELL_ACTION_<ENUM_SUFFIX> in include/gtavmenu/native_bridge.h.
+ * Only actions that need a non-empty footer string are listed; any leaf menu row missing
+ * here renders a blank footer and is caught by tests/test_item_description_coverage.py.
+ * Rows handled BEFORE the switch -- unavailable rows (their unavailable_reason) and
+ * SHELL_ROW_SUBMENU ("Open this submenu") -- are intentionally not listed here.
+ *
+ * Unlike feature_actions.def, the per-slot mod pickers (MOD_SPOILER..MOD_HORN) are listed
+ * as ordinary rows: each has its own distinct help string, so there is no positional-array
+ * trick -- they are plain switch cases like every other action.
+ */
+
+#ifndef GTAV_ACTION_DESC
+#define GTAV_ACTION_DESC(suffix, desc)
+#endif
+
+/* Presets + self/world adjustables */
+GTAV_ACTION_DESC(PRESET_STEALTH, "Never wanted, invisible, and no ragdoll")
+GTAV_ACTION_DESC(PRESET_STUNT, "Movement, jump, stamina, and seatbelt assists")
+GTAV_ACTION_DESC(PRESET_SURVIVAL, "Invincibility, proofs, no crits, and full meters")
+GTAV_ACTION_DESC(PRESET_DRIVER, "Vehicle protection and comfort assists")
+GTAV_ACTION_DESC(PRESET_PARKOUR, "Super jump, no ragdoll, and fast movement")
+GTAV_ACTION_DESC(CYCLE_CASH, "Set your cash to an exact amount")
+GTAV_ACTION_DESC(MAX_ALL_STATS, "Max every skill stat and special ability")
+GTAV_ACTION_DESC(TOGGLE_INFINITE_PARACHUTES, "Always keep a parachute available")
+GTAV_ACTION_DESC(TOGGLE_SPAWN_MAXED, "New vehicles spawn fully performance-modded")
+GTAV_ACTION_DESC(TOGGLE_SPAWN_INVINCIBLE, "New vehicles spawn indestructible")
+GTAV_ACTION_DESC(DELETE_VEHICLE, "Delete the vehicle you are in")
+GTAV_ACTION_DESC(CYCLE_CRUISE_SPEED, "Left/Right to pick the cruise speed")
+GTAV_ACTION_DESC(TOGGLE_CRUISE_CONTROL, "Hold your current vehicle at cruise speed")
+GTAV_ACTION_DESC(CYCLE_AUTOPILOT_MODE, "Off / Wander / drive to your waypoint")
+GTAV_ACTION_DESC(CYCLE_AUTOPILOT_AGGRESSION, "How lawful the autopilot drives")
+GTAV_ACTION_DESC(CYCLE_AUTOPILOT_SPEED, "Left/Right to pick the autopilot speed")
+GTAV_ACTION_DESC(STOP_AUTOPILOT, "Disengage autopilot and stop driving")
+GTAV_ACTION_DESC(TOGGLE_THIN_POPULATION, "Reduce traffic and pedestrian density")
+GTAV_ACTION_DESC(TOGGLE_IGNORED_BY_ALL, "Police, peds and gangs all ignore you")
+GTAV_ACTION_DESC(GIVE_MAX_AMMO, "Refill ammo for your weapons")
+GTAV_ACTION_DESC(CYCLE_MOVE_RATE, "Tune how fast on-foot Fast Movement is")
+GTAV_ACTION_DESC(TOGGLE_HUD_DISTANCE, "Show distance to your waypoint on the HUD")
+GTAV_ACTION_DESC(TOGGLE_GOD_MODE, "Toggle invulnerability")
+GTAV_ACTION_DESC(HEAL_ARMOR, "Restore full health and armor")
+GTAV_ACTION_DESC(CLEAR_WANTED, "Clear your wanted level")
+GTAV_ACTION_DESC(TOGGLE_NEVER_WANTED, "Police never get a wanted level on you")
+GTAV_ACTION_DESC(TOGGLE_VEHICLE_GOD, "Make your current vehicle indestructible")
+GTAV_ACTION_DESC(TOGGLE_NITRO, "Hold the horn while driving for a speed boost")
+GTAV_ACTION_DESC(TOGGLE_ENGINE_ON, "Keep your vehicle's engine running")
+GTAV_ACTION_DESC(TOGGLE_KEEP_CLEAN, "Keep your vehicle spotless")
+GTAV_ACTION_DESC(TOGGLE_NO_RAGDOLL, "Never get knocked down or ragdoll")
+GTAV_ACTION_DESC(TOGGLE_SEATBELT, "Never get thrown from your vehicle")
+GTAV_ACTION_DESC(TOGGLE_SUPER_PROOFS, "Immune to bullets, fire, explosions and more")
+GTAV_ACTION_DESC(TOGGLE_NO_CRIT, "Headshots and critical hits no longer kill you")
+GTAV_ACTION_DESC(TOGGLE_INF_STAMINA, "Never run out of stamina")
+GTAV_ACTION_DESC(TOGGLE_INF_SPECIAL, "Keep your special ability meter full")
+GTAV_ACTION_DESC(TOGGLE_LOW_GRAVITY, "Float with moon-like low gravity")
+GTAV_ACTION_DESC(TOGGLE_SLOW_MOTION, "Slow the whole world to bullet time")
+GTAV_ACTION_DESC(TOGGLE_FREEZE_TIME, "Hold the world clock at the selected time")
+GTAV_ACTION_DESC(TOGGLE_AUTO_HEAL, "Continuously refill health and armor")
+GTAV_ACTION_DESC(TOGGLE_WANTED_LOCK, "Hold the wanted level at the selected stars")
+GTAV_ACTION_DESC(TOGGLE_KEEP_REPAIRED, "Keep your vehicle repaired after crashes")
+GTAV_ACTION_DESC(CYCLE_CLOCK_HOUR, "Left/Right to pick the hour, Select applies")
+GTAV_ACTION_DESC(CYCLE_TIME_SCALE, "Left/Right to pick game speed, Select applies")
+GTAV_ACTION_DESC(CYCLE_GRAVITY, "Left/Right to pick gravity, Select applies")
+GTAV_ACTION_DESC(TOGGLE_HUD, "Show the on-screen info overlay")
+GTAV_ACTION_DESC(TOGGLE_HUD_SPEEDO, "Show a speedometer on the HUD")
+GTAV_ACTION_DESC(TOGGLE_HUD_COORDS, "Show coordinates and heading on the HUD")
+GTAV_ACTION_DESC(TOGGLE_HUD_FPS, "Show a frame-rate readout on the HUD")
+GTAV_ACTION_DESC(SAVE_PROFILE, "Save your toggles and settings to /data")
+GTAV_ACTION_DESC(LOAD_PROFILE, "Reload your saved toggles and settings")
+GTAV_ACTION_DESC(DISABLE_ALL, "Turn off every toggle and restore defaults")
+GTAV_ACTION_DESC(PLACE_ON_WHEELS, "Flip your vehicle back onto its wheels")
+GTAV_ACTION_DESC(REPAIR_CLEAN_VEHICLE, "Repair, clean, and restart the current vehicle")
+GTAV_ACTION_DESC(LAUNCH_BOOST, "One-shot speed push using the Nitro Power setting")
+GTAV_ACTION_DESC(TOGGLE_SUPER_RUN, "Run much faster")
+GTAV_ACTION_DESC(TOGGLE_FAST_MOVE, "Move faster on foot (walk and run)")
+GTAV_ACTION_DESC(TOGGLE_FAST_SWIM, "Swim much faster")
+GTAV_ACTION_DESC(TOGGLE_SUPER_JUMP, "Jump much higher")
+GTAV_ACTION_DESC(TOGGLE_INVISIBLE, "Become invisible")
+GTAV_ACTION_DESC(SAVE_LOCATION, "Save your current player or vehicle position")
+GTAV_ACTION_DESC(RETURN_SAVED_LOCATION, "Teleport back to the saved position")
+GTAV_ACTION_DESC(TELEPORT_WAYPOINT, "Teleport to your map waypoint")
+GTAV_ACTION_DESC(TELEPORT_OBJECTIVE, "Teleport to your current mission objective")
+GTAV_ACTION_DESC(TELEPORT_PRESET, "Teleport to this landmark")
+GTAV_ACTION_DESC(SPAWN_VEHICLE, "Spawn this vehicle")
+GTAV_ACTION_DESC(FIX_VEHICLE, "Fully repair your vehicle")
+GTAV_ACTION_DESC(CLEAN_VEHICLE, "Clean your vehicle")
+GTAV_ACTION_DESC(GIVE_WEAPONS, "Give a full weapon pack")
+GTAV_ACTION_DESC(REMOVE_WEAPONS, "Remove all your weapons")
+GTAV_ACTION_DESC(TOGGLE_INFINITE_AMMO, "Never run out of ammo")
+GTAV_ACTION_DESC(CYCLE_WEATHER, "Left/Right to pick weather, Select applies")
+GTAV_ACTION_DESC(CYCLE_TIME, "Left/Right to pick time, Select applies")
+GTAV_ACTION_DESC(CYCLE_WANTED, "Left/Right to pick stars, Select applies")
+GTAV_ACTION_DESC(CYCLE_VEHICLE_CLASS, "Left/Right to filter spawn list by class")
+GTAV_ACTION_DESC(CYCLE_PED_CATEGORY, "Left/Right to filter ped list by category")
+GTAV_ACTION_DESC(CYCLE_OBJECT_CATEGORY, "Left/Right to filter object list by category")
+GTAV_ACTION_DESC(CYCLE_SCENARIO_CATEGORY, "Left/Right to filter scenario list by category")
+GTAV_ACTION_DESC(START_SCENARIO, "Select to act out this scenario (needs main-thread hook)")
+GTAV_ACTION_DESC(STOP_SCENARIO, "Select to stop the current scenario")
+GTAV_ACTION_DESC(CYCLE_OBJECT_SPAWN_AT, "Left/Right: place in front of player or camera")
+GTAV_ACTION_DESC(CYCLE_OBJECT_DISTANCE, "Left/Right to set how far ahead the object spawns")
+GTAV_ACTION_DESC(CYCLE_OBJECT_HEADING, "Left/Right to set the object's facing")
+GTAV_ACTION_DESC(CYCLE_OBJECT_ON_GROUND, "Left/Right: snap the object to the ground or not")
+GTAV_ACTION_DESC(TOGGLE_AUTO_EDIT_OBJECT, "Auto-enter the move/place mode after each spawn")
+GTAV_ACTION_DESC(MOVE_LAST_OBJECT, "Move and rotate the last spawned object")
+GTAV_ACTION_DESC(CYCLE_NITRO_POWER, "Left/Right to pick launch and horn boost strength")
+GTAV_ACTION_DESC(TOGGLE_TELEMETRY, "Toggle status telemetry")
+
+/* Vehicle controls */
+GTAV_ACTION_DESC(CYCLE_VEHICLE_DOOR, "Pick which door Open/Close acts on")
+GTAV_ACTION_DESC(OPEN_VEHICLE_DOOR, "Open the selected vehicle door(s)")
+GTAV_ACTION_DESC(CLOSE_VEHICLE_DOOR, "Close the selected vehicle door(s)")
+GTAV_ACTION_DESC(ROLL_DOWN_WINDOWS, "Roll down all windows")
+GTAV_ACTION_DESC(ROLL_UP_WINDOWS, "Roll up all windows")
+GTAV_ACTION_DESC(CYCLE_VEHICLE_HEADLIGHTS, "Select to force headlights on/off or default")
+GTAV_ACTION_DESC(CYCLE_VEHICLE_LOCK, "Select to lock or unlock the doors")
+GTAV_ACTION_DESC(RAISE_VEHICLE_ROOF, "Raise the convertible roof")
+GTAV_ACTION_DESC(LOWER_VEHICLE_ROOF, "Lower the convertible roof")
+
+/* Wardrobe / outfit editor */
+GTAV_ACTION_DESC(CYCLE_WARDROBE_SLOT, "Pick the clothing/prop slot to edit")
+GTAV_ACTION_DESC(CYCLE_WARDROBE_STYLE, "Cycle the style for the selected slot")
+GTAV_ACTION_DESC(CYCLE_WARDROBE_TEXTURE, "Cycle the colour/texture for the selected slot")
+GTAV_ACTION_DESC(WARDROBE_RESET, "Reset clothing to the model default")
+GTAV_ACTION_DESC(WARDROBE_CLEAR_PROP, "Remove the selected prop (hat/glasses/etc.)")
+GTAV_ACTION_DESC(SAVE_OUTFIT, "Save the current outfit")
+GTAV_ACTION_DESC(APPLY_OUTFIT, "Re-apply your saved outfit")
+
+/* Saved vehicle (garage) */
+GTAV_ACTION_DESC(SAVE_VEHICLE, "Save your current vehicle's build")
+GTAV_ACTION_DESC(SPAWN_SAVED_VEHICLE, "Spawn your saved vehicle, fully built")
+
+/* Emotes / animation player */
+GTAV_ACTION_DESC(PLAY_EMOTE, "Play this emote")
+GTAV_ACTION_DESC(STOP_EMOTE, "Stop the current emote")
+GTAV_ACTION_DESC(TOGGLE_EMOTE_LOOP, "Loop the emote until Stop (off = play once)")
+
+/* Weapon tint */
+GTAV_ACTION_DESC(CYCLE_WEAPON_TINT, "Recolour your equipped weapon")
+
+/* Spooner-lite scene save/load */
+GTAV_ACTION_DESC(SAVE_MAP, "Save all spawned entities to a map file")
+GTAV_ACTION_DESC(LOAD_MAP, "Re-spawn the entities from your saved map")
+
+/* Self extras */
+GTAV_ACTION_DESC(CLEAN_SELF, "Wash off blood and wetness")
+GTAV_ACTION_DESC(KILL_SELF, "Instantly kill your character")
+GTAV_ACTION_DESC(FORCE_RAGDOLL, "Knock your character into a ragdoll")
+GTAV_ACTION_DESC(GIVE_MONEY, "Add cash to the active character")
+GTAV_ACTION_DESC(TOGGLE_NOCLIP, "Free-fly through the world, no collision")
+
+/* Weapon effects + combat extras */
+GTAV_ACTION_DESC(TOGGLE_EXPLOSIVE_AMMO, "Every shot explodes on impact")
+GTAV_ACTION_DESC(TOGGLE_FIRE_AMMO, "Every shot sets the target on fire")
+GTAV_ACTION_DESC(CYCLE_WEAPON_DAMAGE, "Left/Right to pick a damage multiplier")
+GTAV_ACTION_DESC(SPAWN_EXPLOSION_PLAYER, "Detonate an explosion at your position")
+GTAV_ACTION_DESC(SPAWN_EXPLOSION_WAYPOINT, "Detonate an explosion at your waypoint")
+
+/* Weapon / skin / ped / object picker rows (runtime-built) */
+GTAV_ACTION_DESC(GIVE_WEAPON, "Give and equip this weapon")
+GTAV_ACTION_DESC(SET_PLAYER_MODEL, "Become this character model")
+GTAV_ACTION_DESC(SPAWN_PED, "Spawn this ped near you")
+GTAV_ACTION_DESC(SPAWN_OBJECT, "Spawn this object near you")
+GTAV_ACTION_DESC(CLEAR_SPAWNED_VEHICLES, "Delete vehicles spawned by this menu")
+GTAV_ACTION_DESC(CLEAR_SPAWNED_PEDS, "Delete peds spawned by this menu")
+GTAV_ACTION_DESC(CLEAR_SPAWNED_OBJECTS, "Delete objects spawned by this menu")
+GTAV_ACTION_DESC(CLEAR_SPAWNED_ALL, "Delete all menu-spawned entities")
+GTAV_ACTION_DESC(SPAWN_BODYGUARD, "Spawn this ped as your bodyguard")
+GTAV_ACTION_DESC(CYCLE_BODYGUARD_HEALTH, "Left/Right to pick bodyguard health")
+GTAV_ACTION_DESC(CYCLE_BODYGUARD_ARMOR, "Left/Right to pick bodyguard armor")
+GTAV_ACTION_DESC(TOGGLE_BODYGUARD_INVINCIBLE, "New and tracked bodyguards are invincible")
+GTAV_ACTION_DESC(CYCLE_BODYGUARD_FORMATION, "Left/Right to pick group formation")
+GTAV_ACTION_DESC(CYCLE_BODYGUARD_AGGRESSION, "Left/Right: how guards react to threats")
+GTAV_ACTION_DESC(CYCLE_BODYGUARD_WEAPON, "Left/Right: weapon your guards carry")
+GTAV_ACTION_DESC(CYCLE_BODYGUARD_ACCURACY, "Left/Right: how accurately guards shoot")
+GTAV_ACTION_DESC(TOGGLE_BODYGUARD_BLIPS, "Show tracked bodyguards on the minimap")
+GTAV_ACTION_DESC(BRING_BODYGUARDS, "Teleport your bodyguards to you")
+GTAV_ACTION_DESC(DISMISS_BODYGUARDS, "Delete every tracked bodyguard")
+
+/* Vehicle handling toggles */
+GTAV_ACTION_DESC(TOGGLE_STICK_TO_GROUND, "Keep the car upright on its wheels")
+GTAV_ACTION_DESC(TOGGLE_DRIFT_MODE, "Loosen grip for easy drifting")
+GTAV_ACTION_DESC(TOGGLE_SUPER_BRAKE, "Hold the brake for a hard instant stop")
+
+/* Los Santos Customs one-shots */
+GTAV_ACTION_DESC(LS_STOCK_VEHICLE, "Strip all mods and restore stock paint")
+GTAV_ACTION_DESC(LS_MAX_PERFORMANCE, "Install the top engine, brakes, and turbo")
+GTAV_ACTION_DESC(LS_INSTALL_COSMETICS, "Install the top visual mods and wheels")
+GTAV_ACTION_DESC(LS_BULLETPROOF_TYRES, "Make your tyres bulletproof")
+GTAV_ACTION_DESC(BURST_TYRES, "Pop all of your vehicle's tyres")
+GTAV_ACTION_DESC(FIX_TYRES, "Repair your vehicle's burst tyres")
+GTAV_ACTION_DESC(SKIP_PROLOGUE, "Experimental: skip the prologue and relaunch single-player")
+GTAV_ACTION_DESC(TOGGLE_XENON, "Fit bright xenon headlights")
+
+/* Los Santos Customs per-slot mod pickers (same enum order as native_bridge.h) */
+GTAV_ACTION_DESC(MOD_SPOILER, "Left/Right to pick a spoiler")
+GTAV_ACTION_DESC(MOD_FRONT_BUMPER, "Left/Right to pick a front bumper")
+GTAV_ACTION_DESC(MOD_REAR_BUMPER, "Left/Right to pick a rear bumper")
+GTAV_ACTION_DESC(MOD_SIDE_SKIRT, "Left/Right to pick side skirts")
+GTAV_ACTION_DESC(MOD_EXHAUST, "Left/Right to pick an exhaust")
+GTAV_ACTION_DESC(MOD_FRAME, "Left/Right to pick a frame mod")
+GTAV_ACTION_DESC(MOD_GRILLE, "Left/Right to pick a grille")
+GTAV_ACTION_DESC(MOD_HOOD, "Left/Right to pick a hood")
+GTAV_ACTION_DESC(MOD_FENDERS, "Left/Right to pick fenders")
+GTAV_ACTION_DESC(MOD_ROOF, "Left/Right to pick a roof")
+GTAV_ACTION_DESC(MOD_ENGINE, "Left/Right to pick an engine upgrade")
+GTAV_ACTION_DESC(MOD_BRAKES, "Left/Right to pick a brakes upgrade")
+GTAV_ACTION_DESC(MOD_TRANSMISSION, "Left/Right to pick a transmission upgrade")
+GTAV_ACTION_DESC(MOD_SUSPENSION, "Left/Right to pick a suspension upgrade")
+GTAV_ACTION_DESC(MOD_ARMOR, "Left/Right to pick an armor upgrade")
+GTAV_ACTION_DESC(MOD_WHEELS, "Left/Right to pick a wheel design")
+GTAV_ACTION_DESC(MOD_HORN, "Left/Right to pick a horn")
+
+/* Los Santos Customs paint, colour, and livery cyclers */
+GTAV_ACTION_DESC(CYCLE_PAINT_PRIMARY, "Left/Right to respray the primary colour")
+GTAV_ACTION_DESC(CYCLE_PAINT_SECONDARY, "Left/Right to respray the second colour")
+GTAV_ACTION_DESC(CYCLE_WINDOW_TINT, "Left/Right to pick a window tint")
+GTAV_ACTION_DESC(CYCLE_NEON, "Left/Right to pick a neon underglow colour")
+GTAV_ACTION_DESC(CYCLE_TYRE_SMOKE, "Left/Right to pick a tyre-smoke colour")
+GTAV_ACTION_DESC(CYCLE_PEARLESCENT, "Left/Right to pick a pearlescent tint")
+GTAV_ACTION_DESC(CYCLE_WHEEL_COLOR, "Left/Right to pick a wheel colour")
+GTAV_ACTION_DESC(CYCLE_CUSTOM_PRIMARY, "Left/Right to pick a custom RGB primary")
+GTAV_ACTION_DESC(CYCLE_CUSTOM_SECONDARY, "Left/Right to pick a custom RGB second")
+GTAV_ACTION_DESC(CYCLE_WHEEL_TYPE, "Left/Right to pick a wheel category")
+GTAV_ACTION_DESC(CYCLE_LIVERY, "Left/Right to pick a livery")
+GTAV_ACTION_DESC(CYCLE_PLATE_STYLE, "Left/Right to pick a number-plate style")
+GTAV_ACTION_DESC(CYCLE_PLATE_TEXT, "Left/Right to pick number-plate text")
+GTAV_ACTION_DESC(TOGGLE_RAINBOW_NEON, "Cycle the neon glow through the rainbow")
+GTAV_ACTION_DESC(TOGGLE_RAINBOW_PAINT, "Cycle the body paint through the rainbow")
+
+/* World screen effects */
+GTAV_ACTION_DESC(TOGGLE_NIGHT_VISION, "See in the dark with night vision")
+GTAV_ACTION_DESC(TOGGLE_SEETHROUGH, "See peds through walls (thermal)")
+GTAV_ACTION_DESC(CYCLE_TIMECYCLE, "Left/Right to pick a screen colour effect")
+GTAV_ACTION_DESC(CYCLE_ANIMPOSTFX, "Left/Right to pick a trippy screen effect")
+
+/* Ped control */
+GTAV_ACTION_DESC(PEDS_ATTACK_PLAYER, "Make nearby peds attack you")
+GTAV_ACTION_DESC(PEDS_FLEE_PLAYER, "Make nearby peds flee from you")
+GTAV_ACTION_DESC(PEDS_STOP, "Calm nearby peds back to normal")
+GTAV_ACTION_DESC(RAGDOLL_NEARBY, "Knock down every nearby ped")
+
+/* Minigames (fun modes) */
+GTAV_ACTION_DESC(TOGGLE_MINIGAME_RIOT, "Nearby peds turn hostile and swarm you")
+GTAV_ACTION_DESC(TOGGLE_MINIGAME_METEOR, "Explosions rain down around you")
+GTAV_ACTION_DESC(TOGGLE_MINIGAME_STORM, "Persistent thunderstorm at midnight")
+GTAV_ACTION_DESC(TOGGLE_MINIGAME_INFERNO, "Fires keep igniting around you")
+GTAV_ACTION_DESC(TOGGLE_MINIGAME_RAGDOLL, "Nearby peds keep ragdolling")
+GTAV_ACTION_DESC(TOGGLE_MINIGAME_BLACKOUT, "Kill the city/streetlights (Phase B)")
+GTAV_ACTION_DESC(TOGGLE_MINIGAME_ZOMBIES, "Survive escalating zombie waves")
+GTAV_ACTION_DESC(TOGGLE_MINIGAME_FLOOD, "Experimental rising water (Phase B)")
+
+/* Runtime, menu customisation, and keybinds */
+GTAV_ACTION_DESC(TOGGLE_DEBUG_OVERLAY, "Show the diagnostic counters overlay")
+GTAV_ACTION_DESC(CYCLE_THEME, "Left/Right to recolour the menu")
+GTAV_ACTION_DESC(CYCLE_CUSTOM_COLOR, "Left/Right to tune this channel (selects the Custom theme)")
+GTAV_ACTION_DESC(RESET_CUSTOM_THEME, "Reset the Custom theme to the default palette")
+GTAV_ACTION_DESC(CYCLE_REGION, "Left/Right to move the menu left or right")
+GTAV_ACTION_DESC(CYCLE_WORKER_HZ, "Left/Right to tune the menu refresh rate")
+GTAV_ACTION_DESC(CYCLE_TOAST_TIME, "Left/Right to set how long pop-ups stay up")
+GTAV_ACTION_DESC(CYCLE_MOTION, "Reduced disables menu animations (flash/glide/fade)")
+GTAV_ACTION_DESC(CYCLE_NAV_DELAY, "Left/Right to set the hold-to-scroll start delay")
+GTAV_ACTION_DESC(CYCLE_NAV_SPEED, "Left/Right to set the hold-to-scroll repeat speed")
+GTAV_ACTION_DESC(CYCLE_TOUCHPAD, "Touchpad: swipe to scroll, tap/click to select (needs HW)")
+GTAV_ACTION_DESC(CYCLE_PANEL_WIDTH, "Left/Right to set the menu panel width")
+GTAV_ACTION_DESC(CYCLE_SAVED_VEHICLE_SLOT, "Left/Right to pick the garage slot to save/spawn")
+GTAV_ACTION_DESC(CYCLE_OUTFIT_SLOT, "Left/Right to pick the outfit slot to save/apply")
+GTAV_ACTION_DESC(CYCLE_KEYBIND_0, "Left/Right to bind the God Mode button")
+GTAV_ACTION_DESC(CYCLE_KEYBIND_1, "Left/Right to bind the Noclip button")
+GTAV_ACTION_DESC(CYCLE_KEYBIND_2, "Left/Right to bind the Super Jump button")
+GTAV_ACTION_DESC(CYCLE_KEYBIND_3, "Left/Right to bind the Invisible button")
+
+/* Fly modes */
+GTAV_ACTION_DESC(CYCLE_FLY_MODE, "Off/On/Fast: fly on foot; look to steer, Jump/Duck for up/down")
+GTAV_ACTION_DESC(CYCLE_VEHICLE_FLY, "Off/On/Fast: make the current vehicle fly; look to steer")
+
+/* Gun toolkit */
+GTAV_ACTION_DESC(CYCLE_ACTIVE_GUN, "Off/Gravity/Teleport/Kaboom: aim at a target and pull Fire")
+
+/* World spectacle */
+GTAV_ACTION_DESC(CYCLE_WIND, "Calm/Breezy/Windy/Gale: set the world wind speed")
+GTAV_ACTION_DESC(CYCLE_CAM_SHAKE, "Off/Small/Medium/Large: sustained camera shake (earthquake)")
+GTAV_ACTION_DESC(SPAWN_FIREWORKS, "Launch a fireworks burst above the player")
+
+/* Fun + parity wave */
+GTAV_ACTION_DESC(TOGGLE_NO_RELOAD, "Never reload: the magazine stays full")
+GTAV_ACTION_DESC(TOGGLE_SLIPPERY, "Ice physics: the car slides at any speed")
+GTAV_ACTION_DESC(TELEPORT_LAST_VEHICLE, "Warp into your last-driven vehicle")
+GTAV_ACTION_DESC(FREE_CAM, "Fly a detached camera (Circle to exit)")
+GTAV_ACTION_DESC(CYCLE_FREE_CAM_SPEED, "Left/Right: set the free-camera fly speed")
+GTAV_ACTION_DESC(VEHICLE_ROCKET_BOOST, "Launch the current vehicle straight up")
+GTAV_ACTION_DESC(TOGGLE_EXPLOSIVE_MELEE, "Punches detonate on impact (needs main-thread hook)")
+GTAV_ACTION_DESC(DUPLICATE_LAST_ENTITY, "Spawn another copy of the last object")
+GTAV_ACTION_DESC(ATTACH_LAST_ENTITY, "Attach the last object to the player")
+GTAV_ACTION_DESC(DETACH_LAST_ENTITY, "Detach the last object from the player")
+GTAV_ACTION_DESC(CYCLE_ENTITY_ALPHA, "Left/Right: set the last object's transparency")
+
+/* Weapon attachments (staged Off/On per slot; Apply commits to the equipped weapon) */
+GTAV_ACTION_DESC(CYCLE_ATTACH_SUPP, "Left/Right: stage a suppressor for the equipped weapon")
+GTAV_ACTION_DESC(CYCLE_ATTACH_SCOPE, "Left/Right: stage a scope for the equipped weapon")
+GTAV_ACTION_DESC(CYCLE_ATTACH_GRIP, "Left/Right: stage a grip for the equipped weapon")
+GTAV_ACTION_DESC(CYCLE_ATTACH_CLIP, "Left/Right: stage an extended clip for the equipped weapon")
+GTAV_ACTION_DESC(CYCLE_ATTACH_FLASH, "Left/Right: stage a flashlight for the equipped weapon")
+GTAV_ACTION_DESC(APPLY_ATTACHMENTS, "Apply the staged attachments to the equipped weapon")
+GTAV_ACTION_DESC(REMOVE_ATTACHMENTS, "Remove all attachments from the equipped weapon")
+
+/* Lifecycle */
+GTAV_ACTION_DESC(HIDE, "Hide the menu")
+GTAV_ACTION_DESC(STOP, "Unload the menu")
+
+#undef GTAV_ACTION_DESC

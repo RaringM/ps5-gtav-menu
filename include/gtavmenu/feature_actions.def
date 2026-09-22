@@ -1,0 +1,349 @@
+/* feature_actions.def -- single source of truth for menu action -> snake_case names.
+ *
+ * This is an "X-macro" table: a plain list of data, included more than once with the
+ * row macros defined differently each time. The feature layer (features.cpp) and the
+ * render bridge (native_bridge.cpp) both build their action-name lookup from THIS list,
+ * so the two can never drift apart -- and adding a feature name is a one-line edit here
+ * instead of two parallel switch cases that have to be kept in sync by hand.
+ *
+ *   GTAV_ACTION_NAME(ENUM_SUFFIX, "snake_name")  one action id -> one telemetry name
+ *   GTAV_MOD_SLOT_NAME("snake_name")             one entry of the contiguous mod-slot range
+ *
+ * A consumer defines only the macro it needs and #includes this file; the other macro
+ * expands to nothing (the #ifndef guards below supply an empty default). The names map to
+ * GTAV_NATIVE_SHELL_ACTION_<ENUM_SUFFIX> in include/gtavmenu/native_bridge.h.
+ *
+ * The mod-slot pickers (MOD_SPOILER..MOD_HORN) are a contiguous enum range addressed by
+ * (action - MOD_SLOT_FIRST), so they are listed once as GTAV_MOD_SLOT_NAME rows and the
+ * consumers index an array built from them rather than spelling out 17 switch cases. Keep
+ * that block in the SAME order as kVehicleModSlots[] in features/lsc.inc.
+ *
+ * Not listed here: NONE (0) and the dead SET_TIME_NOON/NIGHT (18/19) placeholders -- they
+ * fall through to "none" on purpose (see tests/test_feature_action_names.py).
+ */
+
+#ifndef GTAV_ACTION_NAME
+#define GTAV_ACTION_NAME(suffix, name)
+#endif
+#ifndef GTAV_MOD_SLOT_NAME
+#define GTAV_MOD_SLOT_NAME(name)
+#endif
+
+/* Lifecycle */
+GTAV_ACTION_NAME(HIDE, "hide")
+GTAV_ACTION_NAME(STOP, "stop")
+
+/* Self */
+GTAV_ACTION_NAME(TOGGLE_TELEMETRY, "toggle_telemetry")
+GTAV_ACTION_NAME(TOGGLE_GOD_MODE, "toggle_god_mode")
+GTAV_ACTION_NAME(HEAL_ARMOR, "heal_armor")
+GTAV_ACTION_NAME(CLEAR_WANTED, "clear_wanted")
+GTAV_ACTION_NAME(TOGGLE_SUPER_RUN, "toggle_super_run")
+GTAV_ACTION_NAME(TOGGLE_FAST_SWIM, "toggle_fast_swim")
+GTAV_ACTION_NAME(TOGGLE_INFINITE_AMMO, "toggle_infinite_ammo")
+GTAV_ACTION_NAME(TOGGLE_SUPER_JUMP, "toggle_super_jump")
+GTAV_ACTION_NAME(TOGGLE_INVISIBLE, "toggle_invisible")
+GTAV_ACTION_NAME(TOGGLE_NEVER_WANTED, "toggle_never_wanted")
+GTAV_ACTION_NAME(TOGGLE_SUPER_PROOFS, "toggle_super_proofs")
+GTAV_ACTION_NAME(TOGGLE_NO_CRIT, "toggle_no_crit")
+GTAV_ACTION_NAME(TOGGLE_INF_STAMINA, "toggle_inf_stamina")
+GTAV_ACTION_NAME(TOGGLE_INF_SPECIAL, "toggle_inf_special")
+GTAV_ACTION_NAME(TOGGLE_AUTO_HEAL, "toggle_auto_heal")
+GTAV_ACTION_NAME(TOGGLE_WANTED_LOCK, "toggle_wanted_lock")
+GTAV_ACTION_NAME(CLEAN_SELF, "clean_self")
+GTAV_ACTION_NAME(KILL_SELF, "kill_self")
+GTAV_ACTION_NAME(FORCE_RAGDOLL, "force_ragdoll")
+GTAV_ACTION_NAME(GIVE_MONEY, "give_money")
+GTAV_ACTION_NAME(CYCLE_CASH, "cycle_cash")
+GTAV_ACTION_NAME(MAX_ALL_STATS, "max_all_stats")
+GTAV_ACTION_NAME(TOGGLE_INFINITE_PARACHUTES, "toggle_infinite_parachutes")
+GTAV_ACTION_NAME(TOGGLE_IGNORED_BY_ALL, "toggle_ignored_by_all")
+
+/* Weapons */
+GTAV_ACTION_NAME(GIVE_WEAPONS, "give_weapons")
+GTAV_ACTION_NAME(REMOVE_WEAPONS, "remove_weapons")
+GTAV_ACTION_NAME(GIVE_WEAPON, "give_weapon")
+GTAV_ACTION_NAME(GIVE_MAX_AMMO, "give_max_ammo")
+GTAV_ACTION_NAME(CYCLE_WEAPON_DAMAGE, "cycle_weapon_damage")
+GTAV_ACTION_NAME(TOGGLE_EXPLOSIVE_AMMO, "toggle_explosive_ammo")
+GTAV_ACTION_NAME(TOGGLE_FIRE_AMMO, "toggle_fire_ammo")
+GTAV_ACTION_NAME(SPAWN_EXPLOSION_PLAYER, "spawn_explosion_player")
+GTAV_ACTION_NAME(SPAWN_EXPLOSION_WAYPOINT, "spawn_explosion_waypoint")
+
+/* Movement */
+GTAV_ACTION_NAME(TOGGLE_FAST_MOVE, "toggle_fast_move")
+GTAV_ACTION_NAME(TOGGLE_NO_RAGDOLL, "toggle_no_ragdoll")
+GTAV_ACTION_NAME(TOGGLE_NOCLIP, "toggle_noclip")
+GTAV_ACTION_NAME(CYCLE_MOVE_RATE, "cycle_move_rate")
+GTAV_ACTION_NAME(PRESET_PARKOUR, "preset_parkour")
+
+/* Vehicle */
+GTAV_ACTION_NAME(SPAWN_VEHICLE, "spawn_vehicle")
+GTAV_ACTION_NAME(FIX_VEHICLE, "fix_vehicle")
+GTAV_ACTION_NAME(CLEAN_VEHICLE, "clean_vehicle")
+GTAV_ACTION_NAME(REPAIR_CLEAN_VEHICLE, "repair_clean_vehicle")
+GTAV_ACTION_NAME(PLACE_ON_WHEELS, "place_on_wheels")
+GTAV_ACTION_NAME(LAUNCH_BOOST, "launch_boost")
+GTAV_ACTION_NAME(TOGGLE_VEHICLE_GOD, "toggle_vehicle_god")
+GTAV_ACTION_NAME(TOGGLE_NITRO, "toggle_nitro")
+GTAV_ACTION_NAME(TOGGLE_ENGINE_ON, "toggle_engine_on")
+GTAV_ACTION_NAME(TOGGLE_SEATBELT, "toggle_seatbelt")
+GTAV_ACTION_NAME(TOGGLE_KEEP_CLEAN, "toggle_keep_clean")
+GTAV_ACTION_NAME(TOGGLE_KEEP_REPAIRED, "toggle_keep_repaired")
+GTAV_ACTION_NAME(TOGGLE_STICK_TO_GROUND, "toggle_stick_to_ground")
+GTAV_ACTION_NAME(TOGGLE_DRIFT_MODE, "toggle_drift_mode")
+GTAV_ACTION_NAME(TOGGLE_SUPER_BRAKE, "toggle_super_brake")
+GTAV_ACTION_NAME(CYCLE_NITRO_POWER, "cycle_nitro_power")
+GTAV_ACTION_NAME(CYCLE_VEHICLE_CLASS, "cycle_vehicle_class")
+GTAV_ACTION_NAME(TOGGLE_SPAWN_MAXED, "toggle_spawn_maxed")
+GTAV_ACTION_NAME(TOGGLE_SPAWN_INVINCIBLE, "toggle_spawn_invincible")
+GTAV_ACTION_NAME(DELETE_VEHICLE, "delete_vehicle")
+GTAV_ACTION_NAME(CYCLE_CRUISE_SPEED, "cycle_cruise_speed")
+GTAV_ACTION_NAME(TOGGLE_CRUISE_CONTROL, "toggle_cruise_control")
+/* Vehicle controls (doors / windows / headlights / locks / convertible roof) */
+GTAV_ACTION_NAME(CYCLE_VEHICLE_DOOR, "cycle_vehicle_door")
+GTAV_ACTION_NAME(OPEN_VEHICLE_DOOR, "open_vehicle_door")
+GTAV_ACTION_NAME(CLOSE_VEHICLE_DOOR, "close_vehicle_door")
+GTAV_ACTION_NAME(ROLL_DOWN_WINDOWS, "roll_down_windows")
+GTAV_ACTION_NAME(ROLL_UP_WINDOWS, "roll_up_windows")
+GTAV_ACTION_NAME(CYCLE_VEHICLE_HEADLIGHTS, "cycle_vehicle_headlights")
+GTAV_ACTION_NAME(CYCLE_VEHICLE_LOCK, "cycle_vehicle_lock")
+GTAV_ACTION_NAME(RAISE_VEHICLE_ROOF, "raise_vehicle_roof")
+GTAV_ACTION_NAME(LOWER_VEHICLE_ROOF, "lower_vehicle_roof")
+/* Wardrobe / outfit editor */
+GTAV_ACTION_NAME(CYCLE_WARDROBE_SLOT, "cycle_wardrobe_slot")
+GTAV_ACTION_NAME(CYCLE_WARDROBE_STYLE, "cycle_wardrobe_style")
+GTAV_ACTION_NAME(CYCLE_WARDROBE_TEXTURE, "cycle_wardrobe_texture")
+GTAV_ACTION_NAME(WARDROBE_RESET, "wardrobe_reset")
+GTAV_ACTION_NAME(WARDROBE_CLEAR_PROP, "wardrobe_clear_prop")
+GTAV_ACTION_NAME(SAVE_OUTFIT, "save_outfit")
+GTAV_ACTION_NAME(APPLY_OUTFIT, "apply_outfit")
+/* Saved vehicle (garage) */
+GTAV_ACTION_NAME(SAVE_VEHICLE, "save_vehicle")
+GTAV_ACTION_NAME(SPAWN_SAVED_VEHICLE, "spawn_saved_vehicle")
+/* Emotes / animation player */
+GTAV_ACTION_NAME(PLAY_EMOTE, "play_emote")
+GTAV_ACTION_NAME(STOP_EMOTE, "stop_emote")
+GTAV_ACTION_NAME(TOGGLE_EMOTE_LOOP, "toggle_emote_loop")
+/* Weapon tint */
+GTAV_ACTION_NAME(CYCLE_WEAPON_TINT, "cycle_weapon_tint")
+/* Spooner-lite scene save/load */
+GTAV_ACTION_NAME(SAVE_MAP, "save_map")
+GTAV_ACTION_NAME(LOAD_MAP, "load_map")
+GTAV_ACTION_NAME(LOAD_MAP_STEP, "load_map_step")
+
+/* Los Santos Customs */
+GTAV_ACTION_NAME(LS_MAX_PERFORMANCE, "ls_max_performance")
+GTAV_ACTION_NAME(LS_STOCK_VEHICLE, "ls_stock_vehicle")
+GTAV_ACTION_NAME(LS_INSTALL_COSMETICS, "ls_install_cosmetics")
+GTAV_ACTION_NAME(LS_BULLETPROOF_TYRES, "ls_bulletproof_tyres")
+GTAV_ACTION_NAME(CYCLE_PAINT_PRIMARY, "cycle_paint_primary")
+GTAV_ACTION_NAME(CYCLE_PAINT_SECONDARY, "cycle_paint_secondary")
+GTAV_ACTION_NAME(CYCLE_WINDOW_TINT, "cycle_window_tint")
+GTAV_ACTION_NAME(CYCLE_NEON, "cycle_neon")
+GTAV_ACTION_NAME(CYCLE_TYRE_SMOKE, "cycle_tyre_smoke")
+GTAV_ACTION_NAME(TOGGLE_XENON, "toggle_xenon")
+GTAV_ACTION_NAME(CYCLE_WHEEL_TYPE, "cycle_wheel_type")
+GTAV_ACTION_NAME(CYCLE_LIVERY, "cycle_livery")
+GTAV_ACTION_NAME(CYCLE_PLATE_STYLE, "cycle_plate_style")
+GTAV_ACTION_NAME(CYCLE_PLATE_TEXT, "cycle_plate_text")
+GTAV_ACTION_NAME(CYCLE_PEARLESCENT, "cycle_pearlescent")
+GTAV_ACTION_NAME(CYCLE_WHEEL_COLOR, "cycle_wheel_color")
+GTAV_ACTION_NAME(CYCLE_CUSTOM_PRIMARY, "cycle_custom_primary")
+GTAV_ACTION_NAME(CYCLE_CUSTOM_SECONDARY, "cycle_custom_secondary")
+GTAV_ACTION_NAME(TOGGLE_RAINBOW_NEON, "toggle_rainbow_neon")
+GTAV_ACTION_NAME(TOGGLE_RAINBOW_PAINT, "toggle_rainbow_paint")
+
+/* Mod-slot pickers: contiguous range, indexed by (action - MOD_SLOT_FIRST).
+ * Keep in the same order as kVehicleModSlots[] in features/lsc.inc. */
+GTAV_MOD_SLOT_NAME("mod_spoiler")
+GTAV_MOD_SLOT_NAME("mod_front_bumper")
+GTAV_MOD_SLOT_NAME("mod_rear_bumper")
+GTAV_MOD_SLOT_NAME("mod_side_skirt")
+GTAV_MOD_SLOT_NAME("mod_exhaust")
+GTAV_MOD_SLOT_NAME("mod_frame")
+GTAV_MOD_SLOT_NAME("mod_grille")
+GTAV_MOD_SLOT_NAME("mod_hood")
+GTAV_MOD_SLOT_NAME("mod_fenders")
+GTAV_MOD_SLOT_NAME("mod_roof")
+GTAV_MOD_SLOT_NAME("mod_engine")
+GTAV_MOD_SLOT_NAME("mod_brakes")
+GTAV_MOD_SLOT_NAME("mod_transmission")
+GTAV_MOD_SLOT_NAME("mod_suspension")
+GTAV_MOD_SLOT_NAME("mod_armor")
+GTAV_MOD_SLOT_NAME("mod_wheels")
+GTAV_MOD_SLOT_NAME("mod_horn")
+
+/* World */
+GTAV_ACTION_NAME(CYCLE_WEATHER, "cycle_weather")
+GTAV_ACTION_NAME(CYCLE_TIME, "cycle_time")
+GTAV_ACTION_NAME(CYCLE_WANTED, "cycle_wanted")
+GTAV_ACTION_NAME(TOGGLE_FREEZE_TIME, "toggle_freeze_time")
+GTAV_ACTION_NAME(TOGGLE_LOW_GRAVITY, "toggle_low_gravity")
+GTAV_ACTION_NAME(TOGGLE_SLOW_MOTION, "toggle_slow_motion")
+GTAV_ACTION_NAME(CYCLE_CLOCK_HOUR, "cycle_clock_hour")
+GTAV_ACTION_NAME(CYCLE_TIME_SCALE, "cycle_time_scale")
+GTAV_ACTION_NAME(CYCLE_GRAVITY, "cycle_gravity")
+GTAV_ACTION_NAME(TOGGLE_THIN_POPULATION, "toggle_thin_population")
+
+/* Teleport */
+GTAV_ACTION_NAME(TELEPORT_WAYPOINT, "teleport_waypoint")
+GTAV_ACTION_NAME(TELEPORT_OBJECTIVE, "teleport_objective")
+GTAV_ACTION_NAME(SAVE_LOCATION, "save_location")
+GTAV_ACTION_NAME(RETURN_SAVED_LOCATION, "return_saved_location")
+GTAV_ACTION_NAME(TELEPORT_PRESET, "teleport_preset")
+
+/* Presets */
+GTAV_ACTION_NAME(PRESET_STEALTH, "preset_stealth")
+GTAV_ACTION_NAME(PRESET_STUNT, "preset_stunt")
+GTAV_ACTION_NAME(PRESET_SURVIVAL, "preset_survival")
+GTAV_ACTION_NAME(PRESET_DRIVER, "preset_driver")
+GTAV_ACTION_NAME(DISABLE_ALL, "disable_all")
+
+/* Screen effects */
+GTAV_ACTION_NAME(TOGGLE_NIGHT_VISION, "toggle_night_vision")
+GTAV_ACTION_NAME(TOGGLE_SEETHROUGH, "toggle_seethrough")
+GTAV_ACTION_NAME(CYCLE_TIMECYCLE, "cycle_timecycle")
+GTAV_ACTION_NAME(CYCLE_ANIMPOSTFX, "cycle_animpostfx")
+
+/* Ped control */
+GTAV_ACTION_NAME(PEDS_ATTACK_PLAYER, "peds_attack_player")
+GTAV_ACTION_NAME(PEDS_FLEE_PLAYER, "peds_flee_player")
+GTAV_ACTION_NAME(PEDS_STOP, "peds_stop")
+GTAV_ACTION_NAME(RAGDOLL_NEARBY, "ragdoll_nearby")
+
+/* Spawned content lifecycle */
+GTAV_ACTION_NAME(CLEAR_SPAWNED_VEHICLES, "clear_spawned_vehicles")
+GTAV_ACTION_NAME(CLEAR_SPAWNED_PEDS, "clear_spawned_peds")
+GTAV_ACTION_NAME(CLEAR_SPAWNED_OBJECTS, "clear_spawned_objects")
+GTAV_ACTION_NAME(CLEAR_SPAWNED_ALL, "clear_spawned_all")
+
+/* Companions / bodyguards */
+GTAV_ACTION_NAME(SPAWN_BODYGUARD, "spawn_bodyguard")
+GTAV_ACTION_NAME(CYCLE_BODYGUARD_HEALTH, "cycle_bodyguard_health")
+GTAV_ACTION_NAME(CYCLE_BODYGUARD_ARMOR, "cycle_bodyguard_armor")
+GTAV_ACTION_NAME(TOGGLE_BODYGUARD_INVINCIBLE, "toggle_bodyguard_invincible")
+GTAV_ACTION_NAME(CYCLE_BODYGUARD_FORMATION, "cycle_bodyguard_formation")
+GTAV_ACTION_NAME(CYCLE_BODYGUARD_AGGRESSION, "cycle_bodyguard_aggression")
+GTAV_ACTION_NAME(CYCLE_BODYGUARD_WEAPON, "cycle_bodyguard_weapon")
+GTAV_ACTION_NAME(CYCLE_BODYGUARD_ACCURACY, "cycle_bodyguard_accuracy")
+GTAV_ACTION_NAME(TOGGLE_BODYGUARD_BLIPS, "toggle_bodyguard_blips")
+GTAV_ACTION_NAME(BRING_BODYGUARDS, "bring_bodyguards")
+GTAV_ACTION_NAME(DISMISS_BODYGUARDS, "dismiss_bodyguards")
+
+/* Vehicle tyre ops */
+GTAV_ACTION_NAME(BURST_TYRES, "burst_tyres")
+GTAV_ACTION_NAME(FIX_TYRES, "fix_tyres")
+
+/* Vehicle autopilot (self-driving) */
+GTAV_ACTION_NAME(CYCLE_AUTOPILOT_MODE, "cycle_autopilot_mode")
+GTAV_ACTION_NAME(CYCLE_AUTOPILOT_AGGRESSION, "cycle_autopilot_aggression")
+GTAV_ACTION_NAME(CYCLE_AUTOPILOT_SPEED, "cycle_autopilot_speed")
+GTAV_ACTION_NAME(STOP_AUTOPILOT, "stop_autopilot")
+
+/* Minigames (fun modes). All of these natives are now pinned in
+ * native_addresses_generated.h and live; minigame_natives_ready() is a defensive runtime
+ * gate that locks a mode only if one of its natives fails to resolve on a given build
+ * (degrades safely instead of crashing). Flood remains labelled experimental. */
+GTAV_ACTION_NAME(TOGGLE_MINIGAME_RIOT, "toggle_minigame_riot")
+GTAV_ACTION_NAME(TOGGLE_MINIGAME_METEOR, "toggle_minigame_meteor")
+GTAV_ACTION_NAME(TOGGLE_MINIGAME_STORM, "toggle_minigame_storm")
+GTAV_ACTION_NAME(TOGGLE_MINIGAME_INFERNO, "toggle_minigame_inferno")
+GTAV_ACTION_NAME(TOGGLE_MINIGAME_RAGDOLL, "toggle_minigame_ragdoll")
+GTAV_ACTION_NAME(TOGGLE_MINIGAME_BLACKOUT, "toggle_minigame_blackout")
+GTAV_ACTION_NAME(TOGGLE_MINIGAME_ZOMBIES, "toggle_minigame_zombies")
+GTAV_ACTION_NAME(TOGGLE_MINIGAME_FLOOD, "toggle_minigame_flood")
+
+/* Content spawner */
+GTAV_ACTION_NAME(SPAWN_PED, "spawn_ped")
+GTAV_ACTION_NAME(SPAWN_OBJECT, "spawn_object")
+GTAV_ACTION_NAME(SET_PLAYER_MODEL, "set_player_model")
+/* Ped browser category filter (skin / spawn ped / bodyguard share the catalog). */
+GTAV_ACTION_NAME(CYCLE_PED_CATEGORY, "cycle_ped_category")
+/* Object browser category filter + spawn-placement controls (World > Spawn Object). */
+GTAV_ACTION_NAME(CYCLE_OBJECT_CATEGORY, "cycle_object_category")
+GTAV_ACTION_NAME(CYCLE_OBJECT_SPAWN_AT, "cycle_object_spawn_at")
+GTAV_ACTION_NAME(CYCLE_OBJECT_DISTANCE, "cycle_object_distance")
+GTAV_ACTION_NAME(CYCLE_OBJECT_HEADING, "cycle_object_heading")
+GTAV_ACTION_NAME(CYCLE_OBJECT_ON_GROUND, "cycle_object_on_ground")
+/* Interactive object placement: enter controller-driven move/reorient for the last spawn,
+ * plus the saved "auto-enter that mode after a spawn" display toggle. */
+GTAV_ACTION_NAME(MOVE_LAST_OBJECT, "move_last_object")
+GTAV_ACTION_NAME(TOGGLE_AUTO_EDIT_OBJECT, "toggle_auto_edit_object")
+/* Internal game-thread model pre-warm job (no menu row). */
+GTAV_ACTION_NAME(PREWARM_MODEL, "prewarm_model")
+/* Internal game-thread vehicle-preview texture-dict stream job (no menu row). */
+GTAV_ACTION_NAME(PREVIEW_TXD, "preview_txd")
+
+/* HUD overlay */
+GTAV_ACTION_NAME(TOGGLE_HUD, "toggle_hud")
+GTAV_ACTION_NAME(TOGGLE_HUD_SPEEDO, "toggle_hud_speedo")
+GTAV_ACTION_NAME(TOGGLE_HUD_COORDS, "toggle_hud_coords")
+GTAV_ACTION_NAME(TOGGLE_HUD_FPS, "toggle_hud_fps")
+GTAV_ACTION_NAME(TOGGLE_HUD_DISTANCE, "toggle_hud_distance")
+GTAV_ACTION_NAME(TOGGLE_DEBUG_OVERLAY, "toggle_debug_overlay")
+
+/* Menu customisation + keybinds */
+GTAV_ACTION_NAME(CYCLE_THEME, "cycle_theme")
+GTAV_ACTION_NAME(CYCLE_CUSTOM_COLOR, "cycle_custom_color")
+GTAV_ACTION_NAME(RESET_CUSTOM_THEME, "reset_custom_theme")
+GTAV_ACTION_NAME(CYCLE_REGION, "cycle_region")
+GTAV_ACTION_NAME(CYCLE_WORKER_HZ, "cycle_worker_hz")
+GTAV_ACTION_NAME(CYCLE_TOAST_TIME, "cycle_toast_time")
+GTAV_ACTION_NAME(CYCLE_MOTION, "cycle_motion")
+GTAV_ACTION_NAME(CYCLE_NAV_DELAY, "cycle_nav_delay")
+GTAV_ACTION_NAME(CYCLE_NAV_SPEED, "cycle_nav_speed")
+GTAV_ACTION_NAME(CYCLE_TOUCHPAD, "cycle_touchpad")
+GTAV_ACTION_NAME(CYCLE_PANEL_WIDTH, "cycle_panel_width")
+GTAV_ACTION_NAME(CYCLE_SAVED_VEHICLE_SLOT, "cycle_saved_vehicle_slot")
+GTAV_ACTION_NAME(CYCLE_OUTFIT_SLOT, "cycle_outfit_slot")
+GTAV_ACTION_NAME(CYCLE_KEYBIND_0, "cycle_keybind_0")
+GTAV_ACTION_NAME(CYCLE_KEYBIND_1, "cycle_keybind_1")
+GTAV_ACTION_NAME(CYCLE_KEYBIND_2, "cycle_keybind_2")
+GTAV_ACTION_NAME(CYCLE_KEYBIND_3, "cycle_keybind_3")
+GTAV_ACTION_NAME(START_SCENARIO, "start_scenario")
+GTAV_ACTION_NAME(STOP_SCENARIO, "stop_scenario")
+GTAV_ACTION_NAME(CYCLE_SCENARIO_CATEGORY, "cycle_scenario_category")
+
+/* Settings persistence */
+GTAV_ACTION_NAME(SAVE_PROFILE, "save_profile")
+GTAV_ACTION_NAME(LOAD_PROFILE, "load_profile")
+
+/* Session: experimental skip-prologue (flag + SP relaunch), game-thread gated. */
+GTAV_ACTION_NAME(SKIP_PROLOGUE, "skip_prologue")
+
+/* Fly modes (game-thread velocity drivers; volatile mode state, not saved toggles). */
+GTAV_ACTION_NAME(CYCLE_FLY_MODE, "cycle_fly_mode")
+GTAV_ACTION_NAME(CYCLE_VEHICLE_FLY, "cycle_vehicle_fly")
+
+/* Gun toolkit (game-thread raycast driver; volatile active-gun mode state). */
+GTAV_ACTION_NAME(CYCLE_ACTIVE_GUN, "cycle_active_gun")
+
+/* World spectacle (Wind worker-safe; Camera Shake game-thread re-assert; Fireworks PTFX job). */
+GTAV_ACTION_NAME(CYCLE_WIND, "cycle_wind")
+GTAV_ACTION_NAME(CYCLE_CAM_SHAKE, "cycle_cam_shake")
+GTAV_ACTION_NAME(SPAWN_FIREWORKS, "spawn_fireworks")
+
+/* Fun + parity wave: No-Reload, Slippery, Teleport Into Last Vehicle, Free Camera (+ speed),
+ * Vehicle Rocket Boost, Explosive Melee, Spooner entity tweaks, Weapon attachments. */
+GTAV_ACTION_NAME(TOGGLE_NO_RELOAD, "toggle_no_reload")
+GTAV_ACTION_NAME(TOGGLE_SLIPPERY, "toggle_slippery")
+GTAV_ACTION_NAME(TELEPORT_LAST_VEHICLE, "teleport_last_vehicle")
+GTAV_ACTION_NAME(FREE_CAM, "free_cam")
+GTAV_ACTION_NAME(CYCLE_FREE_CAM_SPEED, "cycle_free_cam_speed")
+GTAV_ACTION_NAME(VEHICLE_ROCKET_BOOST, "vehicle_rocket_boost")
+GTAV_ACTION_NAME(TOGGLE_EXPLOSIVE_MELEE, "toggle_explosive_melee")
+GTAV_ACTION_NAME(DUPLICATE_LAST_ENTITY, "duplicate_last_entity")
+GTAV_ACTION_NAME(ATTACH_LAST_ENTITY, "attach_last_entity")
+GTAV_ACTION_NAME(DETACH_LAST_ENTITY, "detach_last_entity")
+GTAV_ACTION_NAME(CYCLE_ENTITY_ALPHA, "cycle_entity_alpha")
+GTAV_ACTION_NAME(CYCLE_ATTACH_SUPP, "cycle_attach_supp")
+GTAV_ACTION_NAME(CYCLE_ATTACH_SCOPE, "cycle_attach_scope")
+GTAV_ACTION_NAME(CYCLE_ATTACH_GRIP, "cycle_attach_grip")
+GTAV_ACTION_NAME(CYCLE_ATTACH_CLIP, "cycle_attach_clip")
+GTAV_ACTION_NAME(CYCLE_ATTACH_FLASH, "cycle_attach_flash")
+GTAV_ACTION_NAME(APPLY_ATTACHMENTS, "apply_attachments")
+GTAV_ACTION_NAME(REMOVE_ATTACHMENTS, "remove_attachments")
+
+#undef GTAV_ACTION_NAME
+#undef GTAV_MOD_SLOT_NAME

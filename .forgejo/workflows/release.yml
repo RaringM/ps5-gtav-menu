@@ -1,0 +1,39 @@
+name: release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      LLVM_VERSION: "20"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Install build prerequisites
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends make python3 wget unzip binutils lsb-release gnupg software-properties-common
+          wget -qO /tmp/llvm.sh https://apt.llvm.org/llvm.sh
+          chmod +x /tmp/llvm.sh
+          sudo /tmp/llvm.sh "$LLVM_VERSION"
+          sudo apt-get install -y "clang-$LLVM_VERSION" "lld-$LLVM_VERSION" "llvm-$LLVM_VERSION"
+          echo "LLVM_CONFIG=$(command -v llvm-config-$LLVM_VERSION)" >> "$GITHUB_ENV"
+          echo "PS5_PAYLOAD_SDK=$HOME/ps5-payload-sdk" >> "$GITHUB_ENV"
+      - name: Install pinned PS5 payload SDK
+        run: |
+          wget -q https://github.com/ps5-payload-dev/sdk/releases/download/v0.43/ps5-payload-sdk.zip -O /tmp/ps5-payload-sdk.zip
+          echo "a9cc9929f21b2b2c5d5b309f3bab4997067c45281c0622cf4838b1aecba66fcb  /tmp/ps5-payload-sdk.zip" | sha256sum -c -
+          unzip -q /tmp/ps5-payload-sdk.zip -d "$HOME"
+      - name: Build and assemble release
+        run: |
+          make package-payload package-onionhen
+          python3 tools/release.py assemble --tag "$GITHUB_REF_NAME"
+      - name: Publish Forgejo release
+        env:
+          FORGEJO_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        run: python3 tools/release.py publish --platform forgejo --tag "$GITHUB_REF_NAME"

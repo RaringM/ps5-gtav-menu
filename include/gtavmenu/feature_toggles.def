@@ -1,0 +1,131 @@
+/* feature_toggles.def -- single source of truth for the display/persistence toggles.
+ *
+ * Another X-macro table (see feature_actions.def for the pattern). Each row is one
+ * on/off feature that shows a checkmark in the menu and is saved to profile.cfg. Listing
+ * them once here keeps the consumers that used to be hand-maintained in lockstep:
+ *
+ *   - gtav_features_toggle_mask()  (features.cpp) -- OR each live flag into the bitmask
+ *   - the reset loop in gtav_features_init()      (features.cpp)
+ *   - the restore loop in gtav_features_import_profile()  (features.cpp)
+ *   - shell_toggle_is_on()  (native_bridge.cpp)   -- render the checkmark from the mask
+ *
+ * The bit and the action share a name by construction: a row named X maps to
+ *   GTAV_FEATURE_TOGGLE_X   (the mask bit, in features.h)
+ *   GTAV_NATIVE_SHELL_ACTION_TOGGLE_X   (the menu action, in native_bridge.h)
+ * so adding a toggle is a one-line edit here instead of several parallel ones.
+ *
+ *   GTAV_TOGGLE(NAME, state_expr, reactivate_on_restore, default_on)
+ *     NAME       feature suffix shared by the bit and the TOGGLE_ action
+ *     state_expr the C lvalue holding "is this on" (only used by features.cpp; the bridge
+ *                drops this argument, so its file-local globals are never referenced there)
+ *     reactivate 1 = restore by re-running the toggle action; 0 = restored some other way
+ *                (the HUD sub-elements are written directly from the saved mask before the
+ *                restore loop, because re-activating them would flip the saved state)
+ *     default_on value the flag is reset to in gtav_features_init() (0 for almost all;
+ *                the HUD speed/coords/fps elements default on)
+ */
+
+#ifndef GTAV_TOGGLE
+#define GTAV_TOGGLE(name, state, reactivate, default_on)
+#endif
+
+/* Player */
+GTAV_TOGGLE(GOD_MODE, g_state.god_mode_enabled, 1, 0)
+GTAV_TOGGLE(SUPER_RUN, g_state.super_run_enabled, 1, 0)
+GTAV_TOGGLE(FAST_SWIM, g_state.fast_swim_enabled, 1, 0)
+GTAV_TOGGLE(INFINITE_AMMO, g_state.infinite_ammo_enabled, 1, 0)
+GTAV_TOGGLE(SUPER_JUMP, g_super_jump_enabled, 1, 0)
+GTAV_TOGGLE(INVISIBLE, g_invisible_enabled, 1, 0)
+GTAV_TOGGLE(NEVER_WANTED, g_never_wanted_enabled, 1, 0)
+GTAV_TOGGLE(SUPER_PROOFS, g_super_proofs_enabled, 1, 0)
+GTAV_TOGGLE(NO_CRIT, g_no_crit_enabled, 1, 0)
+GTAV_TOGGLE(INF_STAMINA, g_inf_stamina_enabled, 1, 0)
+GTAV_TOGGLE(INF_SPECIAL, g_inf_special_enabled, 1, 0)
+GTAV_TOGGLE(AUTO_HEAL, g_auto_heal_enabled, 1, 0)
+GTAV_TOGGLE(WANTED_LOCK, g_wanted_lock_enabled, 1, 0)
+GTAV_TOGGLE(NO_RAGDOLL, g_no_ragdoll_enabled, 1, 0)
+/* Infinite Parachutes: handler is a flag flip; the game-thread tick re-grants GADGET_PARACHUTE. */
+GTAV_TOGGLE(INFINITE_PARACHUTES, g_inf_parachute_enabled, 1, 0)
+/* Ignored By Everyone: flag flip; game-thread tick asserts the ignore flags, handler restores. */
+GTAV_TOGGLE(IGNORED_BY_ALL, g_ignored_by_all_enabled, 1, 0)
+
+/* Vehicle */
+GTAV_TOGGLE(VEHICLE_GOD, g_vehicle_god_enabled, 1, 0)
+GTAV_TOGGLE(NITRO, g_nitro_enabled, 1, 0)
+GTAV_TOGGLE(ENGINE_ON, g_engine_on_enabled, 1, 0)
+GTAV_TOGGLE(FAST_MOVE, g_fast_move_enabled, 1, 0)
+GTAV_TOGGLE(SEATBELT, g_seatbelt_enabled, 1, 0)
+GTAV_TOGGLE(KEEP_CLEAN, g_keep_clean_enabled, 1, 0)
+GTAV_TOGGLE(KEEP_REPAIRED, g_keep_repaired_enabled, 1, 0)
+GTAV_TOGGLE(STICK_TO_GROUND, g_stick_to_ground_enabled, 1, 0)
+GTAV_TOGGLE(DRIFT_MODE, g_drift_mode_enabled, 1, 0)
+/* Slippery Roads: constant reduced grip (ice physics), re-asserted on the game-thread vehicle tick.
+ */
+GTAV_TOGGLE(SLIPPERY, g_slippery_enabled, 1, 0)
+GTAV_TOGGLE(SUPER_BRAKE, g_super_brake_enabled, 1, 0)
+GTAV_TOGGLE(CRUISE_CONTROL, g_cruise_control_enabled, 1, 0)
+GTAV_TOGGLE(XENON, g_xenon_enabled, 1, 0)
+GTAV_TOGGLE(RAINBOW_NEON, g_rainbow_neon_enabled, 1, 0)
+GTAV_TOGGLE(RAINBOW_PAINT, g_rainbow_paint_enabled, 1, 0)
+/* Spawner defaults: pure display flags consumed at vehicle create-time (no native at toggle). */
+GTAV_TOGGLE(SPAWN_MAXED, g_spawn_maxed_enabled, 1, 0)
+GTAV_TOGGLE(SPAWN_INVINCIBLE, g_spawn_invincible_enabled, 1, 0)
+
+/* World */
+GTAV_TOGGLE(LOW_GRAVITY, g_low_gravity_enabled, 1, 0)
+GTAV_TOGGLE(SLOW_MOTION, g_slow_motion_enabled, 1, 0)
+GTAV_TOGGLE(FREEZE_TIME, g_freeze_time_enabled, 1, 0)
+/* Thin Population: handler is a flag flip; the game-thread tick re-asserts budget 0. */
+GTAV_TOGGLE(THIN_POPULATION, g_thin_population_enabled, 1, 0)
+GTAV_TOGGLE(BODYGUARD_INVINCIBLE, g_bodyguard_invincible_enabled, 1, 0)
+GTAV_TOGGLE(BODYGUARD_BLIPS, g_bodyguard_blips_enabled, 1, 0)
+/* Spawn Object: auto-enter the interactive move/reorient mode right after a spawn. Pure
+ * display flag (no native at toggle); the spawn job reads it. Restored like any saved toggle
+ * (a flag flip, safe at init). */
+GTAV_TOGGLE(AUTO_EDIT_OBJECT, g_auto_edit_object_enabled, 1, 0)
+
+/* Weapons / combat */
+GTAV_TOGGLE(EXPLOSIVE_AMMO, g_explosive_ammo_enabled, 1, 0)
+GTAV_TOGGLE(FIRE_AMMO, g_fire_ammo_enabled, 1, 0)
+/* Explosive Melee: game-thread tick spawns an explosion at each melee impact. Re-runs the toggle
+ * action on restore -- which self-refuses until the frame hook is live (safe no-op at load). */
+GTAV_TOGGLE(EXPLOSIVE_MELEE, g_explosive_melee_enabled, 1, 0)
+/* Emote Loop: pure worker-side flag read by the emote tick's TASK_PLAY_ANIM flag; default off
+ * (emotes play once). Re-running the toggle on restore just re-flips the flag (safe in any build). */
+GTAV_TOGGLE(EMOTE_LOOP, g_emote_loop_enabled, 1, 0)
+/* No-Reload / Infinite Clip: flag flip; the game-thread tick re-asserts SET_PED_INFINITE_AMMO_CLIP.
+ */
+GTAV_TOGGLE(NO_RELOAD, g_no_reload_enabled, 1, 0)
+
+/* Movement / fun */
+GTAV_TOGGLE(NOCLIP, g_noclip_enabled, 1, 0)
+
+/* Screen effects */
+GTAV_TOGGLE(NIGHT_VISION, g_night_vision_enabled, 1, 0)
+GTAV_TOGGLE(SEETHROUGH, g_seethrough_enabled, 1, 0)
+GTAV_TOGGLE(DEBUG_OVERLAY, g_debug_overlay_enabled, 1, 0)
+
+/* Minigames (fun modes). Mutually exclusive: the display flags live in one array
+ * (g_minigame_on[], features.cpp) so at most one is ever set; the authoritative active id
+ * is g_active_minigame. reactivate = 1 like every non-HUD toggle, but a saved minigame does
+ * not actually re-enable at load because the toggle refuses until the frame hook is live
+ * (which it is not at profile-load time) -- a deliberately safe no-op. default_on = 0. */
+GTAV_TOGGLE(MINIGAME_RIOT, g_minigame_on[GTAV_MINIGAME_RIOT], 1, 0)
+GTAV_TOGGLE(MINIGAME_METEOR, g_minigame_on[GTAV_MINIGAME_METEOR], 1, 0)
+GTAV_TOGGLE(MINIGAME_STORM, g_minigame_on[GTAV_MINIGAME_STORM], 1, 0)
+GTAV_TOGGLE(MINIGAME_INFERNO, g_minigame_on[GTAV_MINIGAME_INFERNO], 1, 0)
+GTAV_TOGGLE(MINIGAME_RAGDOLL, g_minigame_on[GTAV_MINIGAME_RAGDOLL], 1, 0)
+GTAV_TOGGLE(MINIGAME_BLACKOUT, g_minigame_on[GTAV_MINIGAME_BLACKOUT], 1, 0)
+GTAV_TOGGLE(MINIGAME_ZOMBIES, g_minigame_on[GTAV_MINIGAME_ZOMBIES], 1, 0)
+GTAV_TOGGLE(MINIGAME_FLOOD, g_minigame_on[GTAV_MINIGAME_FLOOD], 1, 0)
+
+/* HUD overlay. The master toggle re-activates; the sub-elements are restored by direct
+ * assignment from the saved mask (reactivate = 0), since re-activating would flip them.
+ * Speed/coords/fps default on so a fresh install shows a useful HUD once HUD is enabled. */
+GTAV_TOGGLE(HUD, g_hud_enabled, 1, 0)
+GTAV_TOGGLE(HUD_SPEEDO, g_hud_speedo_enabled, 0, 1)
+GTAV_TOGGLE(HUD_COORDS, g_hud_coords_enabled, 0, 1)
+GTAV_TOGGLE(HUD_FPS, g_hud_fps_enabled, 0, 1)
+GTAV_TOGGLE(HUD_DISTANCE, g_hud_distance_enabled, 0, 0)
+
+#undef GTAV_TOGGLE

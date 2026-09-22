@@ -1,0 +1,12 @@
+#!/bin/sh
+# Thin end-user front-end for the GTAVMenu release installer.
+#
+#   ./gtavmenu preflight --host <ps5-ip>
+#   ./gtavmenu install   --host <ps5-ip>
+#   ./gtavmenu status    --host <ps5-ip>
+#
+# It forwards to tools/install_release.py (Python stdlib only). From a checkout it
+# installs the bundle staged by `make package-payload`; the same script also ships
+# inside the release zip, where you can run `python3 install_release.py ...` directly.
+here=$(CD=$(dirname "$0"); cd "$CD" && pwd)
+exec python3 "$here/tools/install_release.py" "$@"
