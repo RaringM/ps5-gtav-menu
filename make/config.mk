@@ -1,4 +1,8 @@
 PS5_PAYLOAD_SDK ?= $(HOME)/Projects/PS5/ps5-payload-sdk
+PS5_LLVM_MAJOR ?= 20
+# Diagnostic escape hatch only. Publication builds use the pinned major above; setting this to 1
+# records the exception in build-config.json and must be followed by a fresh hardware gate.
+GTAV_ALLOW_UNVALIDATED_TOOLCHAIN ?= 0
 
 # Does the installed SDK provide kernel_proc_copyin/copyout? Those try the debug-memory path and
 # then fall back to a page-table walk + kernel direct-map write. That fallback is mandatory on

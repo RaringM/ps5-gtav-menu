@@ -10,8 +10,8 @@ Left**.
 - A jailbroken PS5 and a compatible payload launcher.
 - The PS5 payload SDK v0.43, set with `PS5_PAYLOAD_SDK` or installed at
   `$HOME/Projects/PS5/ps5-payload-sdk`.
-- `make`, Python 3.11+, `curl`, `socat`, and an LLVM toolchain supported by that SDK. LLVM 20 is
-  the reproducible release/CI toolchain.
+- `make`, Python 3.11+, `curl`, `socat`, and LLVM 20. Direct builds reject another LLVM major; set
+  `LLVM_CONFIG` to the absolute path of `llvm-config-20` when multiple versions are installed.
 
 The operator scripts use the Python modules included under `tools/`; no `pip install` or virtual
 environment is required on the publication branch. Build metadata records the exact compiler
@@ -28,6 +28,15 @@ make package-onionhen
 `make all` builds unstripped production loader and worker ELFs under `build/ps5`. The package
 targets create a standalone bundle and an OnionHEN auto-start bundle under `build/pkg`. Building
 does not deploy or modify a console.
+
+Fedora's system LLVM may be newer than the release toolchain. Build with the included Podman image
+without replacing system packages:
+
+```sh
+podman build -t gtav-menu-ps5-builder .
+podman run --rm --userns=keep-id -v "$PWD:/workspace:Z" \
+  gtav-menu-ps5-builder all package-payload package-onionhen
+```
 
 ## Run
 
