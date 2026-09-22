@@ -11,7 +11,8 @@ Left**.
 - The PS5 payload SDK v0.43, set with `PS5_PAYLOAD_SDK` or installed at
   `$HOME/Projects/PS5/ps5-payload-sdk`.
 - `make`, Python 3.11+, `curl`, `socat`, and LLVM 20. Direct builds reject another LLVM major; set
-  `LLVM_CONFIG` to the absolute path of `llvm-config-20` when multiple versions are installed.
+  `LLVM_CONFIG` to the absolute path of LLVM 20's `llvm-config` when multiple versions are
+  installed.
 
 The operator scripts use the Python modules included under `tools/`; no `pip install` or virtual
 environment is required on the publication branch. Build metadata records the exact compiler
@@ -36,6 +37,14 @@ without replacing system packages:
 podman build -t gtav-menu-ps5-builder .
 podman run --rm --userns=keep-id -v "$PWD:/workspace:Z" \
   gtav-menu-ps5-builder all package-payload package-onionhen
+```
+
+For host-native builds and `menu-ctl.sh` on Fedora 44, install the parallel LLVM 20 packages once
+and select them explicitly:
+
+```sh
+sudo dnf install clang20 llvm20 llvm20-devel lld20
+export LLVM_CONFIG=/usr/lib64/llvm20/bin/llvm-config
 ```
 
 ## Run

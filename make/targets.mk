@@ -82,7 +82,7 @@ require-ps5-sdk:
 			echo "warning: unvalidated PS5 toolchain: $$compiler_version (llvm-config $$llvm_version); expected LLVM $(PS5_LLVM_MAJOR)" >&2; \
 		else \
 			echo "error: PS5 release builds require LLVM $(PS5_LLVM_MAJOR), got $$compiler_version (llvm-config $$llvm_version)" >&2; \
-			echo "error: set LLVM_CONFIG to an absolute llvm-config-$(PS5_LLVM_MAJOR) path, or use the included Containerfile" >&2; \
+			echo "error: set LLVM_CONFIG to LLVM $(PS5_LLVM_MAJOR)'s absolute llvm-config path, or use the included Containerfile" >&2; \
 			exit 1; \
 		fi; \
 	fi
