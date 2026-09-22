@@ -1,0 +1,118 @@
+{
+  "schemaVersion": 2,
+  "targetId": "PPSA04264_01.010.002_DISC",
+  "titleId": "PPSA04264",
+  "contentId": "UP1004-PPSA04264_00-GTAVFULLGAMEDISC",
+  "titleName": "Grand Theft Auto V",
+  "contentVersion": "01.010.002",
+  "masterVersion": "01.00",
+  "sdkVersion": "0x0300000000000000",
+  "requiredSystemSoftwareVersion": "0x0300000000000000",
+  "binaryIdentity": {
+    "encryptedEboot": {
+      "size": 70691458,
+      "sha256": "01d4302521e57a070e908eda1d779aec7c17abc509243b1d09a1b0e934b68f07"
+    },
+    "normalizedElf": {
+      "size": 99012608,
+      "sha256": "2a3419b404a5d10f2d36d8056916e65afad6352b78489365e5f1003f8e953c0d"
+    }
+  },
+  "runtime": {
+    "productionProfile": "phase-menu",
+    "installHook": true,
+    "dryRun": false,
+    "startsHidden": true,
+    "openChord": "R1 + D-pad Left",
+    "injectionLane": "ptrace-free cave bootstrap",
+    "targetElevation": false,
+    "note": "The production worker publishes immutable menu draw lists and the verified render-phase callback consumes them. Gameplay work drains on the existing game-thread hook. The live worker ignores runtime.cfg."
+  },
+  "loader": {
+    "status": "pinned",
+    "caveAddress": "0x3796000",
+    "caveAllocationBytes": "0x200000",
+    "runtimeImageBias": "0x400000",
+    "playerPedAnchor": "0x5a89a88",
+    "playerPedOffset": "0x8",
+    "playerPedReadyMode": "nonzero",
+    "versionSignatureAddr": "0x1a51840",
+    "versionSignatureExpectedCompact": "8b054ac1b102488b0f8901c3cccccccc",
+    "frameHookTarget": "0x1bc8ed0",
+    "brokerContinuation": "0x1bc8ee0",
+    "brokerPatchLen": 14,
+    "brokerStolenLen": 16,
+    "brokerExpectedBytesCompact": "554889e55350488b05ab0bec034889fb",
+    "tlsGameCtxOffset": "0x140",
+    "tlsCtxNativeThreadOffset": "0x198",
+    "note": "Exact 01.010.002 production pins. The loader verifies target identity, version bytes, mapping bounds, write readback, and restoration before accepting this contract."
+  },
+  "liveMapping": {
+    "text": {
+      "liveStart": "0x3ff000",
+      "liveEnd": "0x3798000"
+    }
+  },
+  "nativeBridge": {
+    "status": "hardware_validated_for_production_profile",
+    "abiVersion": 1,
+    "addressAcceptanceSemantics": "exact_target_and_hardware_validation",
+    "runtimeInvocationValidated": true,
+    "authorizedForInjection": true,
+    "addresses": {
+      "getFrameCount": "0x1ae1b40",
+      "isControlPressed": "0x1b85080",
+      "isControlJustPressed": "0x1b855a0",
+      "drawRect": "0x1aa8900",
+      "beginTextCommandDisplayText": "0x1ac5d60",
+      "addTextComponentSubstringPlayerName": "0x1ac7390",
+      "endTextCommandDisplayText": "0x1ac5dc0",
+      "setTextScale": "0x1ac9520",
+      "setTextColour": "0x1ac9540",
+      "setTextFont": "0x1ac9610",
+      "setTextCentre": "0x1ac9570",
+      "setTextWrap": "0x1ac95d0",
+      "setTextJustification": "0x1ac95b0",
+      "setTextDropShadow": "0x1ac9620",
+      "setTextDropshadow": "0x1ac9620",
+      "setTextOutline": "0x1ac9640",
+      "isDisabledControlPressed": "0x1b86580",
+      "isDisabledControlJustPressed": "0x1b869a0",
+      "isDisabledControlJustReleased": "0x1b86c70",
+      "disableControlAction": "0x1b881f0",
+      "setInputExclusive": "0x1b880c0",
+      "getGameTimer": "0x1ae1b10",
+      "drawSprite": "0x1aa8c70",
+      "hasStreamedTextureDictLoaded": "0x1aa8790",
+      "requestStreamedTextureDict": "0x1aa85f0",
+      "playerId": "0x1bc8eb0",
+      "playerPedId": "0x1bc8ed0",
+      "setPlayerInvincible": "0x1bc9430",
+      "setEntityInvincible": "0x1a96160",
+      "setEntityHealth": "0x1a95e10",
+      "setPedArmour": "0x1b97db0",
+      "setPlayerWantedLevel": "0x1bc5c50",
+      "setPlayerWantedLevelNow": "0x1bc5e90"
+    },
+    "notes": [
+      "Addresses are specific to normalized ELF SHA-256 2a3419b404a5d10f2d36d8056916e65afad6352b78489365e5f1003f8e953c0d and must be re-derived for any other build.",
+      "Worker-safe state changes and game-thread gameplay actions were validated on 01.010.002. Vehicle spawning includes cold-model streaming; the script-global vehicle-retention capability is demand-driven and was read back after activation.",
+      "The accepted renderer consumes immutable rectangle, text, sprite-preview, and Scaleform draw commands at the verified phase boundary. Exact hook and callback restoration are required during retirement."
+    ]
+  },
+  "validation": {
+    "status": "hardware-accepted",
+    "date": "2026-09-21",
+    "deliveries": [
+      "standalone persistent watcher",
+      "OnionHEN 1.03 plugin"
+    ],
+    "summary": "Stable hidden-on-launch menu, navigation, previews and fallback, native glyphs, cold-model and MP/DLC vehicle spawning/retention, clean close, and clean Story Mode relaunch were observed on fresh game processes.",
+    "limitations": "Hardware acceptance applies to the recorded source artifacts. Rebuilt artifacts require a fresh on-hardware regression before distribution."
+  },
+  "notes": [
+    "This public manifest is the runtime target contract. Private derivation chronology and machine-local provenance are retained only on dev.",
+    "All addresses are specific to the normalized ELF SHA-256 recorded in binaryIdentity and must be re-derived for another build.",
+    "Production injection is ptrace-free and performs no permanent target credential or root elevation."
+  ]
+}

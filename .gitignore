@@ -1,0 +1,22 @@
+/archive/
+# Vendored third-party reference repos: kept locally for research, not needed to
+# build/test/generate (the generators now source from data/). Untracked to slim the repo.
+/ref/
+/build/
+/eboot.bin
+/eboot-original.bin
+/eboot.elf
+*.o
+*.d
+__pycache__/
+*.py[cod]
+.pytest_cache/
+*.egg-info/
+.ruff_cache/
+/.venv/
+/logs/
+*.log
+# clangd: compilation database has machine-specific SDK paths (regenerate with
+# `make compile-commands`); .cache/ holds clangd's background index.
+/compile_commands.json
+/.cache/

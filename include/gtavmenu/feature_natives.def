@@ -1,0 +1,339 @@
+/* feature_natives.def -- single source of truth for the gameplay native table.
+ *
+ * X-macro list (see feature_actions.def / feature_toggles.def for the pattern). Each row
+ * names one resolved gameplay native; listing it once here drives the two consumers that
+ * used to be hand-maintained in lockstep in features.cpp:
+ *
+ *   - struct FeatureNatives          -- the uint64_t field that holds the address
+ *   - load_feature_natives()         -- the assignment from the generated address macro
+ *
+ *   GTAV_FEATURE_NATIVE(field, SUFFIX)
+ *     field   the FeatureNatives member name (g_n.<field>)
+ *     SUFFIX  the address macro suffix: the row binds field = GTAV_NATIVE_ADDR_<SUFFIX>
+ *             (almost always upper(field); a couple differ where the public native name
+ *             does, e.g. set_run_sprint_multiplier -> ..._FOR_PLAYER).
+ *
+ * Build-gated natives (vehicle-preview streaming, prologue-skip) are NOT listed here: they
+ * are declared unconditionally in the struct and assigned under their own #if blocks in
+ * load_feature_natives(), so adding one stays a deliberate, gated edit.
+ */
+GTAV_FEATURE_NATIVE(player_id, PLAYER_ID)
+GTAV_FEATURE_NATIVE(player_ped_id, PLAYER_PED_ID)
+GTAV_FEATURE_NATIVE(set_player_invincible, SET_PLAYER_INVINCIBLE)
+GTAV_FEATURE_NATIVE(set_entity_invincible, SET_ENTITY_INVINCIBLE)
+GTAV_FEATURE_NATIVE(set_entity_health, SET_ENTITY_HEALTH)
+GTAV_FEATURE_NATIVE(set_ped_armour, SET_PED_ARMOUR)
+GTAV_FEATURE_NATIVE(get_ped_max_health, GET_PED_MAX_HEALTH)
+GTAV_FEATURE_NATIVE(set_ped_max_health, SET_PED_MAX_HEALTH)
+GTAV_FEATURE_NATIVE(clear_ped_blood_damage, CLEAR_PED_BLOOD_DAMAGE)
+GTAV_FEATURE_NATIVE(clear_ped_wetness, CLEAR_PED_WETNESS)
+GTAV_FEATURE_NATIVE(set_player_wanted_level, SET_PLAYER_WANTED_LEVEL)
+GTAV_FEATURE_NATIVE(set_player_wanted_level_now, SET_PLAYER_WANTED_LEVEL_NOW)
+// Ignored By Everyone: player-state setters re-asserted on the game-thread tick.
+GTAV_FEATURE_NATIVE(set_police_ignore_player, SET_POLICE_IGNORE_PLAYER)
+GTAV_FEATURE_NATIVE(set_everyone_ignore_player, SET_EVERYONE_IGNORE_PLAYER)
+GTAV_FEATURE_NATIVE(set_player_can_be_hassled_by_gangs, SET_PLAYER_CAN_BE_HASSLED_BY_GANGS)
+// Give Max Ammo: ped weapon-inventory natives (game-thread, like GIVE_WEAPON_TO_PED).
+GTAV_FEATURE_NATIVE(set_ped_ammo, SET_PED_AMMO)
+GTAV_FEATURE_NATIVE(get_max_ammo, GET_MAX_AMMO)
+GTAV_FEATURE_NATIVE(set_run_sprint_multiplier, SET_RUN_SPRINT_MULTIPLIER_FOR_PLAYER)
+GTAV_FEATURE_NATIVE(set_swim_multiplier, SET_SWIM_MULTIPLIER_FOR_PLAYER)
+GTAV_FEATURE_NATIVE(set_ped_move_rate_override, SET_PED_MOVE_RATE_OVERRIDE)
+GTAV_FEATURE_NATIVE(set_ped_can_ragdoll, SET_PED_CAN_RAGDOLL)
+GTAV_FEATURE_NATIVE(set_ped_can_be_knocked_off_vehicle, SET_PED_CAN_BE_KNOCKED_OFF_VEHICLE)
+GTAV_FEATURE_NATIVE(set_ped_config_flag, SET_PED_CONFIG_FLAG)
+GTAV_FEATURE_NATIVE(set_ped_suffers_critical_hits, SET_PED_SUFFERS_CRITICAL_HITS)
+GTAV_FEATURE_NATIVE(set_entity_proofs, SET_ENTITY_PROOFS)
+GTAV_FEATURE_NATIVE(reset_player_stamina, RESET_PLAYER_STAMINA)
+GTAV_FEATURE_NATIVE(special_ability_fill_meter, SPECIAL_ABILITY_FILL_METER)
+GTAV_FEATURE_NATIVE(set_super_jump_this_frame, SET_SUPER_JUMP_THIS_FRAME)
+// world / settings (global setters, worker-safe)
+GTAV_FEATURE_NATIVE(set_weather_type_now_persist, SET_WEATHER_TYPE_NOW_PERSIST)
+GTAV_FEATURE_NATIVE(network_override_clock_time, NETWORK_OVERRIDE_CLOCK_TIME)
+GTAV_FEATURE_NATIVE(set_clock_time, SET_CLOCK_TIME)
+GTAV_FEATURE_NATIVE(set_gravity_level, SET_GRAVITY_LEVEL)
+GTAV_FEATURE_NATIVE(set_time_scale, SET_TIME_SCALE)
+// Thin Population: global int budget setters (0 = sparsest), no entity walk. Re-asserted on
+// the game-thread tick because the engine re-raises the budget.
+GTAV_FEATURE_NATIVE(set_ped_population_budget, SET_PED_POPULATION_BUDGET)
+GTAV_FEATURE_NATIVE(set_vehicle_population_budget, SET_VEHICLE_POPULATION_BUDGET)
+// self / teleport (modify-existing entity, worker-safe)
+GTAV_FEATURE_NATIVE(set_entity_coords, SET_ENTITY_COORDS)
+GTAV_FEATURE_NATIVE(set_entity_heading, SET_ENTITY_HEADING)
+// Interactive object move mode: full 3-axis reorientation. Either may be unresolved (the
+// driver guards on the field and falls back to heading-only).
+GTAV_FEATURE_NATIVE(get_entity_rotation, GET_ENTITY_ROTATION)
+GTAV_FEATURE_NATIVE(set_entity_rotation, SET_ENTITY_ROTATION)
+GTAV_FEATURE_NATIVE(set_entity_visible, SET_ENTITY_VISIBLE)
+GTAV_FEATURE_NATIVE(get_first_blip_info_id, GET_FIRST_BLIP_INFO_ID)
+GTAV_FEATURE_NATIVE(get_blip_info_id_type, GET_BLIP_INFO_ID_TYPE)
+GTAV_FEATURE_NATIVE(get_blip_coords, GET_BLIP_COORDS)
+// streaming-aware teleport (freeze + stream-in, so a far jump can't fault on void)
+GTAV_FEATURE_NATIVE(freeze_entity_position, FREEZE_ENTITY_POSITION)
+GTAV_FEATURE_NATIVE(request_collision_at_coord, REQUEST_COLLISION_AT_COORD)
+GTAV_FEATURE_NATIVE(has_collision_loaded_around_entity, HAS_COLLISION_LOADED_AROUND_ENTITY)
+GTAV_FEATURE_NATIVE(is_ped_in_any_vehicle, IS_PED_IN_ANY_VEHICLE)
+// model + entity placement
+GTAV_FEATURE_NATIVE(get_hash_key, GET_HASH_KEY)
+GTAV_FEATURE_NATIVE(is_model_valid, IS_MODEL_VALID)
+GTAV_FEATURE_NATIVE(is_model_in_cdimage, IS_MODEL_IN_CDIMAGE)
+GTAV_FEATURE_NATIVE(request_model, REQUEST_MODEL)
+GTAV_FEATURE_NATIVE(has_model_loaded, HAS_MODEL_LOADED)
+GTAV_FEATURE_NATIVE(set_model_as_no_longer_needed, SET_MODEL_AS_NO_LONGER_NEEDED)
+// skin changer (rebuild player ped to a model; game-thread, model-streaming)
+GTAV_FEATURE_NATIVE(set_player_model, SET_PLAYER_MODEL)
+GTAV_FEATURE_NATIVE(set_ped_default_component_variation, SET_PED_DEFAULT_COMPONENT_VARIATION)
+// Emotes / animation player (game-thread tick): stream a dict then play a clip on the player ped.
+GTAV_FEATURE_NATIVE(request_anim_dict, REQUEST_ANIM_DICT)
+GTAV_FEATURE_NATIVE(has_anim_dict_loaded, HAS_ANIM_DICT_LOADED)
+GTAV_FEATURE_NATIVE(task_play_anim, TASK_PLAY_ANIM)
+// Wardrobe / outfit editor: modify-existing-ped component + prop variation (worker-safe class).
+GTAV_FEATURE_NATIVE(set_ped_component_variation, SET_PED_COMPONENT_VARIATION)
+GTAV_FEATURE_NATIVE(get_number_of_ped_drawable_variations, GET_NUMBER_OF_PED_DRAWABLE_VARIATIONS)
+GTAV_FEATURE_NATIVE(get_number_of_ped_texture_variations, GET_NUMBER_OF_PED_TEXTURE_VARIATIONS)
+GTAV_FEATURE_NATIVE(set_ped_prop_index, SET_PED_PROP_INDEX)
+GTAV_FEATURE_NATIVE(get_number_of_ped_prop_drawable_variations,
+                    GET_NUMBER_OF_PED_PROP_DRAWABLE_VARIATIONS)
+GTAV_FEATURE_NATIVE(get_number_of_ped_prop_texture_variations,
+                    GET_NUMBER_OF_PED_PROP_TEXTURE_VARIATIONS)
+GTAV_FEATURE_NATIVE(clear_ped_prop, CLEAR_PED_PROP)
+GTAV_FEATURE_NATIVE(get_entity_coords, GET_ENTITY_COORDS)
+GTAV_FEATURE_NATIVE(get_ground_z_for_3d_coord, GET_GROUND_Z_FOR_3D_COORD)
+// Teleport ground-clamp water fallback: when GET_GROUND_Z finds no solid ground at the
+// destination XY (open water), land on the surface instead of the seabed / mid-air.
+GTAV_FEATURE_NATIVE(get_water_height, GET_WATER_HEIGHT)
+GTAV_FEATURE_NATIVE(get_entity_heading, GET_ENTITY_HEADING)
+GTAV_FEATURE_NATIVE(set_entity_as_mission_entity, SET_ENTITY_AS_MISSION_ENTITY)
+// vehicle
+GTAV_FEATURE_NATIVE(create_vehicle, CREATE_VEHICLE)
+GTAV_FEATURE_NATIVE(set_ped_into_vehicle, SET_PED_INTO_VEHICLE)
+GTAV_FEATURE_NATIVE(set_vehicle_on_ground_properly, SET_VEHICLE_ON_GROUND_PROPERLY)
+GTAV_FEATURE_NATIVE(set_vehicle_engine_on, SET_VEHICLE_ENGINE_ON)
+// Vehicle Controls submenu: one-shot, modify-existing field stores (worker-safe class).
+GTAV_FEATURE_NATIVE(set_vehicle_door_open, SET_VEHICLE_DOOR_OPEN)
+GTAV_FEATURE_NATIVE(set_vehicle_door_shut, SET_VEHICLE_DOOR_SHUT)
+GTAV_FEATURE_NATIVE(roll_down_window, ROLL_DOWN_WINDOW)
+GTAV_FEATURE_NATIVE(roll_up_window, ROLL_UP_WINDOW)
+GTAV_FEATURE_NATIVE(set_vehicle_lights, SET_VEHICLE_LIGHTS)
+GTAV_FEATURE_NATIVE(set_vehicle_doors_locked, SET_VEHICLE_DOORS_LOCKED)
+GTAV_FEATURE_NATIVE(raise_convertible_roof, RAISE_CONVERTIBLE_ROOF)
+GTAV_FEATURE_NATIVE(lower_convertible_roof, LOWER_CONVERTIBLE_ROOF)
+GTAV_FEATURE_NATIVE(is_vehicle_a_convertible, IS_VEHICLE_A_CONVERTIBLE)
+GTAV_FEATURE_NATIVE(set_vehicle_fixed, SET_VEHICLE_FIXED)
+GTAV_FEATURE_NATIVE(set_vehicle_engine_health, SET_VEHICLE_ENGINE_HEALTH)
+GTAV_FEATURE_NATIVE(set_vehicle_body_health, SET_VEHICLE_BODY_HEALTH)
+GTAV_FEATURE_NATIVE(set_vehicle_petrol_tank_health, SET_VEHICLE_PETROL_TANK_HEALTH)
+// Keep Repaired damage gate (game-thread)
+GTAV_FEATURE_NATIVE(get_does_vehicle_have_damage_decals, GET_DOES_VEHICLE_HAVE_DAMAGE_DECALS)
+// clear a wrecked-car undriveable latch
+GTAV_FEATURE_NATIVE(set_vehicle_undriveable, SET_VEHICLE_UNDRIVEABLE)
+GTAV_FEATURE_NATIVE(set_vehicle_dirt_level, SET_VEHICLE_DIRT_LEVEL)
+// Delete Current Vehicle (game-thread, entity teardown)
+GTAV_FEATURE_NATIVE(delete_entity, DELETE_ENTITY)
+GTAV_FEATURE_NATIVE(set_vehicle_mod_kit, SET_VEHICLE_MOD_KIT)
+GTAV_FEATURE_NATIVE(set_vehicle_reduce_grip, SET_VEHICLE_REDUCE_GRIP)
+GTAV_FEATURE_NATIVE(set_vehicle_mod, SET_VEHICLE_MOD)
+GTAV_FEATURE_NATIVE(get_num_vehicle_mods, GET_NUM_VEHICLE_MODS)
+// read the installed tier of a slot so LSC rows match the car
+GTAV_FEATURE_NATIVE(get_vehicle_mod, GET_VEHICLE_MOD)
+// Saved vehicles (garage): read the current vehicle's model hash to respawn it (worker-safe
+// getter).
+GTAV_FEATURE_NATIVE(get_entity_model, GET_ENTITY_MODEL)
+GTAV_FEATURE_NATIVE(toggle_vehicle_mod, TOGGLE_VEHICLE_MOD)
+GTAV_FEATURE_NATIVE(set_vehicle_colours, SET_VEHICLE_COLOURS)
+GTAV_FEATURE_NATIVE(set_vehicle_window_tint, SET_VEHICLE_WINDOW_TINT)
+GTAV_FEATURE_NATIVE(set_vehicle_neon_enabled, SET_VEHICLE_NEON_ENABLED)
+GTAV_FEATURE_NATIVE(set_vehicle_neon_colour, SET_VEHICLE_NEON_COLOUR)
+GTAV_FEATURE_NATIVE(set_vehicle_tyre_smoke_color, SET_VEHICLE_TYRE_SMOKE_COLOR)
+GTAV_FEATURE_NATIVE(set_vehicle_tyres_can_burst, SET_VEHICLE_TYRES_CAN_BURST)
+// pop one tyre (index 0..7)
+GTAV_FEATURE_NATIVE(set_vehicle_tyre_burst, SET_VEHICLE_TYRE_BURST)
+// repair one tyre (index 0..7)
+GTAV_FEATURE_NATIVE(set_vehicle_tyre_fixed, SET_VEHICLE_TYRE_FIXED)
+// LSC expansion 2 (worker-safe modify-existing setters): wheel category, liveries
+// (+ a live count getter), number-plate style/text, extra (pearlescent + wheel) and
+// custom-RGB colours.
+GTAV_FEATURE_NATIVE(set_vehicle_wheel_type, SET_VEHICLE_WHEEL_TYPE)
+GTAV_FEATURE_NATIVE(set_vehicle_livery, SET_VEHICLE_LIVERY)
+GTAV_FEATURE_NATIVE(get_vehicle_livery_count, GET_VEHICLE_LIVERY_COUNT)
+GTAV_FEATURE_NATIVE(set_vehicle_number_plate_text_index, SET_VEHICLE_NUMBER_PLATE_TEXT_INDEX)
+GTAV_FEATURE_NATIVE(set_vehicle_number_plate_text, SET_VEHICLE_NUMBER_PLATE_TEXT)
+GTAV_FEATURE_NATIVE(set_vehicle_extra_colours, SET_VEHICLE_EXTRA_COLOURS)
+GTAV_FEATURE_NATIVE(set_vehicle_custom_primary_colour, SET_VEHICLE_CUSTOM_PRIMARY_COLOUR)
+GTAV_FEATURE_NATIVE(set_vehicle_custom_secondary_colour, SET_VEHICLE_CUSTOM_SECONDARY_COLOUR)
+GTAV_FEATURE_NATIVE(get_vehicle_ped_is_in, GET_VEHICLE_PED_IS_IN)
+GTAV_FEATURE_NATIVE(get_vehicle_class_from_name, GET_VEHICLE_CLASS_FROM_NAME)
+// nitro / boost (modify-existing vehicle, worker-safe)
+GTAV_FEATURE_NATIVE(get_entity_speed, GET_ENTITY_SPEED)
+GTAV_FEATURE_NATIVE(set_vehicle_forward_speed, SET_VEHICLE_FORWARD_SPEED)
+GTAV_FEATURE_NATIVE(is_control_pressed, IS_CONTROL_PRESSED)
+// noclip: analog left-stick axes
+GTAV_FEATURE_NATIVE(get_control_normal, GET_CONTROL_NORMAL)
+// noclip: suppress player movement while free-moving
+GTAV_FEATURE_NATIVE(disable_control_action, DISABLE_CONTROL_ACTION)
+// noclip reads the SAME controls it disables this tick; a disabled control reports
+// not-pressed via IS_CONTROL_PRESSED, so the held stick must be read with the disabled
+// variant instead.
+GTAV_FEATURE_NATIVE(is_disabled_control_pressed, IS_DISABLED_CONTROL_PRESSED)
+GTAV_FEATURE_NATIVE(get_disabled_control_normal, GET_DISABLED_CONTROL_NORMAL)
+// weapon
+GTAV_FEATURE_NATIVE(give_weapon_to_ped, GIVE_WEAPON_TO_PED)
+GTAV_FEATURE_NATIVE(set_current_ped_weapon, SET_CURRENT_PED_WEAPON)
+// Weapon Tint: read the equipped weapon (Hash* out-param) + recolour it (worker-safe field set).
+GTAV_FEATURE_NATIVE(get_current_ped_weapon, GET_CURRENT_PED_WEAPON)
+GTAV_FEATURE_NATIVE(set_ped_weapon_tint_index, SET_PED_WEAPON_TINT_INDEX)
+GTAV_FEATURE_NATIVE(set_ped_infinite_ammo_clip, SET_PED_INFINITE_AMMO_CLIP)
+GTAV_FEATURE_NATIVE(remove_all_ped_weapons, REMOVE_ALL_PED_WEAPONS)
+// weapon effects (game-thread only: called from the per-frame frame-hook tick)
+GTAV_FEATURE_NATIVE(get_ped_last_weapon_impact_coord, GET_PED_LAST_WEAPON_IMPACT_COORD)
+GTAV_FEATURE_NATIVE(add_owned_explosion, ADD_OWNED_EXPLOSION)
+GTAV_FEATURE_NATIVE(start_script_fire, START_SCRIPT_FIRE)
+// weapon damage multiplier (player-state setter, worker-safe; re-asserted each tick)
+GTAV_FEATURE_NATIVE(set_player_weapon_damage_modifier, SET_PLAYER_WEAPON_DAMAGE_MODIFIER)
+// noclip / free-move: camera getters + modify-existing entity setters. These run from
+// the game-thread frame-hook tick (gtav_features_game_thread_tick), NOT the worker: the
+// camera/move natives read engine state that is only valid in script context.
+GTAV_FEATURE_NATIVE(get_gameplay_cam_relative_heading, GET_GAMEPLAY_CAM_RELATIVE_HEADING)
+GTAV_FEATURE_NATIVE(get_gameplay_cam_rot, GET_GAMEPLAY_CAM_ROT)
+// Interactive object placement (aim-follow): camera origin so the prop can be projected
+// along the camera forward. Game-thread getter (driver tick), guarded -> aim mode degrades off.
+GTAV_FEATURE_NATIVE(get_gameplay_cam_coord, GET_GAMEPLAY_CAM_COORD)
+// Interactive object placement (surface raycast snap): synchronous LOS probe + result drain.
+// Either may be unresolved (the driver guards on the fields and disables surface snap).
+GTAV_FEATURE_NATIVE(start_shape_test_probe, START_EXPENSIVE_SYNCHRONOUS_SHAPE_TEST_LOS_PROBE)
+GTAV_FEATURE_NATIVE(get_shape_test_result, GET_SHAPE_TEST_RESULT)
+GTAV_FEATURE_NATIVE(set_entity_collision, SET_ENTITY_COLLISION)
+GTAV_FEATURE_NATIVE(set_entity_has_gravity, SET_ENTITY_HAS_GRAVITY)
+GTAV_FEATURE_NATIVE(set_entity_coords_no_offset, SET_ENTITY_COORDS_NO_OFFSET)
+GTAV_FEATURE_NATIVE(set_entity_velocity, SET_ENTITY_VELOCITY)
+// collapse the many frame-hook fires per frame to one step
+GTAV_FEATURE_NATIVE(get_frame_count, GET_FRAME_COUNT)
+// noclip: scale the per-frame step by real frame delta (ms)
+GTAV_FEATURE_NATIVE(get_game_timer, GET_GAME_TIMER)
+// force-ragdoll + task recovery (mutate the ped task tree -> game-thread/tick only)
+GTAV_FEATURE_NATIVE(set_ped_to_ragdoll, SET_PED_TO_RAGDOLL)
+GTAV_FEATURE_NATIVE(clear_ped_tasks_immediately, CLEAR_PED_TASKS_IMMEDIATELY)
+// Self > Scenarios: enter a named scenario on the player (smoking, leaning, ...). Mutates the
+// ped task tree -> game-thread only. Cancel reuses clear_ped_tasks (autopilot field below).
+GTAV_FEATURE_NATIVE(task_start_scenario_in_place, TASK_START_SCENARIO_IN_PLACE)
+// single-player money: STAT_GET_INT/STAT_SET_INT on SP{0,1,2}_TOTAL_CASH (worker-safe)
+GTAV_FEATURE_NATIVE(stat_get_int, STAT_GET_INT)
+GTAV_FEATURE_NATIVE(stat_set_int, STAT_SET_INT)
+// ped/object spawner (game-thread; allocate entities like CREATE_VEHICLE)
+GTAV_FEATURE_NATIVE(create_ped, CREATE_PED)
+// Task a spawned ped to wander so it walks around instead of standing idle (game-thread; task tree).
+GTAV_FEATURE_NATIVE(task_wander_standard, TASK_WANDER_STANDARD)
+GTAV_FEATURE_NATIVE(create_object, CREATE_OBJECT)
+GTAV_FEATURE_NATIVE(place_object_on_ground_properly, PLACE_OBJECT_ON_GROUND_PROPERLY)
+// screen effects (game-thread tick; render-script state)
+GTAV_FEATURE_NATIVE(set_nightvision, SET_NIGHTVISION)
+GTAV_FEATURE_NATIVE(set_seethrough, SET_SEETHROUGH)
+GTAV_FEATURE_NATIVE(set_timecycle_modifier, SET_TIMECYCLE_MODIFIER)
+GTAV_FEATURE_NATIVE(set_timecycle_modifier_strength, SET_TIMECYCLE_MODIFIER_STRENGTH)
+GTAV_FEATURE_NATIVE(clear_timecycle_modifier, CLEAR_TIMECYCLE_MODIFIER)
+GTAV_FEATURE_NATIVE(animpostfx_play, ANIMPOSTFX_PLAY)
+GTAV_FEATURE_NATIVE(animpostfx_stop_all, ANIMPOSTFX_STOP_ALL)
+// ped control (game-thread; enumerate + retask nearby peds)
+GTAV_FEATURE_NATIVE(task_combat_ped, TASK_COMBAT_PED)
+GTAV_FEATURE_NATIVE(get_ped_nearby_peds, GET_PED_NEARBY_PEDS)
+GTAV_FEATURE_NATIVE(set_ped_keep_task, SET_PED_KEEP_TASK)
+GTAV_FEATURE_NATIVE(set_ped_flee_attributes, SET_PED_FLEE_ATTRIBUTES)
+GTAV_FEATURE_NATIVE(task_smart_flee_ped, TASK_SMART_FLEE_PED)
+GTAV_FEATURE_NATIVE(set_blocking_of_non_temporary_events, SET_BLOCKING_OF_NON_TEMPORARY_EVENTS)
+GTAV_FEATURE_NATIVE(is_ped_a_player, IS_PED_A_PLAYER)
+// Companions AGGRESSIVE/RAMPAGE proactive engage: shoot occupied cars and classify a tracked
+// target handle as ped vs vehicle. Game-thread (pool walk + ped task tree).
+GTAV_FEATURE_NATIVE(task_shoot_at_entity, TASK_SHOOT_AT_ENTITY)
+GTAV_FEATURE_NATIVE(is_entity_a_vehicle, IS_ENTITY_A_VEHICLE)
+// autopilot (game-thread tick; issue/adjust a vehicle drive task on the player ped ->
+// mutates the ped task tree, so never worker-direct). CLEAR_PED_TASKS is the gentle
+// stop (car coasts) vs the _IMMEDIATELY variant above; GET_PED_IN_VEHICLE_SEAT confirms
+// the player is the driver before handing the wheel to the AI.
+GTAV_FEATURE_NATIVE(task_vehicle_drive_to_coord_longrange, TASK_VEHICLE_DRIVE_TO_COORD_LONGRANGE)
+GTAV_FEATURE_NATIVE(task_vehicle_drive_wander, TASK_VEHICLE_DRIVE_WANDER)
+GTAV_FEATURE_NATIVE(set_drive_task_driving_style, SET_DRIVE_TASK_DRIVING_STYLE)
+GTAV_FEATURE_NATIVE(set_drive_task_cruise_speed, SET_DRIVE_TASK_CRUISE_SPEED)
+GTAV_FEATURE_NATIVE(clear_ped_tasks, CLEAR_PED_TASKS)
+GTAV_FEATURE_NATIVE(get_ped_in_vehicle_seat, GET_PED_IN_VEHICLE_SEAT)
+// Phase-B minigame natives (City Blackout, Zombie Outbreak, experimental Flood). Resolved
+// offline and pinned via `make feature-native-header`; assigned in load_feature_natives().
+// Blackout: SET_ARTIFICIAL_LIGHTS_STATE(BOOL)
+GTAV_FEATURE_NATIVE(set_artificial_lights_state, SET_ARTIFICIAL_LIGHTS_STATE)
+// Zombies: harden spawned ped combat AI
+GTAV_FEATURE_NATIVE(set_ped_combat_attributes, SET_PED_COMBAT_ATTRIBUTES)
+// Zombies: put spawns in a player-hostile group
+GTAV_FEATURE_NATIVE(set_ped_relationship_group_hash, SET_PED_RELATIONSHIP_GROUP_HASH)
+// Zombies: register the hostile group (out-param)
+GTAV_FEATURE_NATIVE(add_relationship_group, ADD_RELATIONSHIP_GROUP)
+// Zombies: make the group hate the player group
+GTAV_FEATURE_NATIVE(set_relationship_between_groups, SET_RELATIONSHIP_BETWEEN_GROUPS)
+// Companions / bodyguards: group membership + combat behaviour for friendly spawned peds.
+GTAV_FEATURE_NATIVE(get_player_group, GET_PLAYER_GROUP)
+GTAV_FEATURE_NATIVE(set_ped_as_group_member, SET_PED_AS_GROUP_MEMBER)
+GTAV_FEATURE_NATIVE(set_ped_never_leaves_group, SET_PED_NEVER_LEAVES_GROUP)
+GTAV_FEATURE_NATIVE(set_group_formation, SET_GROUP_FORMATION)
+GTAV_FEATURE_NATIVE(set_group_separation_range, SET_GROUP_SEPARATION_RANGE)
+GTAV_FEATURE_NATIVE(set_ped_combat_ability, SET_PED_COMBAT_ABILITY)
+GTAV_FEATURE_NATIVE(set_ped_combat_movement, SET_PED_COMBAT_MOVEMENT)
+// Companions: SET_PED_ACCURACY(ped, 0..100) hit chance
+GTAV_FEATURE_NATIVE(set_ped_accuracy, SET_PED_ACCURACY)
+// Companions: tag tracked guards on the minimap. HUD natives, applied on the game-thread
+// bodyguard tick; REMOVE_BLIP takes a Blip* out-param (like DELETE_PED).
+GTAV_FEATURE_NATIVE(add_blip_for_entity, ADD_BLIP_FOR_ENTITY)
+GTAV_FEATURE_NATIVE(set_blip_sprite, SET_BLIP_SPRITE)
+GTAV_FEATURE_NATIVE(set_blip_colour, SET_BLIP_COLOUR)
+GTAV_FEATURE_NATIVE(set_blip_as_friendly, SET_BLIP_AS_FRIENDLY)
+GTAV_FEATURE_NATIVE(remove_blip, REMOVE_BLIP)
+// Flood (experimental): MODIFY_WATER(x,y,radius,h)
+GTAV_FEATURE_NATIVE(modify_water, MODIFY_WATER)
+// Zombie Outbreak survival loop: poll the tracked horde (kill vs despawn) and despawn it on
+// stop. Read/called only from the game-thread driver tick. Each is independently gated, so an
+// unresolved one degrades that sub-feature instead of locking the mode.
+// Zombies: a tracked handle died -> count a kill
+GTAV_FEATURE_NATIVE(is_entity_dead, IS_ENTITY_DEAD)
+// Zombies: distinguish an engine despawn from a kill
+GTAV_FEATURE_NATIVE(does_entity_exist, DOES_ENTITY_EXIST)
+// Zombies: despawn the horde on mode stop (DELETE_PED(Ped*))
+GTAV_FEATURE_NATIVE(delete_ped, DELETE_PED)
+// World > Spectacle (spectacle.inc). Wind setters are worker-safe global field writes (like
+// weather). SHAKE_GAMEPLAY_CAM is a render-script camera effect and the PTFX request/use/start are
+// streaming + fx-spawn natives -> driven on the game thread (frame-hook tick / drain).
+GTAV_FEATURE_NATIVE(set_wind_speed, SET_WIND_SPEED)
+GTAV_FEATURE_NATIVE(set_wind_direction, SET_WIND_DIRECTION)
+GTAV_FEATURE_NATIVE(shake_gameplay_cam, SHAKE_GAMEPLAY_CAM)
+GTAV_FEATURE_NATIVE(request_named_ptfx_asset, REQUEST_NAMED_PTFX_ASSET)
+GTAV_FEATURE_NATIVE(has_named_ptfx_asset_loaded, HAS_NAMED_PTFX_ASSET_LOADED)
+GTAV_FEATURE_NATIVE(use_particle_fx_asset, USE_PARTICLE_FX_ASSET)
+// Tint the next non-looped PTFX (call before START) so firework sparks aren't default-black.
+GTAV_FEATURE_NATIVE(set_particle_fx_non_looped_colour, SET_PARTICLE_FX_NON_LOOPED_COLOUR)
+GTAV_FEATURE_NATIVE(start_particle_fx_non_looped_at_coord, START_PARTICLE_FX_NON_LOOPED_AT_COORD)
+// Self > Free Camera (free_cam.inc). A detached scripted camera driven on the game-thread
+// frame-hook tick: the cam create/activate/render natives touch render-script state (like the
+// spectacle shake), so they are game-thread only. SET_FOCUS_POS_AND_VEL streams the world around
+// the cam; CLEAR_FOCUS releases it on exit. Either focus native may be unresolved -> the driver
+// guards on the field.
+GTAV_FEATURE_NATIVE(create_cam_with_params, CREATE_CAM_WITH_PARAMS)
+GTAV_FEATURE_NATIVE(set_cam_active, SET_CAM_ACTIVE)
+GTAV_FEATURE_NATIVE(render_script_cams, RENDER_SCRIPT_CAMS)
+GTAV_FEATURE_NATIVE(destroy_cam, DESTROY_CAM)
+GTAV_FEATURE_NATIVE(set_cam_coord, SET_CAM_COORD)
+GTAV_FEATURE_NATIVE(set_cam_rot, SET_CAM_ROT)
+GTAV_FEATURE_NATIVE(set_focus_pos_and_vel, SET_FOCUS_POS_AND_VEL)
+GTAV_FEATURE_NATIVE(clear_focus, CLEAR_FOCUS)
+// Fun-factor sandbox extras. APPLY_FORCE_TO_ENTITY = vehicle rocket-boost impulse (game-thread).
+// GET_LAST_DRIVEN_VEHICLE backs Teleport Into Last Vehicle (game-thread SET_PED_INTO_VEHICLE).
+// CLONE_PED is the gun-toolkit clone gun (game-thread, allocates a ped). SET_/RESET_ENTITY_ALPHA +
+// ATTACH_/DETACH_ENTITY_TO_ENTITY drive the Spooner entity tweaks (modify-existing field stores).
+GTAV_FEATURE_NATIVE(apply_force_to_entity, APPLY_FORCE_TO_ENTITY)
+GTAV_FEATURE_NATIVE(get_last_driven_vehicle, GET_LAST_DRIVEN_VEHICLE)
+GTAV_FEATURE_NATIVE(clone_ped, CLONE_PED)
+GTAV_FEATURE_NATIVE(set_entity_alpha, SET_ENTITY_ALPHA)
+GTAV_FEATURE_NATIVE(reset_entity_alpha, RESET_ENTITY_ALPHA)
+GTAV_FEATURE_NATIVE(attach_entity_to_entity, ATTACH_ENTITY_TO_ENTITY)
+GTAV_FEATURE_NATIVE(detach_entity, DETACH_ENTITY)
+// Weapons > Attachments (weapon_attachments.inc). Give/remove a component on the player's current
+// weapon -- ped weapon-manager natives, game-thread like GIVE_WEAPON_TO_PED. HAS_..._COMPONENT
+// reads the installed state for the per-slot cycler.
+GTAV_FEATURE_NATIVE(give_weapon_component_to_ped, GIVE_WEAPON_COMPONENT_TO_PED)
+GTAV_FEATURE_NATIVE(remove_weapon_component_from_ped, REMOVE_WEAPON_COMPONENT_FROM_PED)
+GTAV_FEATURE_NATIVE(has_ped_got_weapon_component, HAS_PED_GOT_WEAPON_COMPONENT)

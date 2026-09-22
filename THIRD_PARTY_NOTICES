@@ -1,0 +1,22 @@
+GTAV-Menu third-party notices
+=============================
+
+This repository does not contain Grand Theft Auto V or PlayStation system binaries.
+Those products and their marks belong to their respective owners.
+
+Generated vehicle, pedestrian, object, scenario, animation, and preview catalog headers
+contain names and identifiers derived in part from these community data sources:
+
+MenyooSP
+  https://github.com/MAFINS/MenyooSP
+  Upstream project license: GNU General Public License v3.0.
+
+DurtyFree GTA V data dumps
+  https://github.com/DurtyFree/gta-v-data-dumps
+  No project-wide license was identified when the current generated outputs were
+  prepared. Raw snapshots and refresh tooling are intentionally not distributed on
+  the publication branch. Verify upstream terms before regenerating or redistributing
+  material derived from those dumps.
+
+The checked-in generated headers are published so the documented build is reproducible.
+Their inclusion is not a claim of ownership over Rockstar Games data or third-party work.
