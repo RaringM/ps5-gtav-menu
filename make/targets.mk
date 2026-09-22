@@ -67,10 +67,29 @@ require-ps5-sdk:
 		echo "error: PS5 payload SDK not found at $(PS5_PAYLOAD_SDK); set PS5_PAYLOAD_SDK to a v0.43-compatible SDK" >&2; \
 		exit 1; \
 	}
+	@llvm_version="$$($(PS5_PAYLOAD_SDK)/bin/prospero-llvm-config --version 2>/dev/null)"; \
+	compiler_version="$$($(CC) --version 2>/dev/null | sed -n '1p')"; \
+	llvm_major="$${llvm_version%%.*}"; \
+	compiler_major="$$(printf '%s\n' "$$compiler_version" | sed -E 's/^.*clang version ([0-9]+).*$$/\1/')"; \
+	case "$$llvm_major" in \
+		''|*[!0-9]*) echo "error: could not identify llvm-config version: $$llvm_version" >&2; exit 1 ;; \
+	esac; \
+	case "$$compiler_major" in \
+		''|*[!0-9]*) echo "error: could not identify compiler version: $$compiler_version" >&2; exit 1 ;; \
+	esac; \
+	if test "$$llvm_major" != "$(PS5_LLVM_MAJOR)" || test "$$compiler_major" != "$(PS5_LLVM_MAJOR)"; then \
+		if test "$(GTAV_ALLOW_UNVALIDATED_TOOLCHAIN)" = "1"; then \
+			echo "warning: unvalidated PS5 toolchain: $$compiler_version (llvm-config $$llvm_version); expected LLVM $(PS5_LLVM_MAJOR)" >&2; \
+		else \
+			echo "error: PS5 release builds require LLVM $(PS5_LLVM_MAJOR), got $$compiler_version (llvm-config $$llvm_version)" >&2; \
+			echo "error: set LLVM_CONFIG to an absolute llvm-config-$(PS5_LLVM_MAJOR) path, or use the included Containerfile" >&2; \
+			exit 1; \
+		fi; \
+	fi
 
 menu-live: all
 
-BUILD_LOGIC_SHA256 := $(shell shasum -a 256 Makefile make/config.mk make/flags.mk make/targets.mk make/profiles/$(GTAV_BUILD_PROFILE).mk tools/target_loader_config.py | shasum -a 256 | cut -d' ' -f1)
+BUILD_LOGIC_SHA256 := $(shell shasum -a 256 Containerfile Makefile make/config.mk make/flags.mk make/targets.mk make/profiles/$(GTAV_BUILD_PROFILE).mk tools/target_loader_config.py | shasum -a 256 | cut -d' ' -f1)
 TARGET_MANIFEST_SHA256 := $(shell shasum -a 256 $(GTAV_TARGET_MANIFEST) 2>/dev/null | cut -d' ' -f1)
 LOADER_TARGET_CFLAGS := $(shell $(PYTHON) tools/target_loader_config.py \
 	--target-manifest $(GTAV_TARGET_MANIFEST) --cflags)
@@ -87,6 +106,9 @@ $(BUILD_CONFIG_STAMP): FORCE tools/write_build_stamp.py tools/target_loader_conf
 		--set delivery=$(GTAV_DELIVERY) --set build_logic_sha256=$(BUILD_LOGIC_SHA256) \
 		--set target_manifest_sha256=$(TARGET_MANIFEST_SHA256) \
 		--set sdk=$(PS5_PAYLOAD_SDK) --set sdk_proc_copyio=$(GTAV_SDK_HAS_PROC_COPYIO) \
+		--set release_llvm_major=$(PS5_LLVM_MAJOR) \
+		--set unvalidated_toolchain=$(GTAV_ALLOW_UNVALIDATED_TOOLCHAIN) \
+		--set worker_rootdir=0 \
 		--set native_features=$(FEATURE_MENU_ENABLE_NATIVE_FEATURES) \
 		--set frame_hook=$(FEATURE_MENU_ENABLE_FRAME_HOOK) \
 		--set external_frame_hook=$(FRAME_HOOK_EXTERNAL_INSTALL) \

@@ -2,6 +2,13 @@
 
 #ifdef GTAV_MENU_NO_ROOTDIR
 
+/*
+ * Injected workers enter through gtav_menu_start_thread(), not the ELF CRT's _start. The payload
+ * SDK's kernel_* helpers eventually dispatch through __crt_syscall, whose function pointer is
+ * initialized only by that skipped CRT path. Keep worker file access best-effort through the
+ * process's existing namespace instead of calling an uninitialized privileged dispatcher.
+ */
+
 int gtav_rootdir_enter(GtavRootdirGuard* guard) {
   if (guard) {
     guard->active = 0;
