@@ -74,7 +74,7 @@ def validate_bundle_safety(bundle: Path, manifest: dict) -> None:
         raise InstallError("bundle identity/profile is not the supported 01.010.002 production release")
 
     roles = {str(entry.get("role")) for entry in manifest.get("files", [])}
-    required_roles = {"payload-loader", "menu-worker", "documentation"}
+    required_roles = {"daemon", "menu-worker", "documentation"}
     missing_roles = sorted(required_roles - roles)
     if missing_roles:
         raise InstallError(f"bundle is missing required roles: {', '.join(missing_roles)}")
@@ -106,11 +106,11 @@ def _print_post_install_guidance(manifest: dict, host: str, uploaded: int) -> No
     if manifest.get("ps5debugDependency") is False:
         print("ps5debug-ng is not required for this end-user runtime path.")
 
-    loader_elf = manifest.get("loaderElfPath")
+    daemon_elf = manifest.get("daemonElfName")
     launch_surface = manifest.get("primaryLaunchSurface") or "ps5-payload-manager"
-    if loader_elf:
-        print("Next: start GTA V, enter Story Mode, and wait for player control.")
-        print(f"Then run {loader_elf} from {launch_surface} and open the menu with R1 + D-pad Left.")
+    if daemon_elf:
+        print(f"Next: deploy the archive-root {daemon_elf} from {launch_surface} before starting GTA V.")
+        print("Enter Story Mode and open the menu with R1 + D-pad Left after injection.")
 
 
 # --------------------------------------------------------------------------- preflight

@@ -27,7 +27,7 @@ make package-onionhen
 ```
 
 `make all` builds unstripped production loader and worker ELFs under `build/ps5`. The package
-targets create a standalone bundle and an OnionHEN auto-start bundle under `build/pkg`. Building
+targets create a standalone daemon bundle and an OnionHEN plugin bundle under `build/pkg`. Building
 does not deploy or modify a console.
 
 Fedora's system LLVM may be newer than the release toolchain. Build with the included Podman image

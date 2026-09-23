@@ -18,18 +18,21 @@ EXPECTED_NATIVE_ADDRESSES = {
     "beginTextCommandDisplayText": "0x1ac5d60",
 }
 
-README = """# GTAV-Menu — Standalone
+DAEMON_NAME = "gtav-menu-daemon.elf"
 
-For the disc release of GTA V **PPSA04264 / 01.010.002** only.
+README = f"""# GTAV-Menu — Standalone
 
-1. Start an FTP server on the PS5.
-2. Copy this archive's `data/GTAVMenu` folder into `/data` on the PS5, preserving the directory layout.
-3. Start GTA V, enter Story Mode, and wait until you have player control.
-4. Launch `/data/GTAVMenu/payloads/gtav-menu-payload-loader.elf` with a compatible PS5 payload launcher.
-5. Press **R1 + D-pad Left** to open or hide the menu.
+GTA V Enhanced (**PPSA04264, version 1.010.002**) mod menu daemon.
+`{DAEMON_NAME}` watches for GTA V launches and injects the menu after Story Mode loads.
+
+1. Copy the `GTAVMenu` folder to `/data/` on the PS5.
+2. Deploy `{DAEMON_NAME}` with a PS5 payload manager before starting GTA V.
+3. Start Story Mode in GTA V Enhanced.
+4. When the “GTAVMenu injected” notification appears, press **R1 + D-pad Left** to open the menu.
 
 Use D-pad Up/Down to move, Left/Right to change values, Cross to select, and Circle to go back.
-Launch the loader again after each fresh GTA V process. Do not launch it while the game is loading.
+The daemon stays running and injects again after each GTA V relaunch. To stop it, create an empty
+`/data/GTAVMenu/daemon.stop` file using FTP or a file manager; it exits after safely retiring the menu.
 """
 
 
@@ -60,6 +63,16 @@ def source_commit() -> str:
 def package_manifest_path(output: Path) -> Path:
     """Internal verification metadata kept beside, not inside, the user bundle."""
     return output.with_name(f"{output.name}.package-manifest.json")
+
+
+def _integer(config: dict[str, object], key: str) -> int:
+    value = config.get(key)
+    if not isinstance(value, (str, int)):
+        raise PackageError(f"build config is missing {key}")
+    try:
+        return int(value, 0) if isinstance(value, str) else value
+    except ValueError as exc:
+        raise PackageError(f"build config has invalid {key}: {value}") from exc
 
 
 def copy_entry(
@@ -94,10 +107,6 @@ def stage_package(
     target_manifest: Path,
     build_config: Path,
 ) -> dict[str, object]:
-    if output.exists():
-        shutil.rmtree(output)
-    output.mkdir(parents=True)
-
     target = json.loads(target_manifest.read_text(encoding="utf-8"))
     config = json.loads(build_config.read_text(encoding="utf-8"))
     if (
@@ -106,6 +115,38 @@ def stage_package(
         or config.get("target") != "ppsa04264-01.010.002"
     ):
         raise PackageError("refusing to package a non-production or non-01.010.002 build")
+    loader_config = target.get("loader")
+    if not isinstance(loader_config, dict):
+        raise PackageError("target manifest is missing loader configuration")
+    try:
+        readiness_address = int(loader_config["playerPedAnchor"], 0)
+        readiness_offset = int(loader_config["playerPedOffset"], 0)
+    except (KeyError, TypeError, ValueError) as exc:
+        raise PackageError("target manifest has an invalid loader readiness chain") from exc
+    required = {
+        "worker_context": 1,
+        "loader_wait": 1,
+        "loader_persistent": 1,
+        "loader_sp_ready": 1,
+        "loader_sp_mode": 1,
+        "loader_sp_deref": 1,
+        "loader_sp_addr": readiness_address,
+        "loader_sp_deref_offset": readiness_offset,
+        "loader_sp_confirmations": 3,
+        "loader_probe_nostop": 1,
+        "loader_nostop_io": 1,
+        "loader_nostop_strict": 1,
+        "loader_verify_writes": 1,
+        "loader_cave_bootstrap": 1,
+        "cave_inject": 1,
+        "loader_broker": 1,
+        "loader_phase": 1,
+        "loader_guard": 1,
+        "loader_verify_version": 1,
+    }
+    mismatches = [key for key, expected in required.items() if _integer(config, key) != expected]
+    if mismatches:
+        raise PackageError("unsafe standalone daemon build config: " + ", ".join(mismatches))
     if target.get("targetId") != TARGET_ID or target.get("contentVersion") != CONTENT_VERSION:
         raise PackageError("refusing to package a mismatched target manifest")
     bridge = target.get("nativeBridge")
@@ -123,18 +164,20 @@ def stage_package(
         if str(addresses.get(name) or "").lower() != expected:
             raise PackageError(f"target manifest has an unexpected {name} address")
 
+    if output.exists():
+        shutil.rmtree(output)
+    output.mkdir(parents=True)
     entries: list[dict[str, object]] = []
     copy_entry(
         loader,
-        output / "data/GTAVMenu/payloads/gtav-menu-payload-loader.elf",
+        output / DAEMON_NAME,
         output,
         entries,
-        role="payload-loader",
-        remote="/data/GTAVMenu/payloads/gtav-menu-payload-loader.elf",
+        role="daemon",
     )
     copy_entry(
         worker,
-        output / "data/GTAVMenu/gtav-menu-feature-menu.elf",
+        output / "GTAVMenu/gtav-menu-feature-menu.elf",
         output,
         entries,
         role="menu-worker",
@@ -160,7 +203,7 @@ def stage_package(
         "profile": config["profile"],
         "delivery": config["delivery"],
         "sourceCommit": source_commit(),
-        "loaderElfPath": "/data/GTAVMenu/payloads/gtav-menu-payload-loader.elf",
+        "daemonElfName": DAEMON_NAME,
         "workerElfPath": "/data/GTAVMenu/gtav-menu-feature-menu.elf",
         "primaryLaunchSurface": "generic PS5 payload launcher",
         "ps5debugDependency": False,
@@ -190,7 +233,7 @@ def main() -> int:
             target_manifest=args.target_manifest,
             build_config=args.build_config,
         )
-    except (OSError, KeyError, json.JSONDecodeError, PackageError) as exc:
+    except (OSError, KeyError, TypeError, ValueError, json.JSONDecodeError, PackageError) as exc:
         parser.error(str(exc))
     print(f"staged {len(manifest['files'])} files to {args.output}")
     return 0

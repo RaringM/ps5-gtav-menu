@@ -14,15 +14,17 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 
 README = """# GTAV-Menu — OnionHEN
 
-For OnionHEN 1.03 and the disc release of GTA V **PPSA04264 / 01.010.002** only.
+OnionHEN v0.0.13 plugin for GTA V Enhanced (**PPSA04264, version 1.010.002**).
+The plugin watches for GTA V launches and injects the menu after Story Mode loads.
 
-1. Copy `GTAV00001.elf` and `GTAV00001.elf.auto_start` to `/data/OnionHEN/plugins/`.
-2. Restart OnionHEN after adding or changing the auto-start marker.
-3. Start GTA V and enter Story Mode. The plugin waits for player control, then loads the menu automatically.
-4. Press **R1 + D-pad Left** to open or hide the menu.
+1. Copy `GTAV00001.elf` to `/data/OnionHEN/plugins/`.
+2. In OnionHEN Toolbox, open **Payloads & Kernel → Plugins → GTAV Menu**. Enable **Running** to start
+   watching now, or **Auto-start** to start watching when OnionHEN launches.
+3. Start Story Mode in GTA V Enhanced.
+4. When the “GTAVMenu injected” notification appears, press **R1 + D-pad Left** to open the menu.
 
 Use D-pad Up/Down to move, Left/Right to change values, Cross to select, and Circle to go back.
-To remove the plugin, disable `GTAV00001` in OnionHEN Toolbox before deleting both files.
+To stop or remove the plugin, disable `GTAV00001` in OnionHEN Toolbox before deleting its ELF.
 """
 
 
@@ -140,8 +142,6 @@ def stage_package(
     output.mkdir(parents=True)
     staged_plugin = output / f"{plugin_id}.elf"
     shutil.copy2(plugin, staged_plugin)
-    marker = output / f"{plugin_id}.elf.auto_start"
-    marker.touch()
     readme = output / "README.md"
     readme.write_text(README, encoding="utf-8")
 
@@ -162,7 +162,6 @@ def stage_package(
         "buildConfigSha256": sha256_file(build_config),
         "files": [
             _file_entry(staged_plugin, role="onionhen-plugin"),
-            _file_entry(marker, role="auto-start-marker"),
             _file_entry(readme, role="documentation"),
         ],
     }

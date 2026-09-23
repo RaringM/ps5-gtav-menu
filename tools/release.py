@@ -24,6 +24,17 @@ TARGET_ID = "PPSA04264_01.010.002_DISC"
 CONTENT_VERSION = "01.010.002"
 TAG_RE = re.compile(r"v[A-Za-z0-9][A-Za-z0-9._-]*\Z")
 ZIP_TIMESTAMP = (1980, 1, 1, 0, 0, 0)
+PACKAGE_LAYOUTS = {
+    "standalone": {
+        "gtav-menu-daemon.elf": "daemon",
+        "GTAVMenu/gtav-menu-feature-menu.elf": "menu-worker",
+        "README.md": "documentation",
+    },
+    "onionhen": {
+        "GTAV00001.elf": "onionhen-plugin",
+        "README.md": "documentation",
+    },
+}
 
 
 class ReleaseError(RuntimeError):
@@ -112,16 +123,20 @@ def verify_package(package_root: Path, *, kind: str, delivery: str, source_commi
             f"{delivery} package inventory mismatch; "
             f"missing={sorted(expected - actual)} extra={sorted(actual - expected)}"
         )
+    expected_layout = PACKAGE_LAYOUTS[delivery]
+    actual_layout = {safe_path(entry["path"]): entry.get("role") for entry in entries}
+    if actual_layout != expected_layout:
+        fail(f"{delivery} package has an unexpected release layout: {actual_layout}")
     return manifest
 
 
-def deterministic_zip(source: Path, output: Path, *, archive_root: str, members: list[str]) -> None:
+def deterministic_zip(source: Path, output: Path, *, archive_root: str | None, members: list[str]) -> None:
     with zipfile.ZipFile(output, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=9) as archive:
         for relative in sorted(members):
             member = source / relative
             if member.is_symlink() or not member.is_file():
                 fail(f"archive member is missing: {relative}")
-            info = zipfile.ZipInfo(f"{archive_root}/{relative}", ZIP_TIMESTAMP)
+            info = zipfile.ZipInfo(f"{archive_root}/{relative}" if archive_root else relative, ZIP_TIMESTAMP)
             info.compress_type = zipfile.ZIP_DEFLATED
             info.create_system = 3
             info.external_attr = (stat.S_IFREG | stat.S_IMODE(member.stat().st_mode)) << 16
@@ -170,8 +185,8 @@ def assemble(tag: str, output: Path, standalone: Path, onionhen: Path) -> Path:
 
     prefix = f"GTAV-Menu-{tag}"
     artifacts = [
-        (output / f"{prefix}-standalone.zip", standalone, standalone_manifest, "GTAV-Menu-standalone"),
-        (output / f"{prefix}-onionhen.zip", onionhen, onionhen_manifest, "GTAV-Menu-onionhen"),
+        (output / f"{prefix}-standalone.zip", standalone, standalone_manifest, None),
+        (output / f"{prefix}-onionhen.zip", onionhen, onionhen_manifest, None),
     ]
     for archive, package_root, manifest, archive_root in artifacts:
         deterministic_zip(package_root, archive, archive_root=archive_root, members=package_members(manifest))
@@ -229,8 +244,9 @@ def request_json(
 def release_body(tag: str) -> str:
     return (
         f"GTAV-Menu {tag} for PPSA04264 01.010.002.\n\n"
-        "The standalone and OnionHEN archives contain unstripped production ELFs, exact-target metadata, "
-        "and SHA-256 inventories. Rebuilt artifacts require on-hardware validation before distribution."
+        "The standalone daemon and OnionHEN archives contain only their runtime ELFs and setup READMEs. "
+        "SHA-256 checksums are provided separately. Rebuilt artifacts require on-hardware validation "
+        "before distribution."
     )
 
 

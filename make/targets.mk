@@ -8,7 +8,7 @@
 .DEFAULT_GOAL := all
 
 .PHONY: all menu-live onionhen _onionhen onionhen-plugin-build package-onionhen clean help FORCE require-ps5-sdk \
-	payload-loader-build deploy-payload-loader deploy-built-payload-loader package-payload \
+	payload-loader-build deploy-payload-loader deploy-built-payload-loader package-payload _package-payload \
 	feature-menu-frame-hook-playerped-build
 
 # Sources linked into the injected menu worker ELF (COMMON_SRCS comes from flags.mk,
@@ -52,11 +52,11 @@ help:
 	@echo "  make all                       Build the complete 01.010.002 production loader + worker"
 	@echo "  make menu-live                 Compatibility alias for make all"
 	@echo "  make onionhen                  Build single-file OnionHEN auto-inject plugin"
-	@echo "  make package-onionhen          Stage plugin + auto-start marker for installation"
+	@echo "  make package-onionhen          Stage the OnionHEN plugin for installation"
 	@echo "  make payload-loader-build      Build the SDK payload loader (the injector)"
 	@echo "  make feature-menu-frame-hook-playerped-build  Build the injected menu worker ELF"
 	@echo "  make deploy-payload-loader     Deploy the loader to PS5 (prospero-deploy)"
-	@echo "  make package-payload           Bundle the production loader, worker, manifest, and installer"
+	@echo "  make package-payload           Bundle the persistent daemon and worker"
 	@echo "Launch the default target with ./menu-ctl.sh cave-inject."
 
 # Ordinary builds produce the complete supported menu. Building never deploys it.
@@ -310,7 +310,18 @@ deploy-built-payload-loader: | require-ps5-sdk
 	@test -f "$(PAYLOAD_LOADER_ELF)" || { echo "missing built loader: $(PAYLOAD_LOADER_ELF)" >&2; exit 1; }
 	$(PS5_DEPLOY) -h $(PS5_HOST) -p $(PS5_PORT) $(PAYLOAD_LOADER_ELF)
 
-package-payload: all
+# The release daemon uses the same readiness and lifecycle gates as watch --persist. Re-enter make
+# so these settings apply to both ELF builds and their build-config stamp even after a plain `all`.
+package-payload:
+	$(MAKE) GTAV_BUILD_PROFILE=production GTAV_DELIVERY=standalone \
+		WORKER_REQUIRE_CONTEXT=1 PAYLOAD_LOADER_WAIT_FOR_GAME=1 \
+		PAYLOAD_LOADER_PERSISTENT=1 PAYLOAD_LOADER_SP_READY=1 \
+		PAYLOAD_LOADER_SP_READY_DEREF=1 PAYLOAD_LOADER_SP_READY_MODE=1 \
+		PAYLOAD_LOADER_SP_READY_ADDR=$(GTAV_TARGET_PLAYER_PED_ANCHOR) \
+		PAYLOAD_LOADER_SP_READY_DEREF_OFFSET=$(GTAV_TARGET_PLAYER_PED_OFFSET) \
+		PAYLOAD_LOADER_SP_READY_CONFIRMATIONS=3 _package-payload
+
+_package-payload: all
 	$(PYTHON) tools/package_payload.py --loader $(PAYLOAD_LOADER_ELF) \
 		--worker $(FEATURE_MENU_FRAME_HOOK_PLAYERPED_ELF) \
 		--target-manifest data/targets/$(GTAV_TARGET).json \
