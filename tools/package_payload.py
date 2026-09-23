@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Stage the complete standalone GTAVMenu production bundle."""
+"""Stage the minimal standalone GTAVMenu production bundle."""
 
 from __future__ import annotations
 
@@ -11,6 +11,26 @@ import subprocess
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
+TARGET_ID = "PPSA04264_01.010.002_DISC"
+CONTENT_VERSION = "01.010.002"
+EXPECTED_NATIVE_ADDRESSES = {
+    "drawRect": "0x1aa8900",
+    "beginTextCommandDisplayText": "0x1ac5d60",
+}
+
+README = """# GTAV-Menu — Standalone
+
+For the disc release of GTA V **PPSA04264 / 01.010.002** only.
+
+1. Start an FTP server on the PS5.
+2. Copy this archive's `data/GTAVMenu` folder into `/data` on the PS5, preserving the directory layout.
+3. Start GTA V, enter Story Mode, and wait until you have player control.
+4. Launch `/data/GTAVMenu/payloads/gtav-menu-payload-loader.elf` with a compatible PS5 payload launcher.
+5. Press **R1 + D-pad Left** to open or hide the menu.
+
+Use D-pad Up/Down to move, Left/Right to change values, Cross to select, and Circle to go back.
+Launch the loader again after each fresh GTA V process. Do not launch it while the game is loading.
+"""
 
 
 class PackageError(RuntimeError):
@@ -35,6 +55,11 @@ def source_commit() -> str:
         stderr=subprocess.DEVNULL,
     )
     return result.stdout.strip() if result.returncode == 0 else "unknown"
+
+
+def package_manifest_path(output: Path) -> Path:
+    """Internal verification metadata kept beside, not inside, the user bundle."""
+    return output.with_name(f"{output.name}.package-manifest.json")
 
 
 def copy_entry(
@@ -75,8 +100,28 @@ def stage_package(
 
     target = json.loads(target_manifest.read_text(encoding="utf-8"))
     config = json.loads(build_config.read_text(encoding="utf-8"))
-    if config.get("profile") != "production" or config.get("target") != "ppsa04264-01.010.002":
+    if (
+        config.get("profile") != "production"
+        or config.get("delivery") != "standalone"
+        or config.get("target") != "ppsa04264-01.010.002"
+    ):
         raise PackageError("refusing to package a non-production or non-01.010.002 build")
+    if target.get("targetId") != TARGET_ID or target.get("contentVersion") != CONTENT_VERSION:
+        raise PackageError("refusing to package a mismatched target manifest")
+    bridge = target.get("nativeBridge")
+    if (
+        not isinstance(bridge, dict)
+        or bridge.get("addressAcceptanceSemantics") != "exact_target_and_hardware_validation"
+        or bridge.get("runtimeInvocationValidated") is not True
+        or bridge.get("authorizedForInjection") is not True
+    ):
+        raise PackageError("target manifest lacks the production native-address policy")
+    addresses = bridge.get("addresses")
+    if not isinstance(addresses, dict):
+        raise PackageError("target manifest lacks production native addresses")
+    for name, expected in EXPECTED_NATIVE_ADDRESSES.items():
+        if str(addresses.get(name) or "").lower() != expected:
+            raise PackageError(f"target manifest has an unexpected {name} address")
 
     entries: list[dict[str, object]] = []
     copy_entry(
@@ -95,29 +140,11 @@ def stage_package(
         role="menu-worker",
         remote="/data/GTAVMenu/gtav-menu-feature-menu.elf",
     )
-    target_name = target_manifest.name
-    copy_entry(
-        target_manifest,
-        output / f"data/GTAVMenu/targets/{target_name}",
-        output,
-        entries,
-        role="target-manifest",
-        remote=f"/data/GTAVMenu/targets/{target_name}",
-    )
-    copy_entry(build_config, output / "build-config.json", output, entries, role="build-config")
-    copy_entry(REPO_ROOT / "tools/install_release.py", output / "install_release.py", output, entries, role="installer")
-
-    readme = output / "README.txt"
-    readme.write_text(
-        "GTAVMenu standalone production bundle\n\n"
-        "Install: python3 install_release.py install --host <PS5-IP>\n"
-        "Launch /data/GTAVMenu/payloads/gtav-menu-payload-loader.elf only after Story Mode is ready.\n"
-        "The menu starts hidden. Open it with R1 + D-pad Left.\n",
-        encoding="utf-8",
-    )
+    readme = output / "README.md"
+    readme.write_text(README, encoding="utf-8")
     entries.append(
         {
-            "path": "README.txt",
+            "path": "README.md",
             "role": "documentation",
             "size": readme.stat().st_size,
             "sha256": sha256_file(readme),
@@ -139,11 +166,11 @@ def stage_package(
         "ps5debugDependency": False,
         "requiresHardwareValidation": True,
         "loaderLog": "/data/GTAVMenu/payload-loader.log",
+        "targetManifestSha256": sha256_file(target_manifest),
+        "buildConfigSha256": sha256_file(build_config),
         "files": entries,
     }
-    (output / "package-manifest.json").write_text(
-        json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8"
-    )
+    package_manifest_path(output).write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     return manifest
 
 

@@ -12,6 +12,19 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
+README = """# GTAV-Menu — OnionHEN
+
+For OnionHEN 1.03 and the disc release of GTA V **PPSA04264 / 01.010.002** only.
+
+1. Copy `GTAV00001.elf` and `GTAV00001.elf.auto_start` to `/data/OnionHEN/plugins/`.
+2. Restart OnionHEN after adding or changing the auto-start marker.
+3. Start GTA V and enter Story Mode. The plugin waits for player control, then loads the menu automatically.
+4. Press **R1 + D-pad Left** to open or hide the menu.
+
+Use D-pad Up/Down to move, Left/Right to change values, Cross to select, and Circle to go back.
+To remove the plugin, disable `GTAV00001` in OnionHEN Toolbox before deleting both files.
+"""
+
 
 class PackageError(RuntimeError):
     pass
@@ -35,6 +48,11 @@ def source_commit() -> str:
         stderr=subprocess.DEVNULL,
     )
     return result.stdout.strip() if result.returncode == 0 else "unknown"
+
+
+def package_manifest_path(output: Path) -> Path:
+    """Internal verification metadata kept beside, not inside, the user bundle."""
+    return output.with_name(f"{output.name}.package-manifest.json")
 
 
 def _integer(config: dict[str, object], key: str) -> int:
@@ -124,10 +142,8 @@ def stage_package(
     shutil.copy2(plugin, staged_plugin)
     marker = output / f"{plugin_id}.elf.auto_start"
     marker.touch()
-    staged_config = output / "build-config.json"
-    shutil.copy2(build_config, staged_config)
-    staged_target = output / target_manifest.name
-    shutil.copy2(target_manifest, staged_target)
+    readme = output / "README.md"
+    readme.write_text(README, encoding="utf-8")
 
     manifest = {
         "schemaVersion": 1,
@@ -142,16 +158,15 @@ def stage_package(
         "releaseChannel": "local-publication-candidate",
         "requiresHardwareValidation": True,
         "sourceCommit": source_commit(),
+        "targetManifestSha256": sha256_file(target_manifest),
+        "buildConfigSha256": sha256_file(build_config),
         "files": [
             _file_entry(staged_plugin, role="onionhen-plugin"),
             _file_entry(marker, role="auto-start-marker"),
-            _file_entry(staged_config, role="build-config"),
-            _file_entry(staged_target, role="target-manifest"),
+            _file_entry(readme, role="documentation"),
         ],
     }
-    (output / "package-manifest.json").write_text(
-        json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8"
-    )
+    package_manifest_path(output).write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     return manifest
 
 
