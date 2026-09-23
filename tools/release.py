@@ -52,6 +52,10 @@ def load_json(path: Path) -> dict[str, object]:
     return value
 
 
+def package_manifest_path(package_root: Path) -> Path:
+    return package_root.with_name(f"{package_root.name}.package-manifest.json")
+
+
 def safe_path(raw: object) -> str:
     if not isinstance(raw, str):
         fail("package file entry has no string path")
@@ -62,7 +66,7 @@ def safe_path(raw: object) -> str:
 
 
 def verify_package(package_root: Path, *, kind: str, delivery: str, source_commit: str) -> dict[str, object]:
-    manifest = load_json(package_root / "package-manifest.json")
+    manifest = load_json(package_manifest_path(package_root))
     required = {
         "schemaVersion": 1,
         "kind": kind,
@@ -102,7 +106,7 @@ def verify_package(package_root: Path, *, kind: str, delivery: str, source_commi
         for path in package_root.rglob("*")
         if path.is_file() or path.is_symlink()
     }
-    expected = declared | {"package-manifest.json"}
+    expected = declared
     if actual != expected:
         fail(
             f"{delivery} package inventory mismatch; "
@@ -127,10 +131,7 @@ def deterministic_zip(source: Path, output: Path, *, archive_root: str, members:
 def package_members(manifest: dict[str, object]) -> list[str]:
     entries = manifest["files"]
     assert isinstance(entries, list)
-    return [
-        "package-manifest.json",
-        *(safe_path(entry.get("path")) for entry in entries if isinstance(entry, dict)),
-    ]
+    return [safe_path(entry.get("path")) for entry in entries if isinstance(entry, dict)]
 
 
 def git_output(*args: str) -> str:

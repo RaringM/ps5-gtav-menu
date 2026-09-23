@@ -1,15 +1,11 @@
 #!/usr/bin/env python3
-"""Install the GTAVMenu release bundle onto a PS5 over FTP.
+"""Install a locally staged GTAVMenu standalone bundle onto a PS5 over FTP.
 
-Standard library only (``ftplib``, ``socket``, ``argparse``, ``pathlib``, ``json``) so
-this script runs from inside the release zip with nothing but ``python3`` -- no repo
-checkout, no virtualenv, no ``gtavmenu_tools``. It is also the script the ``./gtavmenu``
-front-end forwards to from a checkout.
+This standard-library-only helper is used by the ``./gtavmenu`` front-end from a source
+checkout. Public release archives stay minimal and carry manual setup in ``README.md``.
 
-The file->destination mapping is read from ``package-manifest.json`` (every entry with a
-``remote`` path is uploaded), so this stays in lockstep with whatever staged the bundle --
-there are no hardcoded upload paths here. It is lane-agnostic: it uploads exactly what the
-manifest lists.
+The file-to-destination mapping is read from internal verification metadata stored beside
+the staged bundle. Only entries with a ``remote`` path are uploaded.
 
 Subcommands::
 
@@ -31,21 +27,12 @@ from pathlib import Path
 DEFAULT_FTP_PORT = 1337
 DEFAULT_PS5DEBUG_PORT = 744
 DEFAULT_KLOG_PORT = 9081
-# Repo-root-relative location of the staged bundle. Anchored on this file's location (this
-# script lives at tools/install_release.py) so ``./gtavmenu`` works from any working
-# directory; only consulted in a checkout (in the release zip the manifest sits next to
-# this script -- see build_parser).
+# Repo-root-relative location of the staged bundle. Anchored on this file's location so
+# ``./gtavmenu`` works from any working directory.
 DEFAULT_BUNDLE = Path(__file__).resolve().parent.parent / "build/pkg/gtavmenu-payload"
-MANIFEST_NAME = "package-manifest.json"
-DEFAULT_TARGET_STEM = "ppsa04264-01.010.002"
-TARGET_MANIFEST_BUNDLE_PATH = Path(f"data/GTAVMenu/targets/{DEFAULT_TARGET_STEM}.json")
-CANONICAL_TARGET_RELATIVE_PATH = Path(f"data/targets/{DEFAULT_TARGET_STEM}.json")
+MANIFEST_SUFFIX = ".package-manifest.json"
 EXPECTED_TARGET_ID = "PPSA04264_01.010.002_DISC"
 EXPECTED_CONTENT_VERSION = "01.010.002"
-EXPECTED_NATIVE_ADDRESSES = {
-    "drawRect": "0x1aa8900",
-    "beginTextCommandDisplayText": "0x1ac5d60",
-}
 
 
 class InstallError(RuntimeError):
@@ -55,13 +42,14 @@ class InstallError(RuntimeError):
 # --------------------------------------------------------------------------- manifest
 
 
+def package_manifest_path(bundle: Path) -> Path:
+    return bundle.with_name(f"{bundle.name}{MANIFEST_SUFFIX}")
+
+
 def load_manifest(bundle: Path) -> dict:
-    manifest_path = bundle / MANIFEST_NAME
+    manifest_path = package_manifest_path(bundle)
     if not manifest_path.is_file():
-        raise InstallError(
-            f"no {MANIFEST_NAME} in {bundle} -- point --bundle at a release bundle "
-            "(run `make package-payload` first, or unpack the release bundle)."
-        )
+        raise InstallError(f"no staging metadata at {manifest_path} -- run `make package-payload` first")
     return json.loads(manifest_path.read_text(encoding="utf-8"))
 
 
@@ -76,7 +64,7 @@ def upload_entries(manifest: dict) -> list[dict]:
 
 
 def validate_bundle_safety(bundle: Path, manifest: dict) -> None:
-    """Refuse a stale/unsafe target manifest before opening an FTP connection."""
+    """Validate the staged runtime files before opening an FTP connection."""
     if (
         manifest.get("kind") != "gtavmenu-standalone-production"
         or manifest.get("profile") != "production"
@@ -86,7 +74,7 @@ def validate_bundle_safety(bundle: Path, manifest: dict) -> None:
         raise InstallError("bundle identity/profile is not the supported 01.010.002 production release")
 
     roles = {str(entry.get("role")) for entry in manifest.get("files", [])}
-    required_roles = {"payload-loader", "menu-worker", "target-manifest", "build-config"}
+    required_roles = {"payload-loader", "menu-worker", "documentation"}
     missing_roles = sorted(required_roles - roles)
     if missing_roles:
         raise InstallError(f"bundle is missing required roles: {', '.join(missing_roles)}")
@@ -101,57 +89,6 @@ def validate_bundle_safety(bundle: Path, manifest: dict) -> None:
         digest = hashlib.sha256(local.read_bytes()).hexdigest()
         if digest != entry.get("sha256") or local.stat().st_size != entry.get("size"):
             raise InstallError(f"bundle hash/size mismatch: {relative}")
-
-    target_path = bundle / TARGET_MANIFEST_BUNDLE_PATH
-    target_entry = next(
-        (entry for entry in upload_entries(manifest) if Path(str(entry.get("path"))) == TARGET_MANIFEST_BUNDLE_PATH),
-        None,
-    )
-    if target_entry is None:
-        raise InstallError(f"bundle does not declare required target manifest {TARGET_MANIFEST_BUNDLE_PATH}")
-    if not target_path.is_file():
-        raise InstallError(f"bundle target manifest missing: {target_path}")
-    try:
-        target = json.loads(target_path.read_text(encoding="utf-8"))
-        bridge = target["nativeBridge"]
-        addresses = bridge["addresses"]
-    except (OSError, json.JSONDecodeError, KeyError, TypeError) as exc:
-        raise InstallError(f"bundle target manifest is unreadable/incomplete: {exc}") from exc
-
-    if target.get("targetId") != EXPECTED_TARGET_ID or target.get("contentVersion") != EXPECTED_CONTENT_VERSION:
-        raise InstallError(
-            "bundle target identity is "
-            f"{target.get('targetId')!r}/{target.get('contentVersion')!r}, expected "
-            f"{EXPECTED_TARGET_ID!r}/{EXPECTED_CONTENT_VERSION!r}; refusing upload"
-        )
-
-    for key, expected in EXPECTED_NATIVE_ADDRESSES.items():
-        actual = str(addresses.get(key) or "").lower()
-        if actual != expected:
-            raise InstallError(
-                f"unsafe/stale bundle target: {key} is {actual or 'missing'}, expected {expected}; " "refusing upload"
-            )
-    if (
-        bridge.get("addressAcceptanceSemantics") != "exact_target_and_hardware_validation"
-        or bridge.get("runtimeInvocationValidated") is not True
-        or bridge.get("authorizedForInjection") is not True
-    ):
-        raise InstallError("bundle target lacks the current production native-address policy; refusing upload")
-
-    # When running from a checkout, also require the staged copy to match the canonical tracked
-    # manifest exactly. A standalone release zip has no repository-side canonical file, so its
-    # signed/pinned semantic checks above remain the portable guard.
-    repo_root = Path(__file__).resolve().parent.parent
-    canonical_path = repo_root / CANONICAL_TARGET_RELATIVE_PATH
-    if canonical_path.is_file():
-        try:
-            canonical = json.loads(canonical_path.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError) as exc:
-            raise InstallError(f"canonical target manifest is unreadable: {exc}") from exc
-        if target != canonical:
-            raise InstallError(
-                f"staged bundle target is stale relative to {canonical_path}; rebuild/re-stage the release bundle"
-            )
 
 
 def _print_post_install_guidance(manifest: dict, host: str, uploaded: int) -> None:
@@ -172,8 +109,8 @@ def _print_post_install_guidance(manifest: dict, host: str, uploaded: int) -> No
     loader_elf = manifest.get("loaderElfPath")
     launch_surface = manifest.get("primaryLaunchSurface") or "ps5-payload-manager"
     if loader_elf:
-        print(f"Next: run the loader payload {loader_elf} from {launch_surface},")
-        print("then launch GTA V story mode. Open the menu with R1 + D-pad Left.")
+        print("Next: start GTA V, enter Story Mode, and wait for player control.")
+        print(f"Then run {loader_elf} from {launch_surface} and open the menu with R1 + D-pad Left.")
 
 
 # --------------------------------------------------------------------------- preflight
@@ -314,11 +251,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("command", choices=("preflight", "install", "status"))
     parser.add_argument("--host", required=True, help="PS5 IP address")
     parser.add_argument("--ftp-port", type=int, default=DEFAULT_FTP_PORT)
-    # Default to the dir this script lives in (works when run from inside the zip),
-    # falling back to the staged build output when run from a checkout.
-    here = Path(__file__).resolve().parent
-    default_bundle = here if (here / MANIFEST_NAME).is_file() else DEFAULT_BUNDLE
-    parser.add_argument("--bundle", type=Path, default=default_bundle)
+    parser.add_argument("--bundle", type=Path, default=DEFAULT_BUNDLE)
     return parser
 
 
