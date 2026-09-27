@@ -74,5 +74,12 @@ back. R1 + D-pad Left opens or hides the menu.
 Tag pushes matching `v*` build both packages and publish checksummed release assets. Releases retain
 debug symbols; rebuilt artifacts require a new on-hardware regression before distribution.
 
+## Offline etaHEN container tools
+
+`python3 tools/inspect_etahen_plugin.py example.plugin` validates container metadata and ELF
+structure and reports SHA-256 hashes. `python3 tools/make_etahen_plugin.py --help` describes the
+offline container writer. Both tools use only the Python standard library. These tools do not
+provide an etaHEN menu runtime or a hardware-validated etaHEN release.
+
 Licensed under the [MIT License](LICENSE). GTA V, PlayStation, the PS5 payload SDK, and third-party
 catalog inputs are not covered by that license. See `THIRD_PARTY_NOTICES` for catalog attribution.
