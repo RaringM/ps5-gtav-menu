@@ -7,7 +7,8 @@
 
 .DEFAULT_GOAL := all
 
-.PHONY: all menu-live onionhen _onionhen onionhen-plugin-build package-onionhen clean help FORCE require-ps5-sdk \
+.PHONY: all menu-live onionhen _onionhen onionhen-plugin-build package-onionhen \
+	etahen _etahen etahen-plugin-build package-etahen clean help FORCE require-ps5-sdk \
 	payload-loader-build deploy-payload-loader deploy-built-payload-loader package-payload _package-payload \
 	feature-menu-frame-hook-playerped-build
 
@@ -53,6 +54,8 @@ help:
 	@echo "  make menu-live                 Compatibility alias for make all"
 	@echo "  make onionhen                  Build single-file OnionHEN auto-inject plugin"
 	@echo "  make package-onionhen          Stage the OnionHEN plugin for installation"
+	@echo "  make etahen                    Build the Toolbox-managed etaHEN plugin"
+	@echo "  make package-etahen            Stage the etaHEN plugin for installation"
 	@echo "  make payload-loader-build      Build the SDK payload loader (the injector)"
 	@echo "  make feature-menu-frame-hook-playerped-build  Build the injected menu worker ELF"
 	@echo "  make deploy-payload-loader     Deploy the loader to PS5 (prospero-deploy)"
@@ -133,6 +136,7 @@ $(BUILD_CONFIG_STAMP): FORCE tools/write_build_stamp.py tools/target_loader_conf
 		--set loader_wait=$(PAYLOAD_LOADER_WAIT_FOR_GAME) \
 		--set loader_wait_timeout=$(PAYLOAD_LOADER_WAIT_TIMEOUT_SEC) \
 		--set loader_persistent=$(PAYLOAD_LOADER_PERSISTENT) \
+		--set etahen_runtime=$(ETAHEN_RUNTIME) \
 		--set loader_sp_ready=$(PAYLOAD_LOADER_SP_READY) \
 		--set loader_sp_addr=$(PAYLOAD_LOADER_SP_READY_ADDR) \
 		--set loader_sp_size=$(PAYLOAD_LOADER_SP_READY_SIZE) \
@@ -248,6 +252,116 @@ package-onionhen: onionhen
 		--target-manifest $(GTAV_TARGET_MANIFEST) \
 		--build-config $(ONIONHEN_OUTPUT_DIR)/build-config.json
 	@echo "OnionHEN package staged in $(ONIONHEN_PACKAGE_DIR)"
+
+# etaHEN's Toolbox terminates the plugin pid without a cooperative callback. The installable
+# GTAV00001 plugin is therefore a small supervisor: it asks stock etaHEN's utility service to launch
+# an embedded GTAV00002 runtime, then holds a unique lease. The runtime owns injection and observes
+# lease loss as a cooperative stop request, so Toolbox shutdown exact-retires the GTA hooks.
+etahen:
+	@if [ "$(GTAV_TARGET)" != "ppsa04264-01.010.002" ]; then \
+		echo "error: the etaHEN plugin is currently gated to ppsa04264-01.010.002" >&2; \
+		exit 1; \
+	fi
+	$(MAKE) GTAV_BUILD_PROFILE=production GTAV_DELIVERY=etahen ETAHEN_RUNTIME=1 \
+		WORKER_REQUIRE_CONTEXT=1 PAYLOAD_LOADER_WAIT_FOR_GAME=1 \
+		PAYLOAD_LOADER_PERSISTENT=1 PAYLOAD_LOADER_SP_READY=1 \
+		PAYLOAD_LOADER_SP_READY_DEREF=1 PAYLOAD_LOADER_SP_READY_MODE=1 \
+		PAYLOAD_LOADER_SP_READY_ADDR=$(GTAV_TARGET_PLAYER_PED_ANCHOR) \
+		PAYLOAD_LOADER_SP_READY_DEREF_OFFSET=$(GTAV_TARGET_PLAYER_PED_OFFSET) \
+		PAYLOAD_LOADER_SP_READY_CONFIRMATIONS=3 _etahen
+
+_etahen: $(ETAHEN_PLUGIN)
+
+etahen-plugin-build: etahen
+
+$(ETAHEN_RUNTIME_ELF): $(PAYLOAD_LOADER_SRCS) src/common/supervisor_lifecycle.c \
+		src/payload_loader/embedded_worker.S include/gtavmenu/loader_pins_generated.h \
+		include/gtavmenu/daemon_control.h include/gtavmenu/daemon_lifecycle.h \
+		include/gtavmenu/supervisor_lifecycle.h include/gtavmenu/render_phase_discovery.h \
+		$(FEATURE_MENU_FRAME_HOOK_PLAYERPED_ELF) $(BUILD_CONFIG_STAMP) | $(ETAHEN_OUTPUT_DIR) require-ps5-sdk
+	@if [ "$(GTAV_TARGET)" != "ppsa04264-01.010.002" ]; then \
+		echo "error: refusing to build the 01.010.002-pinned etaHEN plugin for $(GTAV_TARGET)" >&2; \
+		exit 1; \
+	fi
+	$(CC) $(CFLAGS) \
+		-DGTAV_LOADER_PROBE_NOSTOP=1 \
+		-DGTAV_PROC_NOSTOP_IO=1 \
+		-DGTAV_PROC_NOSTOP_STRICT=1 \
+		-DGTAV_ELF_INJECT_VERIFY_WRITES=1 \
+		-DGTAV_SDK_HAS_PROC_COPYIO=$(GTAV_SDK_HAS_PROC_COPYIO) \
+		-DGTAV_LOADER_CAVE_BOOTSTRAP=1 \
+		-DGTAV_LOADER_CAVE_ADDR=$(PAYLOAD_LOADER_CAVE_ADDR) \
+		-DGTAV_LOADER_CAVE_ALLOC=$(PAYLOAD_LOADER_CAVE_ALLOC) \
+		-DGTAV_LOADER_CAVE_TIMEOUT_MS=$(PAYLOAD_LOADER_CAVE_TIMEOUT_MS) \
+		-DGTAV_LOADER_CAVE_INJECT=1 \
+		-DGTAV_MENU_PAYLOAD_INJECT=1 \
+		-DGTAV_MENU_INSTALL_PATCH_BROKER=1 \
+		-DGTAV_LOADER_INSTALL_RENDER_PHASE=1 \
+		-DGTAV_PAYLOAD_WAIT_FOR_GAME=$(PAYLOAD_LOADER_WAIT_FOR_GAME) \
+		-DGTAV_PAYLOAD_WAIT_TIMEOUT_SEC=$(PAYLOAD_LOADER_WAIT_TIMEOUT_SEC) \
+		-DGTAV_PAYLOAD_PERSISTENT=$(PAYLOAD_LOADER_PERSISTENT) \
+		-DGTAV_PAYLOAD_SP_READY=$(PAYLOAD_LOADER_SP_READY) \
+		-DGTAV_PAYLOAD_SP_READY_ADDR=$(PAYLOAD_LOADER_SP_READY_ADDR) \
+		-DGTAV_PAYLOAD_SP_READY_SIZE=$(PAYLOAD_LOADER_SP_READY_SIZE) \
+		-DGTAV_PAYLOAD_SP_READY_MASK=$(PAYLOAD_LOADER_SP_READY_MASK) \
+		-DGTAV_PAYLOAD_SP_READY_VALUE=$(PAYLOAD_LOADER_SP_READY_VALUE) \
+		-DGTAV_PAYLOAD_SP_READY_MODE=$(PAYLOAD_LOADER_SP_READY_MODE) \
+		-DGTAV_PAYLOAD_SP_READY_TIMEOUT_SEC=$(PAYLOAD_LOADER_SP_READY_TIMEOUT_SEC) \
+		-DGTAV_PAYLOAD_SP_READY_SETTLE_USEC=$(PAYLOAD_LOADER_SP_READY_SETTLE_USEC) \
+		-DGTAV_PAYLOAD_SP_READY_DEREF=$(PAYLOAD_LOADER_SP_READY_DEREF) \
+		-DGTAV_PAYLOAD_SP_READY_DEREF_OFFSET=$(PAYLOAD_LOADER_SP_READY_DEREF_OFFSET) \
+		-DGTAV_PAYLOAD_SP_READY_CONFIRMATIONS=$(PAYLOAD_LOADER_SP_READY_CONFIRMATIONS) \
+		-DGTAV_PAYLOAD_SP_READY_GENTLE=$(PAYLOAD_LOADER_SP_READY_GENTLE) \
+		-DGTAV_PAYLOAD_SP_READY_POLL_USEC=$(PAYLOAD_LOADER_SP_READY_POLL_USEC) \
+		-DGTAV_PAYLOAD_SP_READY_POLL_MAX_USEC=$(PAYLOAD_LOADER_SP_READY_POLL_MAX_USEC) \
+		-DGTAV_PAYLOAD_INJECT_GUARD=$(PAYLOAD_LOADER_INJECT_GUARD) \
+		-DGTAV_LOADER_VERIFY_VERSION=$(PAYLOAD_LOADER_VERIFY_VERSION) \
+		-DGTAV_MANAGED_RUNTIME=1 \
+		-DGTAV_MENU_EMBEDDED_WORKER=1 \
+		'-DGTAV_LOADER_EXPECT_TARGET_ID="PPSA04264_01.010.002_DISC"' \
+		'-DGTAV_EMBEDDED_WORKER_PATH="$(abspath $(FEATURE_MENU_FRAME_HOOK_PLAYERPED_ELF))"' \
+		$(LDFLAGS) -o $@ $(PAYLOAD_LOADER_SRCS) src/common/supervisor_lifecycle.c \
+			src/payload_loader/embedded_worker.S $(PAYLOAD_LOADER_LDLIBS)
+
+$(ETAHEN_RUNTIME_PLUGIN): $(ETAHEN_RUNTIME_ELF) tools/make_etahen_plugin.py \
+		tools/inspect_etahen_plugin.py tools/gtavmenu_tools/etahen.py
+	$(RM) $@.tmp
+	$(PYTHON) tools/make_etahen_plugin.py $(ETAHEN_RUNTIME_ELF) --output $@.tmp \
+		--plugin-id $(ETAHEN_RUNTIME_ID) --version $(ETAHEN_RUNTIME_VERSION)
+	mv $@.tmp $@
+	$(PYTHON) tools/inspect_etahen_plugin.py $@ --expect-id $(ETAHEN_RUNTIME_ID) \
+		--expect-version $(ETAHEN_RUNTIME_VERSION)
+
+$(ETAHEN_SUPERVISOR_ELF): src/payload_loader/etahen_plugin.c \
+		src/payload_loader/embedded_etahen_runtime.S src/common/daemon_control.c \
+		src/common/supervisor_lifecycle.c include/gtavmenu/daemon_control.h \
+		include/gtavmenu/supervisor_lifecycle.h $(ETAHEN_RUNTIME_PLUGIN) $(BUILD_CONFIG_STAMP) \
+		| $(ETAHEN_OUTPUT_DIR) require-ps5-sdk
+	$(CC) $(CFLAGS) \
+		'-DGTAV_ETAHEN_PLUGIN_ID="$(ETAHEN_PLUGIN_ID)"' \
+		'-DGTAV_ETAHEN_RUNTIME_ID="$(ETAHEN_RUNTIME_ID)"' \
+		'-DGTAV_ETAHEN_RUNTIME_VERSION="$(ETAHEN_RUNTIME_VERSION)"' \
+		'-DGTAV_EMBEDDED_ETAHEN_RUNTIME_PATH="$(abspath $(ETAHEN_RUNTIME_PLUGIN))"' \
+		$(LDFLAGS) -o $@ src/payload_loader/etahen_plugin.c \
+			src/common/daemon_control.c src/common/supervisor_lifecycle.c \
+			src/payload_loader/embedded_etahen_runtime.S
+
+$(ETAHEN_PLUGIN): $(ETAHEN_SUPERVISOR_ELF) tools/make_etahen_plugin.py \
+		tools/inspect_etahen_plugin.py tools/gtavmenu_tools/etahen.py
+	$(RM) $@.tmp
+	$(PYTHON) tools/make_etahen_plugin.py $(ETAHEN_SUPERVISOR_ELF) --output $@.tmp \
+		--plugin-id $(ETAHEN_PLUGIN_ID) --version $(ETAHEN_PLUGIN_VERSION)
+	mv $@.tmp $@
+	$(PYTHON) tools/inspect_etahen_plugin.py $@ --expect-id $(ETAHEN_PLUGIN_ID) \
+		--expect-version $(ETAHEN_PLUGIN_VERSION)
+
+package-etahen: etahen
+	$(PYTHON) tools/package_etahen.py --plugin $(ETAHEN_PLUGIN) \
+		--output $(ETAHEN_PACKAGE_DIR) --plugin-id $(ETAHEN_PLUGIN_ID) \
+		--version $(ETAHEN_PLUGIN_VERSION) --target $(GTAV_TARGET) \
+		--target-manifest $(GTAV_TARGET_MANIFEST) \
+		--build-config $(ETAHEN_OUTPUT_DIR)/build-config.json
+	@echo "etaHEN package staged in $(ETAHEN_PACKAGE_DIR)"
 
 # Standalone, etaHEN-free payload loader (SDK-native process-control backend). Rebuilds
 # whenever the generated build-pin table changes: the table is the loader's auto-detect

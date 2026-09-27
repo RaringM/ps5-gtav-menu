@@ -31,8 +31,8 @@
 #include <stdint.h>
 #include <stdio.h>
 
-// Longest path is GTAV_MENU_DEFAULT_DIR + "/daemon.stop" (or "/daemon.lock").
-#define GTAV_DAEMON_PATH_MAX 160
+// Also accommodates unique managed-runtime lease names and host-test temporary directories.
+#define GTAV_DAEMON_PATH_MAX 512
 
 // Compatibility lease for a legacy loader's '1' marker. New loaders' '2' markers rely on an
 // advisory owner lock instead: age alone can never evict a live new loader.

@@ -34,6 +34,10 @@ PACKAGE_LAYOUTS = {
         "GTAV00001.elf": "onionhen-plugin",
         "README.md": "documentation",
     },
+    "etahen": {
+        "GTAV00001.plugin": "etahen-plugin",
+        "README.md": "documentation",
+    },
 }
 
 
@@ -164,7 +168,7 @@ def validate_tag(tag: str, *, require_head: bool = True) -> None:
             fail(f"tag {tag} resolves to {tagged}, but HEAD is {head}")
 
 
-def assemble(tag: str, output: Path, standalone: Path, onionhen: Path) -> Path:
+def assemble(tag: str, output: Path, standalone: Path, onionhen: Path, etahen: Path) -> Path:
     validate_tag(tag)
     if output.exists() and any(output.iterdir()):
         fail(f"release output must be empty: {output}")
@@ -182,11 +186,18 @@ def assemble(tag: str, output: Path, standalone: Path, onionhen: Path) -> Path:
         delivery="onionhen",
         source_commit=commit,
     )
+    etahen_manifest = verify_package(
+        etahen,
+        kind="gtavmenu-etahen-production",
+        delivery="etahen",
+        source_commit=commit,
+    )
 
     prefix = f"GTAV-Menu-{tag}"
     artifacts = [
         (output / f"{prefix}-standalone.zip", standalone, standalone_manifest, None),
         (output / f"{prefix}-onionhen.zip", onionhen, onionhen_manifest, None),
+        (output / f"{prefix}-etahen.zip", etahen, etahen_manifest, None),
     ]
     for archive, package_root, manifest, archive_root in artifacts:
         deterministic_zip(package_root, archive, archive_root=archive_root, members=package_members(manifest))
@@ -244,7 +255,7 @@ def request_json(
 def release_body(tag: str) -> str:
     return (
         f"GTAV-Menu {tag} for PPSA04264 01.010.002.\n\n"
-        "The standalone daemon and OnionHEN archives contain only their runtime ELFs and setup READMEs. "
+        "The standalone, OnionHEN, and etaHEN archives contain only their installable runtime and setup README. "
         "SHA-256 checksums are provided separately. Rebuilt artifacts require on-hardware validation "
         "before distribution."
     )
@@ -315,6 +326,7 @@ def parse_args() -> argparse.Namespace:
     assemble_parser.add_argument("--output", type=Path, default=REPO_ROOT / "build/release")
     assemble_parser.add_argument("--standalone", type=Path, default=REPO_ROOT / "build/pkg/gtavmenu-payload")
     assemble_parser.add_argument("--onionhen", type=Path, default=REPO_ROOT / "build/pkg/onionhen")
+    assemble_parser.add_argument("--etahen", type=Path, default=REPO_ROOT / "build/pkg/etahen")
     publish_parser = sub.add_parser("publish")
     publish_parser.add_argument("--platform", choices=("forgejo", "github"), required=True)
     publish_parser.add_argument("--tag", required=True)
@@ -331,6 +343,7 @@ def main() -> int:
                 args.output.expanduser().resolve(),
                 args.standalone.expanduser().resolve(),
                 args.onionhen.expanduser().resolve(),
+                args.etahen.expanduser().resolve(),
             )
             print(f"release assets assembled: {output}")
         else:

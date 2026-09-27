@@ -31,7 +31,7 @@ jobs:
           unzip -q /tmp/ps5-payload-sdk.zip -d "$HOME"
       - name: Build and assemble release
         run: |
-          make package-payload package-onionhen
+          make package-payload package-onionhen package-etahen
           python3 tools/release.py assemble --tag "$GITHUB_REF_NAME"
       - name: Publish Forgejo release
         env:

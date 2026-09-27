@@ -23,6 +23,7 @@
 #include "gtavmenu/proc_backend.h"
 #include "gtavmenu/render_phase_discovery.h"
 #include "gtavmenu/runtime_config.h"
+#include "gtavmenu/supervisor_lifecycle.h"
 
 #include <errno.h>
 #include <fcntl.h>
@@ -83,6 +84,15 @@
 // inject the first time GTA is found, then exit -- the default).
 #ifndef GTAV_PAYLOAD_PERSISTENT
 #define GTAV_PAYLOAD_PERSISTENT 0
+#endif
+
+// Managed delivery adapters run this loader as a separately launched helper and require a live
+// supervisor lease; losing it feeds the same cooperative retirement path as daemon.stop or SIGTERM.
+#ifndef GTAV_MANAGED_RUNTIME
+#define GTAV_MANAGED_RUNTIME 0
+#endif
+#if GTAV_MANAGED_RUNTIME && (!GTAV_MENU_PAYLOAD_INJECT || !GTAV_PAYLOAD_PERSISTENT)
+#error "GTAV_MANAGED_RUNTIME requires the persistent injection runtime"
 #endif
 
 // Backoff before retrying an inject that failed (e.g. injected too early), in usec.
@@ -2006,6 +2016,13 @@ static int run_inject(int pid, uint64_t expected_token, const GtavBuildPin* pin,
 
 static GtavDaemonControl g_daemon_control = {.owner_fd = -1};
 static volatile sig_atomic_t g_daemon_stop_requested;
+#if GTAV_MANAGED_RUNTIME
+static GtavSupervisorRuntimeLease g_managed_runtime = {.supervisor_fd = -1};
+
+static void managed_runtime_cleanup(void) {
+  gtav_supervisor_runtime_release(&g_managed_runtime);
+}
+#endif
 
 static void daemon_signal_stop(int signal_number) {
   (void)signal_number;
@@ -2015,7 +2032,11 @@ static void daemon_signal_stop(int signal_number) {
 // True if the host has dropped the stop sentinel (menu-ctl daemon-stop). Best effort; NOT deleted
 // here -- a fresh daemon clears it once at startup so a leftover sentinel can't wedge the next run.
 static int daemon_should_stop(void) {
-  return g_daemon_stop_requested || gtav_daemon_control_should_stop(&g_daemon_control);
+  if (g_daemon_stop_requested || gtav_daemon_control_should_stop(&g_daemon_control)) return 1;
+#if GTAV_MANAGED_RUNTIME
+  if (!gtav_supervisor_runtime_alive(&g_managed_runtime)) return 1;
+#endif
+  return 0;
 }
 
 // Bump the daemon lock's mtime as a liveness heartbeat (existing lock only; best effort). Called on
@@ -2596,7 +2617,23 @@ int main(void) {
   mkdir(GTAV_MENU_DEFAULT_DIR, 0777);
   gtav_log_open(GTAV_MENU_DEFAULT_LOG);
   gtav_notify("GTAVMenu payload loader started");
-  gtav_logf("payload loader starting (sdk-native, no external enabler)");
+  gtav_logf("payload loader starting (sdk-native process backend)");
+
+#if GTAV_MANAGED_RUNTIME
+  if (gtav_supervisor_runtime_attach(&g_managed_runtime, GTAV_MENU_DEFAULT_DIR) != 0) {
+    gtav_logf("managed runtime: no live Toolbox supervisor lease: %s", strerror(errno));
+    gtav_log_close();
+    return 1;
+  }
+  if (atexit(managed_runtime_cleanup) != 0) {
+    gtav_logf("managed runtime: could not register lifecycle cleanup");
+    gtav_supervisor_runtime_release(&g_managed_runtime);
+    gtav_log_close();
+    return 1;
+  }
+  gtav_logf("managed runtime: attached to supervisor session=%016llx",
+            (unsigned long long)g_managed_runtime.token);
+#endif
 
   if (gtav_proc_backend_init() != 0) {
     gtav_logf("backend init failed: %s", gtav_proc_last_error());
@@ -2617,6 +2654,15 @@ int main(void) {
     return 1;
   }
   gtav_logf("persistent: ownership acquired pid=%d", getpid());
+#if GTAV_MANAGED_RUNTIME
+  if (gtav_supervisor_runtime_publish_ack(&g_managed_runtime, getpid()) != 0) {
+    gtav_logf("managed runtime: supervisor disappeared before ready acknowledgement");
+    daemon_release();
+    gtav_log_close();
+    return 1;
+  }
+  gtav_logf("managed runtime: ready acknowledgement published");
+#endif
 #endif
 
   if (find_game_wait(GTAV_PAYLOAD_TARGET_TITLE_ID, &pid) != 0) {

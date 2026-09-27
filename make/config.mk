@@ -23,6 +23,10 @@ GTAV_BUILD_PROFILE ?= production
 GTAV_DELIVERY ?= standalone
 ONIONHEN_PLUGIN_VERSION ?= 1.03
 ONIONHEN_PACKAGE_DIR ?= build/pkg/onionhen
+ETAHEN_PLUGIN_VERSION ?= 1.00
+ETAHEN_RUNTIME_VERSION ?= $(ETAHEN_PLUGIN_VERSION)
+ETAHEN_PACKAGE_DIR ?= build/pkg/etahen
+ETAHEN_RUNTIME ?= 0
 
 # The current production tree supports one exact target. The reproducible 01.005.000 build lives at
 # the signed archive/ppsa04264-01.005.000 tag and is intentionally absent from current build logic.
