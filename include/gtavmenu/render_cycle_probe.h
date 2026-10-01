@@ -8,14 +8,19 @@
 #ifndef GTAV_RENDER_CYCLE_TARGET_010
 #define GTAV_RENDER_CYCLE_TARGET_010 0
 #endif
+#ifndef GTAV_RENDER_PHASE_TARGET_VALID
+// Compatibility for older diagnostic-only host builds. Versioned production builds define the
+// generic target-valid gate from their JSON profile.
+#define GTAV_RENDER_PHASE_TARGET_VALID GTAV_RENDER_CYCLE_TARGET_010
+#endif
 #ifndef GTAV_RENDER_PHASE_INTERCEPT
 #define GTAV_RENDER_PHASE_INTERCEPT 0
 #endif
 #define GTAV_RENDER_CYCLE_GATE (GTAV_RENDER_CYCLE_PROBE || GTAV_RENDER_PHASE_INTERCEPT)
-#if GTAV_RENDER_CYCLE_PROBE && (!GTAV_RENDER_DIAG_ISOLATED || !GTAV_RENDER_CYCLE_TARGET_010)
-#error "Cycle observation requires isolated diagnostics for ppsa04264-01.010.002"
-#elif GTAV_RENDER_PHASE_INTERCEPT && !GTAV_RENDER_CYCLE_TARGET_010
-#error "Cycle gate is pinned only for ppsa04264-01.010.002"
+#if GTAV_RENDER_CYCLE_PROBE && (!GTAV_RENDER_DIAG_ISOLATED || !GTAV_RENDER_PHASE_TARGET_VALID)
+#error "Cycle observation requires isolated diagnostics and a pinned target"
+#elif GTAV_RENDER_PHASE_INTERCEPT && !GTAV_RENDER_PHASE_TARGET_VALID
+#error "Cycle gate requires a pinned render-phase target"
 #endif
 
 #if GTAV_RENDER_CYCLE_GATE
@@ -23,16 +28,39 @@
 extern "C" {
 #endif
 
-// Read-only observations for eboot SHA-256 2a3419b4...953c0d. Live addresses, not RVAs.
-// These are NOT a validated drawing gate. See docs/render-phase-intercept.md.
-#define GTAV_CYCLE_EPOCH_ADDR 0x61a623cu
-#define GTAV_CYCLE_RESET_ADDR 0x546e200u
-#define GTAV_CYCLE_PRODUCER_ADDR 0x61a6ae8u
-#define GTAV_CYCLE_CONSUMER_ADDR 0x61a6aecu
-#define GTAV_CYCLE_COUNT0_ADDR 0x5479df8u
-#define GTAV_CYCLE_COUNT1_ADDR 0x5485980u
-#define GTAV_CYCLE_TEXT_ADDR 0x5486dc8u
-#define GTAV_CYCLE_COUNTER_ADDR 0x61a6264u
+// Exact live addresses come from renderPhase.cycle in the selected target manifest. No fallback
+// is safe: these words are read on the game's render thread, so a missing target pin must fail the
+// build instead of silently compiling another version's addresses.
+#ifndef GTAV_CYCLE_EPOCH_ADDR
+#define GTAV_CYCLE_EPOCH_ADDR 0ull
+#endif
+#ifndef GTAV_CYCLE_RESET_ADDR
+#define GTAV_CYCLE_RESET_ADDR 0ull
+#endif
+#ifndef GTAV_CYCLE_PRODUCER_ADDR
+#define GTAV_CYCLE_PRODUCER_ADDR 0ull
+#endif
+#ifndef GTAV_CYCLE_CONSUMER_ADDR
+#define GTAV_CYCLE_CONSUMER_ADDR 0ull
+#endif
+#ifndef GTAV_CYCLE_COUNT0_ADDR
+#define GTAV_CYCLE_COUNT0_ADDR 0ull
+#endif
+#ifndef GTAV_CYCLE_COUNT1_ADDR
+#define GTAV_CYCLE_COUNT1_ADDR 0ull
+#endif
+#ifndef GTAV_CYCLE_TEXT_ADDR
+#define GTAV_CYCLE_TEXT_ADDR 0ull
+#endif
+#ifndef GTAV_CYCLE_COUNTER_ADDR
+#define GTAV_CYCLE_COUNTER_ADDR 0ull
+#endif
+#if GTAV_RENDER_PHASE_TARGET_VALID &&                                                   \
+    (!GTAV_CYCLE_EPOCH_ADDR || !GTAV_CYCLE_RESET_ADDR || !GTAV_CYCLE_PRODUCER_ADDR ||   \
+     !GTAV_CYCLE_CONSUMER_ADDR || !GTAV_CYCLE_COUNT0_ADDR || !GTAV_CYCLE_COUNT1_ADDR || \
+     !GTAV_CYCLE_TEXT_ADDR || !GTAV_CYCLE_COUNTER_ADDR)
+#error "Render-cycle gate requires complete target-manifest cycle addresses"
+#endif
 
 enum {
   GTAV_CYCLE_CHANGED_DURING_READ = 1u,

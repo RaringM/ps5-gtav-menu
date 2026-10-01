@@ -10,19 +10,16 @@ import shutil
 import subprocess
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parents[1]
-TARGET_ID = "PPSA04264_01.010.002_DISC"
-CONTENT_VERSION = "01.010.002"
-EXPECTED_NATIVE_ADDRESSES = {
-    "drawRect": "0x1aa8900",
-    "beginTextCommandDisplayText": "0x1ac5d60",
-}
+from gtavmenu_tools.target_profile import expected_build_config, validate_manifest
 
+REPO_ROOT = Path(__file__).resolve().parents[1]
 DAEMON_NAME = "gtav-menu-daemon.elf"
 
-README = f"""# GTAV-Menu — Standalone
 
-GTA V Enhanced (**PPSA04264, version 1.010.002**) mod menu daemon.
+def render_readme(content_version: str) -> str:
+    return f"""# GTAV-Menu — Standalone
+
+GTA V Enhanced (**PPSA04264, version {content_version}**) mod menu daemon.
 `{DAEMON_NAME}` watches for GTA V launches and injects the menu after Story Mode loads.
 
 1. Copy the `GTAVMenu` folder to `/data/` on the PS5.
@@ -75,6 +72,24 @@ def _integer(config: dict[str, object], key: str) -> int:
         raise PackageError(f"build config has invalid {key}: {value}") from exc
 
 
+def validate_build_config(config: dict[str, object], target: dict[str, object]) -> dict[str, object]:
+    profile = validate_manifest(target)
+    if (
+        config.get("profile") != "production"
+        or config.get("delivery") != "standalone"
+        or config.get("target") != profile["stem"]
+    ):
+        raise PackageError("refusing to package a non-production or mismatched standalone build")
+    mismatches: list[str] = []
+    for key, expected in expected_build_config(target, "standalone").items():
+        actual = _integer(config, key) if isinstance(expected, int) else config.get(key)
+        if actual != expected:
+            mismatches.append(f"{key}={actual!r} (expected {expected!r})")
+    if mismatches:
+        raise PackageError("unsafe standalone daemon build config: " + "; ".join(mismatches))
+    return profile
+
+
 def copy_entry(
     source: Path,
     destination: Path,
@@ -109,60 +124,7 @@ def stage_package(
 ) -> dict[str, object]:
     target = json.loads(target_manifest.read_text(encoding="utf-8"))
     config = json.loads(build_config.read_text(encoding="utf-8"))
-    if (
-        config.get("profile") != "production"
-        or config.get("delivery") != "standalone"
-        or config.get("target") != "ppsa04264-01.010.002"
-    ):
-        raise PackageError("refusing to package a non-production or non-01.010.002 build")
-    loader_config = target.get("loader")
-    if not isinstance(loader_config, dict):
-        raise PackageError("target manifest is missing loader configuration")
-    try:
-        readiness_address = int(loader_config["playerPedAnchor"], 0)
-        readiness_offset = int(loader_config["playerPedOffset"], 0)
-    except (KeyError, TypeError, ValueError) as exc:
-        raise PackageError("target manifest has an invalid loader readiness chain") from exc
-    required = {
-        "worker_context": 1,
-        "loader_wait": 1,
-        "loader_persistent": 1,
-        "loader_sp_ready": 1,
-        "loader_sp_mode": 1,
-        "loader_sp_deref": 1,
-        "loader_sp_addr": readiness_address,
-        "loader_sp_deref_offset": readiness_offset,
-        "loader_sp_confirmations": 3,
-        "loader_probe_nostop": 1,
-        "loader_nostop_io": 1,
-        "loader_nostop_strict": 1,
-        "loader_verify_writes": 1,
-        "loader_cave_bootstrap": 1,
-        "cave_inject": 1,
-        "loader_broker": 1,
-        "loader_phase": 1,
-        "loader_guard": 1,
-        "loader_verify_version": 1,
-    }
-    mismatches = [key for key, expected in required.items() if _integer(config, key) != expected]
-    if mismatches:
-        raise PackageError("unsafe standalone daemon build config: " + ", ".join(mismatches))
-    if target.get("targetId") != TARGET_ID or target.get("contentVersion") != CONTENT_VERSION:
-        raise PackageError("refusing to package a mismatched target manifest")
-    bridge = target.get("nativeBridge")
-    if (
-        not isinstance(bridge, dict)
-        or bridge.get("addressAcceptanceSemantics") != "exact_target_and_hardware_validation"
-        or bridge.get("runtimeInvocationValidated") is not True
-        or bridge.get("authorizedForInjection") is not True
-    ):
-        raise PackageError("target manifest lacks the production native-address policy")
-    addresses = bridge.get("addresses")
-    if not isinstance(addresses, dict):
-        raise PackageError("target manifest lacks production native addresses")
-    for name, expected in EXPECTED_NATIVE_ADDRESSES.items():
-        if str(addresses.get(name) or "").lower() != expected:
-            raise PackageError(f"target manifest has an unexpected {name} address")
+    profile = validate_build_config(config, target)
 
     if output.exists():
         shutil.rmtree(output)
@@ -183,21 +145,25 @@ def stage_package(
         role="menu-worker",
         remote="/data/GTAVMenu/gtav-menu-feature-menu.elf",
     )
-    readme = output / "README.md"
-    readme.write_text(README, encoding="utf-8")
+    readme_path = output / "README.md"
+    readme_path.write_text(render_readme(str(profile["contentVersion"])), encoding="utf-8")
     entries.append(
         {
             "path": "README.md",
             "role": "documentation",
-            "size": readme.stat().st_size,
-            "sha256": sha256_file(readme),
+            "size": readme_path.stat().st_size,
+            "sha256": sha256_file(readme_path),
         }
     )
 
     manifest = {
         "schemaVersion": 1,
         "kind": "gtavmenu-standalone-production",
-        "releaseChannel": "local-publication-candidate",
+        "releaseChannel": (
+            "local-publication-candidate" if profile["channel"] == "primary" else "local-development-candidate"
+        ),
+        "target": profile["stem"],
+        "targetChannel": profile["channel"],
         "targetId": target["targetId"],
         "contentVersion": target["contentVersion"],
         "profile": config["profile"],

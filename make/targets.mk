@@ -9,7 +9,7 @@
 
 .PHONY: all menu-live onionhen _onionhen onionhen-plugin-build package-onionhen \
 	etahen _etahen etahen-plugin-build package-etahen clean help FORCE require-ps5-sdk \
-	payload-loader-build deploy-payload-loader deploy-built-payload-loader package-payload _package-payload \
+	payload-loader-build deploy-payload-loader deploy-built-payload-loader package-payload _package-payload package-target \
 	feature-menu-frame-hook-playerped-build
 
 # Sources linked into the injected menu worker ELF (COMMON_SRCS comes from flags.mk,
@@ -50,7 +50,7 @@ MODULE_DEPS := \
 
 help:
 	@echo "GTAV-Menu — common targets:"
-	@echo "  make all                       Build the complete 01.010.002 production loader + worker"
+	@echo "  make all                       Build the selected target's production loader + worker"
 	@echo "  make menu-live                 Compatibility alias for make all"
 	@echo "  make onionhen                  Build single-file OnionHEN auto-inject plugin"
 	@echo "  make package-onionhen          Stage the OnionHEN plugin for installation"
@@ -60,6 +60,8 @@ help:
 	@echo "  make feature-menu-frame-hook-playerped-build  Build the injected menu worker ELF"
 	@echo "  make deploy-payload-loader     Deploy the loader to PS5 (prospero-deploy)"
 	@echo "  make package-payload           Bundle the persistent daemon and worker"
+	@echo "  make package-target            Build all three versioned delivery packages"
+	@echo "Select an exact profile with GTAV_TARGET=ppsa04264-01.005.000 (default: 01.010.002)."
 	@echo "Launch the default target with ./menu-ctl.sh cave-inject."
 
 # Ordinary builds produce the complete supported menu. Building never deploys it.
@@ -92,7 +94,7 @@ require-ps5-sdk:
 
 menu-live: all
 
-BUILD_LOGIC_SHA256 := $(shell shasum -a 256 Containerfile Makefile make/config.mk make/flags.mk make/targets.mk make/profiles/$(GTAV_BUILD_PROFILE).mk tools/target_loader_config.py | shasum -a 256 | cut -d' ' -f1)
+BUILD_LOGIC_SHA256 := $(shell shasum -a 256 Containerfile Makefile make/config.mk make/flags.mk make/targets.mk make/profiles/$(GTAV_BUILD_PROFILE).mk tools/target_loader_config.py tools/target_build_config.py tools/gtavmenu_tools/target_profile.py tools/feature_menu_target_cflags.py | shasum -a 256 | cut -d' ' -f1)
 TARGET_MANIFEST_SHA256 := $(shell shasum -a 256 $(GTAV_TARGET_MANIFEST) 2>/dev/null | cut -d' ' -f1)
 LOADER_TARGET_CFLAGS := $(shell $(PYTHON) tools/target_loader_config.py \
 	--target-manifest $(GTAV_TARGET_MANIFEST) --cflags)
@@ -103,9 +105,17 @@ $(BUILD_PROFILE_DIR):
 	mkdir -p $@
 
 $(BUILD_CONFIG_STAMP): FORCE tools/write_build_stamp.py tools/target_loader_config.py \
-		$(GTAV_TARGET_MANIFEST) | $(BUILD_PROFILE_DIR) require-ps5-sdk
+		tools/target_build_config.py tools/gtavmenu_tools/target_profile.py \
+		$(GTAV_TARGET_MANIFEST) $(GTAV_TARGET_NATIVE_JSON) $(GTAV_TARGET_SCRIPT_JSON) \
+		include/$(GTAV_TARGET_NATIVE_HEADER) include/$(GTAV_TARGET_SCRIPT_HEADER) \
+		| $(BUILD_PROFILE_DIR) require-ps5-sdk
 	$(PYTHON) tools/write_build_stamp.py --output $@ --compiler "$(CC)" \
 		--set target=$(GTAV_TARGET) --set profile=$(GTAV_BUILD_PROFILE) \
+		--set target_id=$(GTAV_TARGET_ID) --set content_version=$(GTAV_TARGET_CONTENT_VERSION) \
+		--set target_channel=$(GTAV_TARGET_CHANNEL) \
+		--set native_input_sha256=$(GTAV_TARGET_NATIVE_SHA256) \
+		--set script_globals_input_sha256=$(GTAV_TARGET_SCRIPT_SHA256) \
+		--set injection_lane=$(GTAV_TARGET_INJECTION_LANE) \
 		--set delivery=$(GTAV_DELIVERY) --set build_logic_sha256=$(BUILD_LOGIC_SHA256) \
 		--set target_manifest_sha256=$(TARGET_MANIFEST_SHA256) \
 		--set sdk=$(PS5_PAYLOAD_SDK) --set sdk_proc_copyio=$(GTAV_SDK_HAS_PROC_COPYIO) \
@@ -133,6 +143,7 @@ $(BUILD_CONFIG_STAMP): FORCE tools/write_build_stamp.py tools/target_loader_conf
 		--set phase_intercept=$(RENDER_PHASE_INTERCEPT) \
 		--set phase_draw_list=$(GTAV_MENU_PHASE_DRAW_LIST) \
 		--set loader_inject=$(PAYLOAD_LOADER_INJECT) \
+		--set embedded_worker=$(GTAV_MENU_EMBEDDED_WORKER) \
 		--set loader_wait=$(PAYLOAD_LOADER_WAIT_FOR_GAME) \
 		--set loader_wait_timeout=$(PAYLOAD_LOADER_WAIT_TIMEOUT_SEC) \
 		--set loader_persistent=$(PAYLOAD_LOADER_PERSISTENT) \
@@ -160,21 +171,18 @@ $(BUILD_CONFIG_STAMP): FORCE tools/write_build_stamp.py tools/target_loader_conf
 		--set loader_cave_alloc=$(PAYLOAD_LOADER_CAVE_ALLOC) \
 		--set loader_cave_timeout=$(PAYLOAD_LOADER_CAVE_TIMEOUT_MS) \
 		--set cave_inject=$(PAYLOAD_LOADER_CAVE_INJECT) \
+		--set classic_inject=$(PAYLOAD_LOADER_CLASSIC_INJECT) \
 		--set loader_broker=$(PAYLOAD_LOADER_INSTALL_BROKER) \
 		--set loader_phase=$(PAYLOAD_LOADER_INSTALL_RENDER_PHASE) \
 		--set loader_guard=$(PAYLOAD_LOADER_INJECT_GUARD) \
 		--set loader_verify_version=$(PAYLOAD_LOADER_VERIFY_VERSION)
 
-# OnionHEN-managed persistent watcher for the hardware-validated 01.010.002 cave lane. The menu
+# OnionHEN-managed persistent watcher for the exact target-selected injection lane. The menu
 # worker is embedded in a loader-daemon ELF, and that ELF is embedded in the installable plugin.
 # The supervisor asks OnionHEN's private :9020 loader to start the daemon as a fresh payload process
 # with its own payload_args/kernel binding. It must never fork the managed plugin process: the SDK
 # runtime and its kernel primitive are not fork-safe on target.
 onionhen:
-	@if [ "$(GTAV_TARGET)" != "ppsa04264-01.010.002" ]; then \
-		echo "error: the OnionHEN plugin is currently gated to ppsa04264-01.010.002" >&2; \
-		exit 1; \
-	fi
 	$(MAKE) GTAV_BUILD_PROFILE=production GTAV_DELIVERY=onionhen \
 		WORKER_REQUIRE_CONTEXT=1 PAYLOAD_LOADER_WAIT_FOR_GAME=1 \
 		PAYLOAD_LOADER_PERSISTENT=1 PAYLOAD_LOADER_SP_READY=1 \
@@ -191,24 +199,21 @@ $(ONIONHEN_DAEMON_ELF): $(PAYLOAD_LOADER_SRCS) src/payload_loader/embedded_worke
 		include/gtavmenu/loader_pins_generated.h include/gtavmenu/daemon_control.h \
 		include/gtavmenu/daemon_lifecycle.h include/gtavmenu/render_phase_discovery.h \
 		$(FEATURE_MENU_FRAME_HOOK_PLAYERPED_ELF) $(BUILD_CONFIG_STAMP) | $(ONIONHEN_OUTPUT_DIR) require-ps5-sdk
-	@if [ "$(GTAV_TARGET)" != "ppsa04264-01.010.002" ]; then \
-		echo "error: refusing to build the 01.010.002-pinned OnionHEN plugin for $(GTAV_TARGET)" >&2; \
-		exit 1; \
-	fi
 	$(CC) $(CFLAGS) \
-		-DGTAV_LOADER_PROBE_NOSTOP=1 \
-		-DGTAV_PROC_NOSTOP_IO=1 \
-		-DGTAV_PROC_NOSTOP_STRICT=1 \
-		-DGTAV_ELF_INJECT_VERIFY_WRITES=1 \
+		-DGTAV_LOADER_PROBE_NOSTOP=$(PAYLOAD_LOADER_PROBE_NOSTOP) \
+		-DGTAV_PROC_NOSTOP_IO=$(PAYLOAD_LOADER_NOSTOP_IO) \
+		-DGTAV_PROC_NOSTOP_STRICT=$(PAYLOAD_LOADER_NOSTOP_STRICT) \
+		-DGTAV_ELF_INJECT_VERIFY_WRITES=$(PAYLOAD_LOADER_VERIFY_WRITES) \
 		-DGTAV_SDK_HAS_PROC_COPYIO=$(GTAV_SDK_HAS_PROC_COPYIO) \
-		-DGTAV_LOADER_CAVE_BOOTSTRAP=1 \
+		-DGTAV_LOADER_CAVE_BOOTSTRAP=$(PAYLOAD_LOADER_CAVE_BOOTSTRAP) \
 		-DGTAV_LOADER_CAVE_ADDR=$(PAYLOAD_LOADER_CAVE_ADDR) \
 		-DGTAV_LOADER_CAVE_ALLOC=$(PAYLOAD_LOADER_CAVE_ALLOC) \
 		-DGTAV_LOADER_CAVE_TIMEOUT_MS=$(PAYLOAD_LOADER_CAVE_TIMEOUT_MS) \
-		-DGTAV_LOADER_CAVE_INJECT=1 \
+		-DGTAV_LOADER_CAVE_INJECT=$(PAYLOAD_LOADER_CAVE_INJECT) \
+		-DGTAV_LOADER_CLASSIC_INJECT=$(PAYLOAD_LOADER_CLASSIC_INJECT) \
 		-DGTAV_MENU_PAYLOAD_INJECT=1 \
 		-DGTAV_MENU_INSTALL_PATCH_BROKER=1 \
-		-DGTAV_LOADER_INSTALL_RENDER_PHASE=1 \
+		-DGTAV_LOADER_INSTALL_RENDER_PHASE=$(PAYLOAD_LOADER_INSTALL_RENDER_PHASE) \
 		-DGTAV_PAYLOAD_WAIT_FOR_GAME=$(PAYLOAD_LOADER_WAIT_FOR_GAME) \
 		-DGTAV_PAYLOAD_WAIT_TIMEOUT_SEC=$(PAYLOAD_LOADER_WAIT_TIMEOUT_SEC) \
 		-DGTAV_PAYLOAD_PERSISTENT=$(PAYLOAD_LOADER_PERSISTENT) \
@@ -229,7 +234,7 @@ $(ONIONHEN_DAEMON_ELF): $(PAYLOAD_LOADER_SRCS) src/payload_loader/embedded_worke
 		-DGTAV_PAYLOAD_INJECT_GUARD=$(PAYLOAD_LOADER_INJECT_GUARD) \
 		-DGTAV_LOADER_VERIFY_VERSION=$(PAYLOAD_LOADER_VERIFY_VERSION) \
 		-DGTAV_MENU_EMBEDDED_WORKER=1 \
-		'-DGTAV_LOADER_EXPECT_TARGET_ID="PPSA04264_01.010.002_DISC"' \
+		$(LOADER_TARGET_CFLAGS) \
 		'-DGTAV_EMBEDDED_WORKER_PATH="$(abspath $(FEATURE_MENU_FRAME_HOOK_PLAYERPED_ELF))"' \
 		$(LDFLAGS) -o $@ $(PAYLOAD_LOADER_SRCS) \
 			src/payload_loader/embedded_worker.S $(PAYLOAD_LOADER_LDLIBS)
@@ -258,10 +263,6 @@ package-onionhen: onionhen
 # an embedded GTAV00002 runtime, then holds a unique lease. The runtime owns injection and observes
 # lease loss as a cooperative stop request, so Toolbox shutdown exact-retires the GTA hooks.
 etahen:
-	@if [ "$(GTAV_TARGET)" != "ppsa04264-01.010.002" ]; then \
-		echo "error: the etaHEN plugin is currently gated to ppsa04264-01.010.002" >&2; \
-		exit 1; \
-	fi
 	$(MAKE) GTAV_BUILD_PROFILE=production GTAV_DELIVERY=etahen ETAHEN_RUNTIME=1 \
 		WORKER_REQUIRE_CONTEXT=1 PAYLOAD_LOADER_WAIT_FOR_GAME=1 \
 		PAYLOAD_LOADER_PERSISTENT=1 PAYLOAD_LOADER_SP_READY=1 \
@@ -279,24 +280,21 @@ $(ETAHEN_RUNTIME_ELF): $(PAYLOAD_LOADER_SRCS) src/common/supervisor_lifecycle.c 
 		include/gtavmenu/daemon_control.h include/gtavmenu/daemon_lifecycle.h \
 		include/gtavmenu/supervisor_lifecycle.h include/gtavmenu/render_phase_discovery.h \
 		$(FEATURE_MENU_FRAME_HOOK_PLAYERPED_ELF) $(BUILD_CONFIG_STAMP) | $(ETAHEN_OUTPUT_DIR) require-ps5-sdk
-	@if [ "$(GTAV_TARGET)" != "ppsa04264-01.010.002" ]; then \
-		echo "error: refusing to build the 01.010.002-pinned etaHEN plugin for $(GTAV_TARGET)" >&2; \
-		exit 1; \
-	fi
 	$(CC) $(CFLAGS) \
-		-DGTAV_LOADER_PROBE_NOSTOP=1 \
-		-DGTAV_PROC_NOSTOP_IO=1 \
-		-DGTAV_PROC_NOSTOP_STRICT=1 \
-		-DGTAV_ELF_INJECT_VERIFY_WRITES=1 \
+		-DGTAV_LOADER_PROBE_NOSTOP=$(PAYLOAD_LOADER_PROBE_NOSTOP) \
+		-DGTAV_PROC_NOSTOP_IO=$(PAYLOAD_LOADER_NOSTOP_IO) \
+		-DGTAV_PROC_NOSTOP_STRICT=$(PAYLOAD_LOADER_NOSTOP_STRICT) \
+		-DGTAV_ELF_INJECT_VERIFY_WRITES=$(PAYLOAD_LOADER_VERIFY_WRITES) \
 		-DGTAV_SDK_HAS_PROC_COPYIO=$(GTAV_SDK_HAS_PROC_COPYIO) \
-		-DGTAV_LOADER_CAVE_BOOTSTRAP=1 \
+		-DGTAV_LOADER_CAVE_BOOTSTRAP=$(PAYLOAD_LOADER_CAVE_BOOTSTRAP) \
 		-DGTAV_LOADER_CAVE_ADDR=$(PAYLOAD_LOADER_CAVE_ADDR) \
 		-DGTAV_LOADER_CAVE_ALLOC=$(PAYLOAD_LOADER_CAVE_ALLOC) \
 		-DGTAV_LOADER_CAVE_TIMEOUT_MS=$(PAYLOAD_LOADER_CAVE_TIMEOUT_MS) \
-		-DGTAV_LOADER_CAVE_INJECT=1 \
+		-DGTAV_LOADER_CAVE_INJECT=$(PAYLOAD_LOADER_CAVE_INJECT) \
+		-DGTAV_LOADER_CLASSIC_INJECT=$(PAYLOAD_LOADER_CLASSIC_INJECT) \
 		-DGTAV_MENU_PAYLOAD_INJECT=1 \
 		-DGTAV_MENU_INSTALL_PATCH_BROKER=1 \
-		-DGTAV_LOADER_INSTALL_RENDER_PHASE=1 \
+		-DGTAV_LOADER_INSTALL_RENDER_PHASE=$(PAYLOAD_LOADER_INSTALL_RENDER_PHASE) \
 		-DGTAV_PAYLOAD_WAIT_FOR_GAME=$(PAYLOAD_LOADER_WAIT_FOR_GAME) \
 		-DGTAV_PAYLOAD_WAIT_TIMEOUT_SEC=$(PAYLOAD_LOADER_WAIT_TIMEOUT_SEC) \
 		-DGTAV_PAYLOAD_PERSISTENT=$(PAYLOAD_LOADER_PERSISTENT) \
@@ -318,7 +316,7 @@ $(ETAHEN_RUNTIME_ELF): $(PAYLOAD_LOADER_SRCS) src/common/supervisor_lifecycle.c 
 		-DGTAV_LOADER_VERIFY_VERSION=$(PAYLOAD_LOADER_VERIFY_VERSION) \
 		-DGTAV_MANAGED_RUNTIME=1 \
 		-DGTAV_MENU_EMBEDDED_WORKER=1 \
-		'-DGTAV_LOADER_EXPECT_TARGET_ID="PPSA04264_01.010.002_DISC"' \
+		$(LOADER_TARGET_CFLAGS) \
 		'-DGTAV_EMBEDDED_WORKER_PATH="$(abspath $(FEATURE_MENU_FRAME_HOOK_PLAYERPED_ELF))"' \
 		$(LDFLAGS) -o $@ $(PAYLOAD_LOADER_SRCS) src/common/supervisor_lifecycle.c \
 			src/payload_loader/embedded_worker.S $(PAYLOAD_LOADER_LDLIBS)
@@ -371,7 +369,8 @@ payload-loader-build: $(PAYLOAD_LOADER_ELF)
 # Non-TU loader inputs: the pins header is a real prerequisite (a rebuilt table must
 # re-link the loader) but is textually #included via build_pin.h, never compiled, so
 # the recipe compiles $(PAYLOAD_LOADER_SRCS) explicitly (not $^).
-$(PAYLOAD_LOADER_ELF): $(PAYLOAD_LOADER_SRCS) include/gtavmenu/loader_pins_generated.h \
+$(PAYLOAD_LOADER_ELF): $(PAYLOAD_LOADER_SRCS) src/payload_loader/embedded_worker.S \
+		$(FEATURE_MENU_FRAME_HOOK_PLAYERPED_ELF) include/gtavmenu/loader_pins_generated.h \
 		include/gtavmenu/daemon_control.h include/gtavmenu/daemon_lifecycle.h \
 		include/gtavmenu/render_phase_discovery.h $(BUILD_CONFIG_STAMP) | $(BUILD_PROFILE_DIR) require-ps5-sdk
 	$(CC) $(CFLAGS) \
@@ -387,6 +386,7 @@ $(PAYLOAD_LOADER_ELF): $(PAYLOAD_LOADER_SRCS) include/gtavmenu/loader_pins_gener
 		-DGTAV_LOADER_CAVE_ALLOC=$(PAYLOAD_LOADER_CAVE_ALLOC) \
 		-DGTAV_LOADER_CAVE_TIMEOUT_MS=$(PAYLOAD_LOADER_CAVE_TIMEOUT_MS) \
 		-DGTAV_LOADER_CAVE_INJECT=$(PAYLOAD_LOADER_CAVE_INJECT) \
+		-DGTAV_LOADER_CLASSIC_INJECT=$(PAYLOAD_LOADER_CLASSIC_INJECT) \
 		-DGTAV_MENU_PAYLOAD_INJECT=$(PAYLOAD_LOADER_INJECT) \
 		-DGTAV_MENU_INSTALL_PATCH_BROKER=$(PAYLOAD_LOADER_INSTALL_BROKER) \
 		-DGTAV_LOADER_INSTALL_RENDER_PHASE=$(PAYLOAD_LOADER_INSTALL_RENDER_PHASE) \
@@ -409,8 +409,11 @@ $(PAYLOAD_LOADER_ELF): $(PAYLOAD_LOADER_SRCS) include/gtavmenu/loader_pins_gener
 		-DGTAV_PAYLOAD_SP_READY_POLL_MAX_USEC=$(PAYLOAD_LOADER_SP_READY_POLL_MAX_USEC) \
 		-DGTAV_PAYLOAD_INJECT_GUARD=$(PAYLOAD_LOADER_INJECT_GUARD) \
 		-DGTAV_LOADER_VERIFY_VERSION=$(PAYLOAD_LOADER_VERIFY_VERSION) \
+		-DGTAV_MENU_EMBEDDED_WORKER=$(GTAV_MENU_EMBEDDED_WORKER) \
 		$(LOADER_TARGET_CFLAGS) \
-		$(LDFLAGS) -o $@ $(PAYLOAD_LOADER_SRCS) $(PAYLOAD_LOADER_LDLIBS)
+		'-DGTAV_EMBEDDED_WORKER_PATH="$(abspath $(FEATURE_MENU_FRAME_HOOK_PLAYERPED_ELF))"' \
+		$(LDFLAGS) -o $@ $(PAYLOAD_LOADER_SRCS) src/payload_loader/embedded_worker.S \
+			$(PAYLOAD_LOADER_LDLIBS)
 
 deploy-payload-loader: $(PAYLOAD_LOADER_ELF)
 	$(PS5_DEPLOY) -h $(PS5_HOST) -p $(PS5_PORT) $<
@@ -438,7 +441,7 @@ package-payload:
 _package-payload: all
 	$(PYTHON) tools/package_payload.py --loader $(PAYLOAD_LOADER_ELF) \
 		--worker $(FEATURE_MENU_FRAME_HOOK_PLAYERPED_ELF) \
-		--target-manifest data/targets/$(GTAV_TARGET).json \
+		--target-manifest $(GTAV_TARGET_MANIFEST) \
 		--build-config $(BUILD_CONFIG_STAMP) --output $(PAYLOAD_PACKAGE_DIR)
 
 # The injected menu worker: external-install CHAIN frame hook on the target build's
@@ -451,7 +454,7 @@ $(FEATURE_MENU_FRAME_HOOK_PLAYERPED_ELF): $(MODULE_SRCS) $(MODULE_DEPS) $(BUILD_
 	@# A script-global target mismatch is a blind write, so exact identity is a build gate.
 	@if [ "$(SCRIPT_GLOBALS)" = "1" ]; then \
 		anchor=$$(sed -n 's/^#define GTAV_SCRIPT_GLOBALS_ANCHOR_TARGET_ID "\(.*\)"/\1/p' \
-			include/gtavmenu/script_globals_addresses_generated.h 2>/dev/null); \
+			include/$(GTAV_TARGET_SCRIPT_HEADER) 2>/dev/null); \
 		if [ "$$anchor" != "$(GTAV_TARGET)" ]; then \
 			echo "error: script-global data targets '$$anchor', expected $(GTAV_TARGET); refusing BLIND WRITE" >&2; \
 			exit 1; \
@@ -472,6 +475,8 @@ $(FEATURE_MENU_FRAME_HOOK_PLAYERPED_ELF): $(MODULE_SRCS) $(MODULE_DEPS) $(BUILD_
 	$(PYTHON) tools/patch_inject_skip_sdk_patch.py $@
 
 feature-menu-frame-hook-playerped-build: $(FEATURE_MENU_FRAME_HOOK_PLAYERPED_ELF)
+
+package-target: package-payload package-onionhen package-etahen
 
 clean:
 	rm -rf $(BUILD_DIR)

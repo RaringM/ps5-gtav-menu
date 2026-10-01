@@ -29,7 +29,7 @@ DEFAULT_PS5DEBUG_PORT = 744
 DEFAULT_KLOG_PORT = 9081
 # Repo-root-relative location of the staged bundle. Anchored on this file's location so
 # ``./gtavmenu`` works from any working directory.
-DEFAULT_BUNDLE = Path(__file__).resolve().parent.parent / "build/pkg/gtavmenu-payload"
+DEFAULT_BUNDLE = Path(__file__).resolve().parent.parent / "build/pkg/ppsa04264-01.010.002/standalone"
 MANIFEST_SUFFIX = ".package-manifest.json"
 EXPECTED_TARGET_ID = "PPSA04264_01.010.002_DISC"
 EXPECTED_CONTENT_VERSION = "01.010.002"

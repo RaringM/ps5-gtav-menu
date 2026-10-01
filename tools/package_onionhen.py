@@ -10,11 +10,15 @@ import shutil
 import subprocess
 from pathlib import Path
 
+from gtavmenu_tools.target_profile import expected_build_config, validate_manifest
+
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
-README = """# GTAV-Menu — OnionHEN
 
-OnionHEN v0.0.13 plugin for GTA V Enhanced (**PPSA04264, version 1.010.002**).
+def render_readme(content_version: str) -> str:
+    return f"""# GTAV-Menu — OnionHEN
+
+OnionHEN v0.0.13 plugin for GTA V Enhanced (**PPSA04264, version {content_version}**).
 The plugin watches for GTA V launches and injects the menu after Story Mode loads.
 
 1. Copy `GTAV00001.elf` to `/data/OnionHEN/plugins/`.
@@ -67,49 +71,22 @@ def _integer(config: dict[str, object], key: str) -> int:
         raise PackageError(f"build config has invalid {key}: {value}") from exc
 
 
-def validate_build_config(config: dict[str, object], target_manifest: dict[str, object], target: str) -> None:
+def validate_build_config(
+    config: dict[str, object], target_manifest: dict[str, object], target: str
+) -> dict[str, object]:
+    profile = validate_manifest(target_manifest)
     if config.get("profile") != "production" or config.get("delivery") != "onionhen" or config.get("target") != target:
         raise PackageError("refusing to package a non-production or mismatched OnionHEN build")
-
-    loader = target_manifest.get("loader")
-    if not isinstance(loader, dict):
-        raise PackageError("target manifest is missing loader configuration")
-    manifest_target = f"{target_manifest.get('titleId', '').lower()}-{target_manifest.get('contentVersion', '')}"
-    if manifest_target != target:
-        raise PackageError(f"target manifest identifies {manifest_target}, expected {target}")
-    try:
-        expected_address = int(loader["playerPedAnchor"], 0)
-        expected_offset = int(loader["playerPedOffset"], 0)
-    except (KeyError, TypeError, ValueError) as exc:
-        raise PackageError("target manifest has an invalid loader readiness chain") from exc
-
-    required = {
-        "loader_wait": 1,
-        "loader_persistent": 1,
-        "loader_sp_ready": 1,
-        "loader_sp_mode": 1,
-        "loader_sp_deref": 1,
-        "loader_sp_addr": expected_address,
-        "loader_sp_deref_offset": expected_offset,
-        "loader_sp_confirmations": 3,
-        "loader_probe_nostop": 1,
-        "loader_nostop_io": 1,
-        "loader_nostop_strict": 1,
-        "loader_verify_writes": 1,
-        "loader_cave_bootstrap": 1,
-        "cave_inject": 1,
-        "loader_broker": 1,
-        "loader_phase": 1,
-        "loader_guard": 1,
-        "loader_verify_version": 1,
-    }
-    mismatches = [
-        f"{key}={_integer(config, key):#x} (expected {value:#x})"
-        for key, value in required.items()
-        if _integer(config, key) != value
-    ]
+    if profile["stem"] != target:
+        raise PackageError(f"target manifest identifies {profile['stem']}, expected {target}")
+    mismatches: list[str] = []
+    for key, expected in expected_build_config(target_manifest, "onionhen").items():
+        actual = _integer(config, key) if isinstance(expected, int) else config.get(key)
+        if actual != expected:
+            mismatches.append(f"{key}={actual!r} (expected {expected!r})")
     if mismatches:
         raise PackageError("unsafe OnionHEN build config: " + "; ".join(mismatches))
+    return profile
 
 
 def _file_entry(path: Path, *, role: str) -> dict[str, object]:
@@ -135,7 +112,7 @@ def stage_package(
         raise PackageError("required OnionHEN package input is missing")
     config = json.loads(build_config.read_text(encoding="utf-8"))
     manifest_data = json.loads(target_manifest.read_text(encoding="utf-8"))
-    validate_build_config(config, manifest_data, target)
+    profile = validate_build_config(config, manifest_data, target)
 
     if output.exists():
         shutil.rmtree(output)
@@ -143,7 +120,7 @@ def stage_package(
     staged_plugin = output / f"{plugin_id}.elf"
     shutil.copy2(plugin, staged_plugin)
     readme = output / "README.md"
-    readme.write_text(README, encoding="utf-8")
+    readme.write_text(render_readme(str(profile["contentVersion"])), encoding="utf-8")
 
     manifest = {
         "schemaVersion": 1,
@@ -155,7 +132,10 @@ def stage_package(
         "delivery": "onionhen",
         "pluginId": plugin_id,
         "version": version,
-        "releaseChannel": "local-publication-candidate",
+        "releaseChannel": (
+            "local-publication-candidate" if profile["channel"] == "primary" else "local-development-candidate"
+        ),
+        "targetChannel": profile["channel"],
         "requiresHardwareValidation": True,
         "sourceCommit": source_commit(),
         "targetManifestSha256": sha256_file(target_manifest),

@@ -1,0 +1,36 @@
+{
+  "_comment": [
+    "Version-specific script-global inputs retained from the hardware-validated 01.005.000 build.",
+    "Addresses are absolute live virtual addresses and must never be reused for another target."
+  ],
+  "gameBuild": "GTA V Enhanced (PS5) PPSA04264 / 01.005.000",
+  "targetId": "ppsa04264-01.005.000",
+  "ebootRef": "research/artifacts/ppsa04264/01.005.000/eboot.normalized.elf",
+  "despawnGlobalIndex": {
+    "macro": "GTAV_DESPAWN_GLOBAL_INDEX",
+    "value": 4540731,
+    "note": "Live-derived and behavior-validated on 01.005.000."
+  },
+  "prologueGlobalIndex": {
+    "macro": "GTAV_PROLOGUE_GLOBAL_INDEX",
+    "value": 123206,
+    "note": "Diff-derived historical 01.005.000 candidate."
+  },
+  "prologueGlobalCandidates": [123206, 123212, 123262, 123270, 123271],
+  "anchors": [
+    {
+      "name": "SCRIPT_TABLE",
+      "macro": "GTAV_SCRIPT_TABLE_ADDR",
+      "addr": null,
+      "verifiedLive": false,
+      "lead": "Not required by the direct despawn-global path; unresolved on this target."
+    },
+    {
+      "name": "GLOBALS_BASE",
+      "macro": "GTAV_GLOBALS_BASE_ADDR",
+      "addr": "0x58e0630",
+      "verifiedLive": true,
+      "lead": "Live-verified globals pointer table for 01.005.000."
+    }
+  ]
+}

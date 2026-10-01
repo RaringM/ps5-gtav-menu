@@ -12,9 +12,13 @@
 #define GTAV_MENU_PHASE_DRAW_LIST 0
 #endif
 
-#if GTAV_RENDER_PHASE_INTERCEPT && \
-    (!GTAV_RENDER_CYCLE_TARGET_010 || (!GTAV_RENDER_DIAG_ISOLATED && !GTAV_MENU_PHASE_DRAW_LIST))
-#error "Phase interception requires isolated diagnostics or the .010.002 phase draw list"
+#ifndef GTAV_RENDER_PHASE_TARGET_VALID
+#define GTAV_RENDER_PHASE_TARGET_VALID GTAV_RENDER_CYCLE_TARGET_010
+#endif
+
+#if GTAV_RENDER_PHASE_INTERCEPT && (!GTAV_RENDER_PHASE_TARGET_VALID || \
+                                    (!GTAV_RENDER_DIAG_ISOLATED && !GTAV_MENU_PHASE_DRAW_LIST))
+#error "Phase interception requires a pinned target and isolated diagnostics or its phase draw list"
 #endif
 
 #if GTAV_RENDER_PHASE_INTERCEPT
@@ -22,10 +26,15 @@
 extern "C" {
 #endif
 
-// Pinned to normalized ELF SHA-256 2a3419b4...953c0d. These are live addresses.
-#define GTAV_RENDER_PHASE_ORIGINAL 0x1cae9c0ull
-#define GTAV_RENDER_PHASE_LEAF_VTABLE 0x408f118ull
-#define GTAV_RENDER_PHASE_TASK_ID 0x249760f7u
+#ifndef GTAV_RENDER_PHASE_ORIGINAL
+#define GTAV_RENDER_PHASE_ORIGINAL 0ull
+#endif
+#ifndef GTAV_RENDER_PHASE_LEAF_VTABLE
+#define GTAV_RENDER_PHASE_LEAF_VTABLE 0ull
+#endif
+#ifndef GTAV_RENDER_PHASE_TASK_ID
+#define GTAV_RENDER_PHASE_TASK_ID 0u
+#endif
 
 #define GTAV_RENDER_PHASE_MAGIC 0x3148505249545447ull
 enum {

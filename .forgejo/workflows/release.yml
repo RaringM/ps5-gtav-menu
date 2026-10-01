@@ -4,16 +4,32 @@ on:
   push:
     tags:
       - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing release tag to build (must point at the checked-out commit)
+        required: true
+        type: string
 
 jobs:
   release:
     runs-on: ubuntu-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        shell: bash
     env:
       LLVM_VERSION: "20"
+      RELEASE_TAG: ${{ github.event.inputs.tag || github.ref_name }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ref: refs/tags/${{ github.event.inputs.tag || github.ref_name }}
+          persist-credentials: false
+      - name: Validate release tag
+        run: |
+          python3 -c 'import os; from tools.release import validate_tag; validate_tag(os.environ["RELEASE_TAG"])'
       - name: Install build prerequisites
         run: |
           sudo apt-get update
@@ -31,9 +47,19 @@ jobs:
           unzip -q /tmp/ps5-payload-sdk.zip -d "$HOME"
       - name: Build and assemble release
         run: |
-          make package-payload package-onionhen package-etahen
-          python3 tools/release.py assemble --tag "$GITHUB_REF_NAME"
+          for target in ppsa04264-01.005.000 ppsa04264-01.010.002; do
+            make GTAV_TARGET="$target" package-target
+          done
+          python3 tools/release.py assemble --tag "$RELEASE_TAG"
+          python3 tools/release.py verify --tag "$RELEASE_TAG"
+      - name: Retain release assets
+        uses: actions/upload-artifact@v3
+        with:
+          name: GTAVMenu-${{ env.RELEASE_TAG }}
+          path: build/release/
+          if-no-files-found: error
+          retention-days: 14
       - name: Publish Forgejo release
         env:
           FORGEJO_TOKEN: ${{ secrets.RELEASE_TOKEN }}
-        run: python3 tools/release.py publish --platform forgejo --tag "$GITHUB_REF_NAME"
+        run: python3 tools/release.py publish --platform forgejo --tag "$RELEASE_TAG"
