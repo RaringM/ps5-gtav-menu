@@ -21,9 +21,10 @@ Usage from make:
 from __future__ import annotations
 
 import argparse
-import json
 import sys
 from pathlib import Path
+
+from gtavmenu_tools.target_profile import load_manifest
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 TARGETS_DIR = REPO_ROOT / "data" / "targets"
@@ -89,13 +90,31 @@ def compute_gateway_bytes(stolen: bytes, anchor: int) -> bytes:
     return prefix + abs_mov + suffix
 
 
+def _native_addresses(source: Path) -> dict[str, int]:
+    import json
+
+    payload = json.loads(source.read_text(encoding="utf-8"))
+    result: dict[str, int] = {}
+    addresses = payload.get("addresses")
+    if isinstance(addresses, list):
+        for item in addresses:
+            if isinstance(item, dict) and isinstance(item.get("name"), str):
+                result[item["name"]] = _int(item["address"])
+    targets = payload.get("targets")
+    if isinstance(targets, list):
+        for item in targets:
+            if isinstance(item, dict) and isinstance(item.get("name"), str) and item.get("registrationFound") is True:
+                result[item["name"]] = _int(item["handler"])
+    if not result:
+        raise ValueError(f"native address input has no usable rows: {source}")
+    return result
+
+
 def target_cflags(stem: str, *, include_preview: bool = False, include_glyphs: bool = False) -> list[str]:
     path = TARGETS_DIR / f"{stem}.json"
     if not path.is_file():
         raise FileNotFoundError(f"target manifest not found: {path}")
-    manifest = json.loads(path.read_text(encoding="utf-8"))
-    if manifest.get("schemaVersion") != 2:
-        raise ValueError("target manifest schemaVersion must be 2")
+    manifest, profile = load_manifest(path)
     loader = manifest.get("loader", {})
     frame_hook_target = _int(loader["frameHookTarget"])
     continuation = _int(loader["brokerContinuation"])
@@ -121,19 +140,45 @@ def target_cflags(stem: str, *, include_preview: bool = False, include_glyphs: b
     ctx_thread_offset = loader.get("tlsCtxNativeThreadOffset")
     if ctx_thread_offset is not None:
         flags.append(f"-DGTAV_TLS_CTX_NATIVE_THREAD_OFFSET={_int(ctx_thread_offset)}u")
-    native_bridge = manifest.get("nativeBridge", {})
-    addresses = native_bridge.get("addresses", {}) if isinstance(native_bridge, dict) else {}
-    if not isinstance(addresses, dict):
-        raise ValueError("nativeBridge.addresses must be an object")
+    native_input = profile["nativeAddresses"]
+    if not isinstance(native_input, dict):
+        raise ValueError("validated target profile lacks native address input")
+    addresses = _native_addresses(REPO_ROOT / str(native_input["json"]))
     selected = dict(NATIVE_CFLAGS)
     if include_preview:
         selected.update(PREVIEW_NATIVE_CFLAGS)
     if include_glyphs:
         selected.update(GLYPH_NATIVE_CFLAGS)
-    for key, macro in selected.items():
-        if key not in addresses:
-            raise ValueError(f"nativeBridge.addresses is missing {key}")
-        flags.append(f"-D{macro}=0x{_int(addresses[key]):x}ull")
+    for macro in selected.values():
+        name = macro.removeprefix("GTAV_MENU_DEFAULT_NATIVE_")
+        if name not in addresses:
+            raise ValueError(f"native address input is missing {name}")
+        flags.append(f"-D{macro}=0x{addresses[name]:x}ull")
+
+    phase = manifest.get("renderPhase")
+    if isinstance(phase, dict):
+        cycle = phase.get("cycle")
+        if not isinstance(cycle, dict):
+            raise ValueError("renderPhase.cycle must be an object")
+        flags.extend(
+            [
+                "-DGTAV_RENDER_PHASE_TARGET_VALID=1",
+                f"-DGTAV_RENDER_PHASE_ORIGINAL=0x{_int(phase['original']):x}ull",
+                f"-DGTAV_RENDER_PHASE_LEAF_VTABLE=0x{_int(phase['leafVtable']):x}ull",
+                f"-DGTAV_RENDER_PHASE_TASK_ID=0x{_int(phase['taskId']):x}u",
+            ]
+        )
+        for key, macro in (
+            ("epoch", "GTAV_CYCLE_EPOCH_ADDR"),
+            ("reset", "GTAV_CYCLE_RESET_ADDR"),
+            ("producer", "GTAV_CYCLE_PRODUCER_ADDR"),
+            ("consumer", "GTAV_CYCLE_CONSUMER_ADDR"),
+            ("count0", "GTAV_CYCLE_COUNT0_ADDR"),
+            ("count1", "GTAV_CYCLE_COUNT1_ADDR"),
+            ("text", "GTAV_CYCLE_TEXT_ADDR"),
+            ("counter", "GTAV_CYCLE_COUNTER_ADDR"),
+        ):
+            flags.append(f"-D{macro}=0x{_int(cycle[key]):x}ull")
     return flags
 
 

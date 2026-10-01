@@ -18,6 +18,46 @@
       "sha256": "2a3419b404a5d10f2d36d8056916e65afad6352b78489365e5f1003f8e953c0d"
     }
   },
+  "build": {
+    "channel": "primary",
+    "toolchain": {
+      "payloadSdk": "0.43",
+      "llvmMajor": 20
+    },
+    "nativeAddresses": {
+      "json": "data/native_targets/production-native-addresses-ppsa04264-01.010.002.json",
+      "header": "gtavmenu/native_addresses_ppsa04264-01.010.002_generated.h",
+      "sha256": "0b48f6e41f61798e9f55d5980ad44d0ebcbf7452d0a16f7adda166d2c1fa67aa"
+    },
+    "scriptGlobals": {
+      "json": "data/script_globals/anchors.json",
+      "header": "gtavmenu/script_globals_addresses_generated.h",
+      "sha256": "4c945345d2f2d2e33c8d09877be7646ae17dd170cabfcb29c56a79fc09e7fb4f"
+    },
+    "features": {
+      "nativeFeatures": true,
+      "workerTextOverlay": true,
+      "toasts": true,
+      "vehiclePreview": true,
+      "instructionalScaleform": true,
+      "buttonGlyphs": false,
+      "scriptGlobals": true,
+      "phaseIntercept": true,
+      "phaseDrawList": true
+    },
+    "injection": {
+      "lane": "ptrace-free-cave",
+      "probeNoStop": true,
+      "noStopIo": true,
+      "noStopStrict": true,
+      "verifyWrites": true,
+      "caveBootstrap": true,
+      "caveInject": true,
+      "classicInject": false,
+      "selfStartWorker": true,
+      "installRenderPhase": true
+    }
+  },
   "runtime": {
     "productionProfile": "phase-menu",
     "installHook": true,
@@ -46,6 +86,42 @@
     "tlsGameCtxOffset": "0x140",
     "tlsCtxNativeThreadOffset": "0x198",
     "note": "Exact 01.010.002 production pins. The loader verifies target identity, version bytes, mapping bounds, write readback, and restoration before accepting this contract."
+  },
+  "renderPhase": {
+    "status": "pinned",
+    "root": "0x4356178",
+    "leafVtable": "0x408f118",
+    "groupVtable": "0x408f140",
+    "taskId": "0x249760f7",
+    "original": "0x1cae9c0",
+    "cycle": {
+      "epoch": "0x61a623c",
+      "reset": "0x546e200",
+      "producer": "0x61a6ae8",
+      "consumer": "0x61a6aec",
+      "count0": "0x5479df8",
+      "count1": "0x5485980",
+      "text": "0x5486dc8",
+      "counter": "0x61a6264"
+    },
+    "fingerprints": {
+      "leafInvoke": {
+        "address": "0x3494810",
+        "bytes": "ff6720"
+      },
+      "groupInvoke": {
+        "address": "0x34948c0",
+        "bytes": "554889e55350488b5f204885db741390488b034889dfff5010488b5b184885db75ee4883c4085b5dc3cccccc"
+      },
+      "group2Dispatch": {
+        "address": "0x8beb31",
+        "bytes": "488b034889dfff5010488b5b184885db75ee"
+      },
+      "registration": {
+        "address": "0x8d7477",
+        "bytes": "488d3d42753d01bef760972431d2e88680bb02"
+      }
+    }
   },
   "liveMapping": {
     "text": {

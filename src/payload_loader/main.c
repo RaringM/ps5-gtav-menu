@@ -16,7 +16,36 @@
 #include "gtavmenu/daemon_lifecycle.h"
 #include "gtavmenu/elf_inject.h"
 #include "gtavmenu/inject_lock.h"
+// Build pins are consumed only by injection-time version verification.
+#if GTAV_MENU_PAYLOAD_INJECT && GTAV_LOADER_VERIFY_VERSION
+#if GTAV_LOADER_TARGET_PIN_OVERRIDE
+#if !defined(GTAV_LOADER_TARGET_PIN_ID) || !defined(GTAV_LOADER_TARGET_SP_READY_ADDR) ||      \
+    !defined(GTAV_LOADER_TARGET_SP_READY_OFFSET) || !defined(GTAV_LOADER_VERSION_ADDR) ||     \
+    !defined(GTAV_LOADER_VERSION_BYTES) || !defined(GTAV_LOADER_BROKER_TARGET) ||             \
+    !defined(GTAV_LOADER_BROKER_CONTINUATION) || !defined(GTAV_LOADER_BROKER_PATCH_LEN) ||    \
+    !defined(GTAV_LOADER_BROKER_STOLEN_LEN) || !defined(GTAV_LOADER_BROKER_EXPECTED_BYTES) || \
+    !defined(GTAV_LOADER_TEXT_LIVE_START) || !defined(GTAV_LOADER_TEXT_LIVE_END)
+#error "target pin override is incomplete"
+#endif
+#define GTAV_BUILD_PIN_COUNT 1u
+static const GtavBuildPin gtav_build_pins[] = {{
+    GTAV_LOADER_TARGET_PIN_ID,
+    (uintptr_t)GTAV_LOADER_VERSION_ADDR,
+    {GTAV_LOADER_VERSION_BYTES},
+    (uintptr_t)GTAV_LOADER_BROKER_TARGET,
+    (uintptr_t)GTAV_LOADER_BROKER_CONTINUATION,
+    GTAV_LOADER_BROKER_PATCH_LEN,
+    GTAV_LOADER_BROKER_STOLEN_LEN,
+    {GTAV_LOADER_BROKER_EXPECTED_BYTES},
+    (uintptr_t)GTAV_LOADER_TEXT_LIVE_START,
+    (uintptr_t)GTAV_LOADER_TEXT_LIVE_END,
+    (uintptr_t)GTAV_LOADER_TARGET_SP_READY_ADDR,
+    (uintptr_t)GTAV_LOADER_TARGET_SP_READY_OFFSET,
+}};
+#else
 #include "gtavmenu/loader_pins_generated.h"
+#endif
+#endif  // GTAV_MENU_PAYLOAD_INJECT && GTAV_LOADER_VERIFY_VERSION
 #include "gtavmenu/log.h"
 #include "gtavmenu/notify.h"
 #include "gtavmenu/patch_broker.h"
@@ -245,6 +274,12 @@
 #ifndef GTAV_LOADER_CAVE_INJECT
 #define GTAV_LOADER_CAVE_INJECT 0
 #endif
+#ifndef GTAV_LOADER_CLASSIC_INJECT
+#define GTAV_LOADER_CLASSIC_INJECT 0
+#endif
+#if GTAV_LOADER_CAVE_INJECT && GTAV_LOADER_CLASSIC_INJECT
+#error "select exactly one loader injection lane"
+#endif
 #if GTAV_LOADER_CAVE_INJECT
 #if !GTAV_LOADER_CAVE_BOOTSTRAP
 #error "PAYLOAD_LOADER_CAVE_INJECT needs PAYLOAD_LOADER_CAVE_BOOTSTRAP=1 (it supplies the memory)"
@@ -266,13 +301,14 @@
 #define GTAV_LOADER_PROBE_NOSTOP 0
 #endif
 
-// Production never rewrites GTA's credentials or root/jail directories. The loader's kernel
-// binding performs copies/protection changes and the bootstrap executes mmap inside GTA.
-#if GTAV_LOADER_TARGET_TRANSACTION &&                                                           \
-    (!GTAV_LOADER_CAVE_INJECT || !GTAV_LOADER_PROBE_NOSTOP || !GTAV_PROC_NOSTOP_IO ||           \
-     !GTAV_PROC_NOSTOP_STRICT || !GTAV_ELF_INJECT_VERIFY_WRITES || !GTAV_MENU_PAYLOAD_INJECT || \
-     !GTAV_LOADER_VERIFY_VERSION)
-#error "production injection requires strict verified cave injection and exact build binding"
+// Every target transaction names its injection lane explicitly and preserves the common exact
+// build, no-elevation, strict I/O, and readback gates. The development classic lane still uses
+// the injector's remote allocation/thread-start operations; it is never a fallback from cave mode.
+#if GTAV_LOADER_TARGET_TRANSACTION &&                                                            \
+    ((GTAV_LOADER_CAVE_INJECT + GTAV_LOADER_CLASSIC_INJECT) != 1 || !GTAV_LOADER_PROBE_NOSTOP || \
+     !GTAV_PROC_NOSTOP_IO || !GTAV_PROC_NOSTOP_STRICT || !GTAV_ELF_INJECT_VERIFY_WRITES ||       \
+     !GTAV_MENU_PAYLOAD_INJECT || !GTAV_LOADER_VERIFY_VERSION)
+#error "injection requires an explicit strict, verified lane and exact build binding"
 #endif
 
 // Where menu-ctl uploads the feature-menu ELF the loader injects.
@@ -281,7 +317,7 @@
 #endif
 
 #ifndef GTAV_MENU_EMBEDDED_WORKER
-#define GTAV_MENU_EMBEDDED_WORKER 0
+#define GTAV_MENU_EMBEDDED_WORKER 1
 #endif
 
 #if GTAV_MENU_EMBEDDED_WORKER
@@ -1356,6 +1392,45 @@ static int cave_region_make_rwx(int pid, uint64_t base, uint64_t size) {
 #define LOADER_RENDER_PHASE_RESTORED 5ull
 #define LOADER_RENDER_PHASE_FAILED 6ull
 
+#ifndef GTAV_RENDER_PHASE_READY_CONFIRMATIONS
+#define GTAV_RENDER_PHASE_READY_CONFIRMATIONS 2u
+#endif
+#ifndef GTAV_RENDER_PHASE_READY_POLL_USEC
+#define GTAV_RENDER_PHASE_READY_POLL_USEC 1000000ul
+#endif
+#ifndef GTAV_RENDER_PHASE_READY_TIMEOUT_SEC
+#define GTAV_RENDER_PHASE_READY_TIMEOUT_SEC 0u
+#endif
+
+#if GTAV_RENDER_PHASE_READY_CONFIRMATIONS == 0
+#error "GTAV_RENDER_PHASE_READY_CONFIRMATIONS must be positive"
+#endif
+
+#define GTAV_PHASE_READY_OK 0
+#define GTAV_PHASE_READY_GAVE_UP (-1)
+#define GTAV_PHASE_READY_TARGET_GONE (-2)
+#define GTAV_PHASE_READY_STOP_REQUESTED (-3)
+
+#if !defined(GTAV_CYCLE_EPOCH_ADDR) || !defined(GTAV_CYCLE_RESET_ADDR) ||       \
+    !defined(GTAV_CYCLE_PRODUCER_ADDR) || !defined(GTAV_CYCLE_CONSUMER_ADDR) || \
+    !defined(GTAV_CYCLE_COUNT0_ADDR) || !defined(GTAV_CYCLE_COUNT1_ADDR) ||     \
+    !defined(GTAV_CYCLE_TEXT_ADDR) || !defined(GTAV_CYCLE_COUNTER_ADDR)
+#error "render-phase loader requires complete target-manifest cycle addresses"
+#endif
+
+enum {
+  LOADER_CYCLE_CHANGED_DURING_READ = 1u,
+  LOADER_CYCLE_INVALID_SELECTOR = 2u,
+  LOADER_CYCLE_INVALID_COUNT = 4u,
+  LOADER_CYCLE_TEXT_BUSY = 8u,
+  LOADER_CYCLE_RESET_DIFFERS = 16u,
+  LOADER_CYCLE_SELECTORS_EQUAL = 32u,
+};
+
+typedef struct LoaderRenderCycleSample {
+  uint32_t epoch, reset_epoch, producer, consumer, count0, count1, text_mode, game_counter;
+} LoaderRenderCycleSample;
+
 typedef struct LoaderRenderPhaseState {
   uint64_t magic, abi, size, phase;
   uint64_t slot, object, original, wrapper;
@@ -1376,6 +1451,133 @@ static int loader_render_phase_read(void* context, uintptr_t address, void* outp
   return gtav_proc_read(pid, address, output, size);
 }
 
+// Read exactly the same target-profile words that the in-process callback will use. A bad address
+// is permanent for this exact build and must reject the profile before mapping the worker. Values
+// may be transiently busy while GTA is loading, so only unreadable or structurally implausible
+// words block preflight; the callback still applies the complete per-invocation gate.
+static int loader_render_cycle_ready(int pid, LoaderRenderCycleSample* sample,
+                                     uint32_t* flags_out) {
+  static const uintptr_t addresses[] = {
+      (uintptr_t)GTAV_CYCLE_EPOCH_ADDR,    (uintptr_t)GTAV_CYCLE_RESET_ADDR,
+      (uintptr_t)GTAV_CYCLE_PRODUCER_ADDR, (uintptr_t)GTAV_CYCLE_CONSUMER_ADDR,
+      (uintptr_t)GTAV_CYCLE_COUNT0_ADDR,   (uintptr_t)GTAV_CYCLE_COUNT1_ADDR,
+      (uintptr_t)GTAV_CYCLE_TEXT_ADDR,     (uintptr_t)GTAV_CYCLE_COUNTER_ADDR,
+  };
+  LoaderRenderCycleSample before;
+  uint32_t first[8] = {0};
+  uint32_t second[8] = {0};
+  uint32_t flags = 0;
+  unsigned i;
+
+  for (i = 0; i < sizeof(addresses) / sizeof(addresses[0]); ++i) {
+    if (gtav_proc_read(pid, addresses[i], &first[i], sizeof(first[i])) != 0) {
+      gtav_logf("render-phase-ready: unreadable cycle word[%u]=0x%lx; target profile rejected", i,
+                (unsigned long)addresses[i]);
+      return -1;
+    }
+  }
+  memcpy(&before, first, sizeof(before));
+  __atomic_signal_fence(__ATOMIC_SEQ_CST);
+  for (i = 0; i < sizeof(addresses) / sizeof(addresses[0]); ++i) {
+    if (gtav_proc_read(pid, addresses[i], &second[i], sizeof(second[i])) != 0) {
+      gtav_logf("render-phase-ready: unreadable cycle word[%u]=0x%lx; target profile rejected", i,
+                (unsigned long)addresses[i]);
+      return -1;
+    }
+  }
+  memcpy(sample, second, sizeof(*sample));
+  if (memcmp(&before, sample, sizeof(before)) != 0) flags |= LOADER_CYCLE_CHANGED_DURING_READ;
+  if (before.producer > 1 || before.consumer > 1 || sample->producer > 1 || sample->consumer > 1)
+    flags |= LOADER_CYCLE_INVALID_SELECTOR;
+  if (before.count0 > 500 || before.count1 > 500 || sample->count0 > 500 || sample->count1 > 500)
+    flags |= LOADER_CYCLE_INVALID_COUNT;
+  if (sample->text_mode) flags |= LOADER_CYCLE_TEXT_BUSY;
+  if (sample->epoch != sample->reset_epoch) flags |= LOADER_CYCLE_RESET_DIFFERS;
+  if (sample->producer == sample->consumer) flags |= LOADER_CYCLE_SELECTORS_EQUAL;
+  *flags_out = flags;
+  return flags & (LOADER_CYCLE_INVALID_SELECTOR | LOADER_CYCLE_INVALID_COUNT) ? 0 : 1;
+}
+
+// The player-ped anchor may become nonzero while a loading screen is still active. Do not reserve
+// the cave region or map the worker until the target-pinned render task exists and remains stable.
+// A missing task is ordinary loading state; a fingerprint mismatch is a permanent profile error.
+static int wait_for_render_phase_ready(int pid, uint64_t expected_token) {
+  const unsigned long timeout_us = (unsigned long)GTAV_RENDER_PHASE_READY_TIMEOUT_SEC * 1000000ul;
+  unsigned long waited_us = 0;
+  unsigned long next_log_us = 0;
+  unsigned consecutive_ready = 0;
+  uint32_t last_error = GTAV_RENDER_PHASE_DISCOVERY_OK;
+  uint32_t last_cycle_flags = 0;
+
+  gtav_logf("render-phase-ready: waiting for exact task (%u confirmations)",
+            (unsigned)GTAV_RENDER_PHASE_READY_CONFIRMATIONS);
+  for (;;) {
+    GtavRenderPhaseDiscovery found;
+    uint64_t current_token = gtav_proc_app_id(pid);
+    int discovered;
+
+    if ((current_token != 0 && current_token != expected_token) ||
+        (current_token == 0 && !loader_target_is_live(pid))) {
+      gtav_logf("render-phase-ready: target instance changed/gone after %lus token=0x%llx->0x%llx",
+                waited_us / 1000000ul, (unsigned long long)expected_token,
+                (unsigned long long)current_token);
+      return GTAV_PHASE_READY_TARGET_GONE;
+    }
+
+    memset(&found, 0, sizeof(found));
+    discovered = gtav_render_phase_discover(loader_render_phase_read, &pid, &found);
+    last_error = found.error;
+    if (discovered == 0 && found.matches == 1u && found.object && found.slot) {
+      LoaderRenderCycleSample cycle;
+      int cycle_ready = loader_render_cycle_ready(pid, &cycle, &last_cycle_flags);
+      if (cycle_ready < 0) return GTAV_PHASE_READY_GAVE_UP;
+      if (cycle_ready > 0)
+        ++consecutive_ready;
+      else
+        consecutive_ready = 0;
+      if (consecutive_ready >= (unsigned)GTAV_RENDER_PHASE_READY_CONFIRMATIONS) {
+        gtav_logf(
+            "render-phase-ready: satisfied after %lus object=0x%lx slot=0x%lx groups=%u "
+            "nodes=%u epoch=%u selectors=%u/%u counts=%u/%u cycle=0x%x",
+            waited_us / 1000000ul, (unsigned long)found.object, (unsigned long)found.slot,
+            found.groups, found.nodes, cycle.epoch, cycle.producer, cycle.consumer, cycle.count0,
+            cycle.count1, last_cycle_flags);
+        return GTAV_PHASE_READY_OK;
+      }
+    } else {
+      consecutive_ready = 0;
+      if (found.error == GTAV_RENDER_PHASE_DISCOVERY_ERROR_FINGERPRINT) {
+        gtav_logf(
+            "render-phase-ready: pinned code/vtable fingerprint mismatch; not mapping worker");
+        return GTAV_PHASE_READY_GAVE_UP;
+      }
+    }
+
+    if (waited_us >= next_log_us) {
+      gtav_logf(
+          "render-phase-ready: not yet (waited %lus err=%u matches=%u groups=%u nodes=%u "
+          "cycle=0x%x streak=%u/%u)",
+          waited_us / 1000000ul, last_error, found.matches, found.groups, found.nodes,
+          last_cycle_flags, consecutive_ready, (unsigned)GTAV_RENDER_PHASE_READY_CONFIRMATIONS);
+      next_log_us = waited_us + 30000000ul;
+    }
+    if (timeout_us != 0 && waited_us >= timeout_us) {
+      gtav_logf("render-phase-ready: timed out after %lus (last err=%u); not mapping worker",
+                waited_us / 1000000ul, last_error);
+      return GTAV_PHASE_READY_GAVE_UP;
+    }
+#if GTAV_PAYLOAD_PERSISTENT
+    if (daemon_wait_interruptible(GTAV_RENDER_PHASE_READY_POLL_USEC) != 0) {
+      gtav_logf("render-phase-ready: stop requested while waiting for pid=%d", pid);
+      return GTAV_PHASE_READY_STOP_REQUESTED;
+    }
+#else
+    usleep((useconds_t)GTAV_RENDER_PHASE_READY_POLL_USEC);
+#endif
+    waited_us += GTAV_RENDER_PHASE_READY_POLL_USEC;
+  }
+}
+
 static int prepare_render_phase(int pid, uint64_t expected_token, const GtavBuildPin* pin,
                                 uintptr_t base, const uint8_t* elf, size_t elf_len,
                                 size_t image_size, LoaderRenderPhaseInstall* install) {
@@ -1385,7 +1587,7 @@ static int prepare_render_phase(int pid, uint64_t expected_token, const GtavBuil
   uint64_t phase = LOADER_RENDER_PHASE_INSTALL_PENDING;
   uint8_t object[40];
   memset(install, 0, sizeof(*install));
-  if (!pin || strcmp(pin->target_id, "PPSA04264_01.010.002_DISC") != 0 ||
+  if (!pin || strcmp(pin->target_id, GTAV_LOADER_EXPECT_TARGET_ID) != 0 ||
       !loader_instance_token_matches(pid, expected_token, "render phase discovery")) {
     gtav_logf("render-phase: build/instance prerequisite failed");
     return -1;
@@ -2772,6 +2974,30 @@ int main(void) {
             }
             continue;
           }
+#if GTAV_LOADER_INSTALL_RENDER_PHASE
+          {
+            int phase_ready = wait_for_render_phase_ready(pid, inject_token);
+            if (phase_ready == GTAV_PHASE_READY_STOP_REQUESTED) {
+              gtav_logf("persistent: stop requested during render-phase readiness wait");
+              break;
+            }
+            if (phase_ready == GTAV_PHASE_READY_TARGET_GONE) {
+              gtav_logf("persistent: target pid=%d vanished before render phase was ready", pid);
+              served_pid = pid;
+              served_token = cur_token;
+              goto persistent_wait_instance;
+            }
+            if (phase_ready != GTAV_PHASE_READY_OK) {
+              gtav_notify("GTAVMenu render phase unavailable");
+              gtav_logf(
+                  "persistent: render-phase readiness failed for pid=%d; worker was not mapped",
+                  pid);
+              served_pid = pid;
+              served_token = cur_token;
+              goto persistent_wait_instance;
+            }
+          }
+#endif
           {
             uint64_t cave_base = 0;
             uint64_t cave_reserved = 0;
@@ -2952,6 +3178,19 @@ int main(void) {
       uint64_t cave_base = 0;
       uint64_t cave_reserved = 0;
       int ir;
+#if GTAV_LOADER_INSTALL_RENDER_PHASE
+      {
+        int phase_ready = wait_for_render_phase_ready(pid, inject_token);
+        if (phase_ready != GTAV_PHASE_READY_OK) {
+          gtav_logf("render-phase readiness failed; worker was not mapped");
+          gtav_notify(phase_ready == GTAV_PHASE_READY_STOP_REQUESTED
+                          ? "GTAVMenu payload: stopped before render ready"
+                          : "GTAVMenu render phase unavailable");
+          gtav_log_close();
+          return phase_ready == GTAV_PHASE_READY_TARGET_GONE ? 0 : 1;
+        }
+      }
+#endif
 #if GTAV_LOADER_CAVE_INJECT
       // Obtain the worker's memory from inside the game instead of by remote mmap. This runs after
       // sp-ready on purpose: the stub only executes when the game's scripts call the hooked native.

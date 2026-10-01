@@ -20,8 +20,7 @@ from typing import NoReturn
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 TARGET = "ppsa04264-01.010.002"
-TARGET_ID = "PPSA04264_01.010.002_DISC"
-CONTENT_VERSION = "01.010.002"
+TARGETS = ("ppsa04264-01.005.000", TARGET)
 TAG_RE = re.compile(r"v[A-Za-z0-9][A-Za-z0-9._-]*\Z")
 ZIP_TIMESTAMP = (1980, 1, 1, 0, 0, 0)
 PACKAGE_LAYOUTS = {
@@ -80,16 +79,35 @@ def safe_path(raw: object) -> str:
     return raw
 
 
-def verify_package(package_root: Path, *, kind: str, delivery: str, source_commit: str) -> dict[str, object]:
+def target_metadata(target: str) -> dict[str, object]:
+    if target not in TARGETS:
+        fail(f"unsupported release target: {target}")
+    manifest = load_json(REPO_ROOT / "data/targets" / f"{target}.json")
+    title, version = target.split("-", 1)
+    if manifest.get("titleId") != title.upper() or manifest.get("contentVersion") != version:
+        fail(f"target manifest identity mismatch: {target}")
+    channel = manifest["build"]["channel"]
+    if channel not in ("primary", "development"):
+        fail(f"unsupported target channel: {channel}")
+    return {
+        "target": target,
+        "targetId": manifest["targetId"],
+        "titleId": manifest["titleId"],
+        "contentVersion": manifest["contentVersion"],
+        "releaseChannel": "local-publication-candidate" if channel == "primary" else "local-development-candidate",
+    }
+
+
+def verify_package(
+    package_root: Path, *, kind: str, delivery: str, source_commit: str, target: str = TARGET
+) -> dict[str, object]:
     manifest = load_json(package_manifest_path(package_root))
     required = {
         "schemaVersion": 1,
         "kind": kind,
-        "targetId": TARGET_ID,
-        "contentVersion": CONTENT_VERSION,
+        **{key: value for key, value in target_metadata(target).items() if key != "titleId"},
         "profile": "production",
         "delivery": delivery,
-        "releaseChannel": "local-publication-candidate",
         "requiresHardwareValidation": True,
         "sourceCommit": source_commit,
     }
@@ -168,60 +186,111 @@ def validate_tag(tag: str, *, require_head: bool = True) -> None:
             fail(f"tag {tag} resolves to {tagged}, but HEAD is {head}")
 
 
-def assemble(tag: str, output: Path, standalone: Path, onionhen: Path, etahen: Path) -> Path:
+def assemble(tag: str, output: Path, package_root: Path, targets: tuple[str, ...] = TARGETS) -> Path:
     validate_tag(tag)
+    if not targets or len(set(targets)) != len(targets):
+        fail("release targets must be nonempty and unique")
     if output.exists() and any(output.iterdir()):
         fail(f"release output must be empty: {output}")
-    output.mkdir(parents=True, exist_ok=True)
     commit = git_output("rev-parse", "HEAD")
-    standalone_manifest = verify_package(
-        standalone,
-        kind="gtavmenu-standalone-production",
-        delivery="standalone",
-        source_commit=commit,
-    )
-    onionhen_manifest = verify_package(
-        onionhen,
-        kind="gtavmenu-onionhen-production",
-        delivery="onionhen",
-        source_commit=commit,
-    )
-    etahen_manifest = verify_package(
-        etahen,
-        kind="gtavmenu-etahen-production",
-        delivery="etahen",
-        source_commit=commit,
-    )
+    packages = []
+    identities = []
+    # Validate every delivery before creating any release assets.
+    for target in targets:
+        identity = target_metadata(target)
+        identities.append(identity)
+        for delivery in PACKAGE_LAYOUTS:
+            root = package_root / target / delivery
+            manifest = verify_package(
+                root,
+                kind=f"gtavmenu-{delivery}-production",
+                delivery=delivery,
+                source_commit=commit,
+                target=target,
+            )
+            name = f"GTAVMenu-{identity['titleId']}-v{identity['contentVersion']}-{delivery}.zip"
+            packages.append((name, root, manifest, identity, delivery))
 
-    prefix = f"GTAV-Menu-{tag}"
-    artifacts = [
-        (output / f"{prefix}-standalone.zip", standalone, standalone_manifest, None),
-        (output / f"{prefix}-onionhen.zip", onionhen, onionhen_manifest, None),
-        (output / f"{prefix}-etahen.zip", etahen, etahen_manifest, None),
-    ]
-    for archive, package_root, manifest, archive_root in artifacts:
-        deterministic_zip(package_root, archive, archive_root=archive_root, members=package_members(manifest))
-
+    output.mkdir(parents=True, exist_ok=True)
+    artifacts = []
+    for name, root, manifest, identity, delivery in packages:
+        archive = output / name
+        deterministic_zip(root, archive, archive_root=None, members=package_members(manifest))
+        artifacts.append(
+            {
+                **identity,
+                "delivery": delivery,
+                "file": name,
+                "size": archive.stat().st_size,
+                "sha256": sha256_file(archive),
+            }
+        )
     release_manifest = {
-        "schemaVersion": 1,
+        "schemaVersion": 2,
         "tag": tag,
-        "target": TARGET,
-        "targetId": TARGET_ID,
-        "contentVersion": CONTENT_VERSION,
+        "targets": identities,
         "sourceCommit": commit,
-        "artifacts": [
-            {"file": archive.name, "size": archive.stat().st_size, "sha256": sha256_file(archive)}
-            for archive, _, _, _ in artifacts
-        ],
+        "requiresHardwareValidation": True,
+        "artifacts": artifacts,
     }
     manifest_path = output / "release-manifest.json"
     manifest_path.write_text(json.dumps(release_manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    checksum_paths = [*(archive for archive, _, _, _ in artifacts), manifest_path]
+    checksum_paths = [*(output / entry["file"] for entry in artifacts), manifest_path]
     (output / "SHA256SUMS").write_text(
         "".join(f"{sha256_file(path)}  {path.name}\n" for path in sorted(checksum_paths)),
         encoding="utf-8",
     )
     return output
+
+
+def verify_release(tag: str, assets: Path) -> dict[str, object]:
+    manifest = load_json(assets / "release-manifest.json")
+    if (
+        manifest.get("schemaVersion") != 2
+        or manifest.get("tag") != tag
+        or manifest.get("sourceCommit") != git_output("rev-parse", "HEAD")
+    ):
+        fail("release manifest schema, tag, or source commit mismatch")
+    identities = manifest.get("targets")
+    if not isinstance(identities, list) or not identities:
+        fail("release manifest has no targets")
+    if any(not isinstance(entry, dict) or not isinstance(entry.get("target"), str) for entry in identities):
+        fail("release manifest has malformed target metadata")
+    targets = [entry["target"] for entry in identities]
+    if len(set(targets)) != len(targets) or identities != [target_metadata(target) for target in targets]:
+        fail("release target metadata mismatch")
+    expected = {
+        f"GTAVMenu-{identity['titleId']}-v{identity['contentVersion']}-{delivery}.zip": (identity, delivery)
+        for identity in identities
+        for delivery in PACKAGE_LAYOUTS
+    }
+    entries = manifest.get("artifacts")
+    if not isinstance(entries, list) or len(entries) != len(expected):
+        fail("release artifact inventory mismatch")
+    seen = set()
+    for entry in entries:
+        if not isinstance(entry, dict):
+            fail("release manifest has a malformed artifact")
+        name = safe_path(entry.get("file"))
+        if name not in expected or name in seen:
+            fail(f"unexpected or duplicate release asset: {name}")
+        seen.add(name)
+        identity, delivery = expected[name]
+        if any(entry.get(key) != value for key, value in {**identity, "delivery": delivery}.items()):
+            fail(f"release artifact metadata mismatch: {name}")
+        path = assets / name
+        if path.is_symlink() or not path.is_file():
+            fail(f"release asset missing: {name}")
+        if entry.get("size") != path.stat().st_size or entry.get("sha256") != sha256_file(path):
+            fail(f"release asset hash/size mismatch: {name}")
+    names = set(expected) | {"release-manifest.json", "SHA256SUMS"}
+    if {path.name for path in assets.iterdir()} != names or any((assets / name).is_symlink() for name in names):
+        fail("release asset inventory mismatch")
+    checksum_paths = sorted(assets / name for name in names - {"SHA256SUMS"})
+    checksums = "".join(f"{sha256_file(path)}  {path.name}\n" for path in checksum_paths)
+    if (assets / "SHA256SUMS").read_text(encoding="utf-8") != checksums:
+        fail("release checksums mismatch")
+    return manifest
 
 
 def request_json(
@@ -252,20 +321,26 @@ def request_json(
     return value
 
 
-def release_body(tag: str) -> str:
+def release_body(tag: str, manifest: dict[str, object]) -> str:
+    versions = ", ".join(f"{item['titleId']} v{item['contentVersion']}" for item in manifest["targets"])
+    development = [
+        item["contentVersion"]
+        for item in manifest["targets"]
+        if item["releaseChannel"] == "local-development-candidate"
+    ]
+    note = f"\n\nDevelopment candidates: {', '.join(development)}." if development else ""
     return (
-        f"GTAV-Menu {tag} for PPSA04264 01.010.002.\n\n"
-        "The standalone, OnionHEN, and etaHEN archives contain only their installable runtime and setup README. "
-        "SHA-256 checksums are provided separately. Rebuilt artifacts require on-hardware validation "
-        "before distribution."
+        f"GTAVMenu {tag} for {versions}.\n\n"
+        "Choose the ZIP matching your exact game version and standalone, OnionHEN, or etaHEN delivery. "
+        "Each archive contains its runtime and setup README. SHA-256 checksums and source provenance "
+        "are provided separately. Rebuilt artifacts require on-hardware validation." + note
     )
 
 
 def publish(platform: str, tag: str, assets: Path) -> None:
     validate_tag(tag)
-    files = sorted(path for path in assets.iterdir() if path.is_file())
-    if not files or not (assets / "SHA256SUMS").is_file():
-        fail(f"release assets are incomplete: {assets}")
+    manifest = verify_release(tag, assets)
+    files = sorted(assets.iterdir())
 
     if platform == "github":
         token = os.environ.get("GITHUB_TOKEN", "")
@@ -287,7 +362,7 @@ def publish(platform: str, tag: str, assets: Path) -> None:
         endpoint,
         token=token,
         method="POST",
-        payload={"tag_name": tag, "name": tag, "body": release_body(tag), "draft": True, "prerelease": False},
+        payload={"tag_name": tag, "name": tag, "body": release_body(tag, manifest), "draft": True, "prerelease": False},
     )
     release_id = release.get("id")
     if not isinstance(release_id, int):
@@ -314,7 +389,7 @@ def publish(platform: str, tag: str, assets: Path) -> None:
         f"{endpoint}/{release_id}",
         token=token,
         method="PATCH",
-        payload={"draft": False, "name": tag, "body": release_body(tag), "prerelease": False},
+        payload={"draft": False, "name": tag, "body": release_body(tag, manifest), "prerelease": False},
     )
 
 
@@ -324,9 +399,11 @@ def parse_args() -> argparse.Namespace:
     assemble_parser = sub.add_parser("assemble")
     assemble_parser.add_argument("--tag", required=True)
     assemble_parser.add_argument("--output", type=Path, default=REPO_ROOT / "build/release")
-    assemble_parser.add_argument("--standalone", type=Path, default=REPO_ROOT / "build/pkg/gtavmenu-payload")
-    assemble_parser.add_argument("--onionhen", type=Path, default=REPO_ROOT / "build/pkg/onionhen")
-    assemble_parser.add_argument("--etahen", type=Path, default=REPO_ROOT / "build/pkg/etahen")
+    assemble_parser.add_argument("--package-root", type=Path, default=REPO_ROOT / "build/pkg")
+    assemble_parser.add_argument("--targets", nargs="+", choices=TARGETS, default=TARGETS)
+    verify_parser = sub.add_parser("verify")
+    verify_parser.add_argument("--tag", required=True)
+    verify_parser.add_argument("--assets", type=Path, default=REPO_ROOT / "build/release")
     publish_parser = sub.add_parser("publish")
     publish_parser.add_argument("--platform", choices=("forgejo", "github"), required=True)
     publish_parser.add_argument("--tag", required=True)
@@ -341,11 +418,14 @@ def main() -> int:
             output = assemble(
                 args.tag,
                 args.output.expanduser().resolve(),
-                args.standalone.expanduser().resolve(),
-                args.onionhen.expanduser().resolve(),
-                args.etahen.expanduser().resolve(),
+                args.package_root.expanduser().resolve(),
+                tuple(args.targets),
             )
             print(f"release assets assembled: {output}")
+        elif args.command == "verify":
+            validate_tag(args.tag)
+            verify_release(args.tag, args.assets.expanduser().resolve())
+            print(f"release assets verified: {args.assets}")
         else:
             publish(args.platform, args.tag, args.assets.expanduser().resolve())
             print(f"published {args.tag} to {args.platform}")

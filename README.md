@@ -1,12 +1,12 @@
 # GTAV-Menu for PS5
 
 GTAV-Menu is an in-process, single-player menu for the disc release of GTA V on PS5. This branch
-supports exactly **PPSA04264 / 01.010.002**. The menu starts hidden and opens with **R1 + D-pad
+packages **PPSA04264 / 01.010.002** (primary) and **01.005.000** (development candidate). The menu starts hidden and opens with **R1 + D-pad
 Left**.
 
 ## Requirements
 
-- A legally owned PPSA04264 installation at content version 01.010.002.
+- A legally owned PPSA04264 installation at the exact content version named in your package.
 - A jailbroken PS5 and a compatible payload launcher.
 - Stock etaHEN 2.5B or newer when using the etaHEN plugin delivery.
 - The PS5 payload SDK v0.43, set with `PS5_PAYLOAD_SDK` or installed at
@@ -75,14 +75,27 @@ fresh game process after a failed or interrupted injection.
 Controls: D-pad Up/Down navigates, D-pad Left/Right changes values, Cross selects, and Circle goes
 back. R1 + D-pad Left opens or hides the menu.
 
-For etaHEN, copy `build/pkg/etahen/GTAV00001.plugin` to `/data/etaHEN/plugins/`, then use etaHEN
+For etaHEN, copy
+`build/pkg/ppsa04264-01.010.002/etahen/GTAV00001.plugin` to `/data/etaHEN/plugins/`, then use etaHEN
 Toolbox to enable **Running** or **Auto-start**. The visible plugin launches an embedded helper
 through etaHEN's utility service so the helper receives a valid payload runtime and kernel binding.
 When Toolbox stops the visible plugin, the helper observes its supervisor lease closing, runs the
 normal menu shutdown, verifies the render callback and frame hook were restored, and exits.
 
-Tag pushes matching `v*` build all three packages and publish checksummed release assets. Releases
-retain debug symbols; rebuilt artifacts require a new on-hardware regression before distribution.
+Tag pushes matching `v*` build standalone, OnionHEN, and etaHEN packages for both game versions
+and publish six checksummed ZIPs. You can also run the release workflow manually with an existing
+tag. Names identify the game build and delivery, for example
+`GTAVMenu-PPSA04264-v01.005.000-etahen.zip` and `GTAVMenu-PPSA04264-v01.010.002-etahen.zip`.
+The menu release tag and source commit are recorded in `release-manifest.json`.
+Releases retain debug symbols; rebuilt artifacts require a new on-hardware regression before
+distribution. The 01.005.000 packages retain their development-candidate status.
+
+To package a specific game version locally:
+
+```sh
+make GTAV_TARGET=ppsa04264-01.005.000 package-target
+make GTAV_TARGET=ppsa04264-01.010.002 package-target
+```
 
 ## etaHEN container tools
 

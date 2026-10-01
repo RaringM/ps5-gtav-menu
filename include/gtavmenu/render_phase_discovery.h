@@ -1,6 +1,6 @@
 #pragma once
 
-// Read-only discovery of the certified 01.010.002 group-2 render callback object. This is used by
+// Read-only discovery of a target-pinned group-2 render callback object. This is used by
 // the payload loader after build binding and before it arms the injected worker's in-process CAS
 // installer. It never writes target memory and never executes target code.
 
@@ -11,11 +11,37 @@
 extern "C" {
 #endif
 
-#define GTAV_RENDER_PHASE_DISCOVERY_ROOT 0x4356178ull
-#define GTAV_RENDER_PHASE_DISCOVERY_LEAF_VTABLE 0x408f118ull
-#define GTAV_RENDER_PHASE_DISCOVERY_GROUP_VTABLE 0x408f140ull
-#define GTAV_RENDER_PHASE_DISCOVERY_TASK_ID 0x249760f7u
-#define GTAV_RENDER_PHASE_DISCOVERY_ORIGINAL 0x1cae9c0ull
+#ifndef GTAV_RENDER_PHASE_DISCOVERY_ROOT
+#define GTAV_RENDER_PHASE_DISCOVERY_ROOT 0ull
+#endif
+#ifndef GTAV_RENDER_PHASE_DISCOVERY_LEAF_VTABLE
+#define GTAV_RENDER_PHASE_DISCOVERY_LEAF_VTABLE 0ull
+#endif
+#ifndef GTAV_RENDER_PHASE_DISCOVERY_GROUP_VTABLE
+#define GTAV_RENDER_PHASE_DISCOVERY_GROUP_VTABLE 0ull
+#endif
+#ifndef GTAV_RENDER_PHASE_DISCOVERY_TASK_ID
+#define GTAV_RENDER_PHASE_DISCOVERY_TASK_ID 0u
+#endif
+#ifndef GTAV_RENDER_PHASE_DISCOVERY_ORIGINAL
+#define GTAV_RENDER_PHASE_DISCOVERY_ORIGINAL 0ull
+#endif
+#ifndef GTAV_RENDER_PHASE_LEAF_INVOKE_ADDR
+#define GTAV_RENDER_PHASE_LEAF_INVOKE_ADDR 0ull
+#define GTAV_RENDER_PHASE_LEAF_INVOKE_BYTES 0x00
+#endif
+#ifndef GTAV_RENDER_PHASE_GROUP_INVOKE_ADDR
+#define GTAV_RENDER_PHASE_GROUP_INVOKE_ADDR 0ull
+#define GTAV_RENDER_PHASE_GROUP_INVOKE_BYTES 0x00
+#endif
+#ifndef GTAV_RENDER_PHASE_GROUP2_DISPATCH_ADDR
+#define GTAV_RENDER_PHASE_GROUP2_DISPATCH_ADDR 0ull
+#define GTAV_RENDER_PHASE_GROUP2_DISPATCH_BYTES 0x00
+#endif
+#ifndef GTAV_RENDER_PHASE_REGISTRATION_ADDR
+#define GTAV_RENDER_PHASE_REGISTRATION_ADDR 0ull
+#define GTAV_RENDER_PHASE_REGISTRATION_BYTES 0x00
+#endif
 
 typedef int (*GtavRenderPhaseRead)(void* context, uintptr_t address, void* output, size_t size);
 

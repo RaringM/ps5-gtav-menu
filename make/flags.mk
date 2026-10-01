@@ -3,7 +3,7 @@ BUILD_DIR ?= build/ps5
 BUILD_PROFILE_DIR := $(BUILD_DIR)/$(GTAV_TARGET)/$(GTAV_BUILD_PROFILE)/$(GTAV_DELIVERY)
 BUILD_CONFIG_STAMP := $(BUILD_PROFILE_DIR)/build-config.json
 # Standalone payload bundle (etaHEN-free): loader + worker + target metadata.
-PAYLOAD_PACKAGE_DIR ?= build/pkg/gtavmenu-payload
+PAYLOAD_PACKAGE_DIR ?= build/pkg/$(GTAV_TARGET)/standalone
 INCLUDES := -Iinclude
 WARNINGS := -Wall -Wextra -Werror -Wno-unused-parameter
 # Keep debug information and any __FILE__ strings independent of the checkout
@@ -27,7 +27,6 @@ FEATURE_MENU_CFLAGS := $(CFLAGS) \
 		-DGTAV_RENDER_BANK_PROBE=0 \
 		-DGTAV_RENDER_PHASE_INTERCEPT=$(RENDER_PHASE_INTERCEPT) \
 		-DGTAV_MENU_PHASE_DRAW_LIST=$(GTAV_MENU_PHASE_DRAW_LIST) \
-		-DGTAV_RENDER_CYCLE_TARGET_010=1 \
 		-DGTAV_MENU_DEFAULT_TARGET_ID=\"$(FEATURE_MENU_TARGET_ID)\" \
 		-DGTAV_MENU_DEFAULT_INSTALL_HOOK=0 \
 		-DGTAV_MENU_DEFAULT_DRY_RUN=1 \
@@ -59,8 +58,10 @@ FEATURE_MENU_CFLAGS := $(CFLAGS) \
 		-DGTAV_FRAME_HOOK_USE_REAL_FS_BASE=0
 
 # Exact production gameplay-native address header.
-GTAV_MENU_NATIVE_ADDRESSES_HEADER ?= "gtavmenu/native_addresses_ppsa04264-01.010.002_generated.h"
+GTAV_MENU_NATIVE_ADDRESSES_HEADER ?= "$(GTAV_TARGET_NATIVE_HEADER)"
 FEATURE_MENU_CFLAGS += -DGTAV_MENU_NATIVE_ADDRESSES_HEADER=\"$(subst ",,$(GTAV_MENU_NATIVE_ADDRESSES_HEADER))\"
+GTAV_MENU_SCRIPT_GLOBALS_HEADER ?= "$(GTAV_TARGET_SCRIPT_HEADER)"
+FEATURE_MENU_CFLAGS += -DGTAV_MENU_SCRIPT_GLOBALS_HEADER=\"$(subst ",,$(GTAV_MENU_SCRIPT_GLOBALS_HEADER))\"
 
 # --- Feature opt-ins that depend on the gameplay/native feature layer ----------
 # Vehicle-preview image, inline button glyphs, and native Scaleform instructional
@@ -247,6 +248,9 @@ PAYLOAD_LOADER_CAVE_TIMEOUT_MS ?= 5000
 # PAYLOAD_LOADER_NOSTOP_STRICT=1, PAYLOAD_LOADER_VERIFY_WRITES=1 (all enforced with #error), and a
 # worker built with FRAME_HOOK_SELF_START_WORKER=1.
 PAYLOAD_LOADER_CAVE_INJECT ?= 0
+# Explicit legacy allocation/thread-start lane. This is a selected target contract, never a
+# fallback if cave injection fails.
+PAYLOAD_LOADER_CLASSIC_INJECT ?= 0
 # Real menu injection: map the feature-menu ELF into GTA and start its worker.
 PAYLOAD_LOADER_INJECT ?= 0
 # Frame-hook (function-prologue) drain: after inject, the loader reads the patch broker

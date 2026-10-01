@@ -21,24 +21,56 @@ PYTHON ?= python3
 MENU_COMMAND ?= toggle
 GTAV_BUILD_PROFILE ?= production
 GTAV_DELIVERY ?= standalone
+# Standalone payloads are self-contained by default. Keep the staged-worker lane available as an
+# explicit development override, but never make end users supply the worker beside the daemon.
+GTAV_MENU_EMBEDDED_WORKER ?= 1
 ONIONHEN_PLUGIN_VERSION ?= 1.03
-ONIONHEN_PACKAGE_DIR ?= build/pkg/onionhen
+ONIONHEN_PACKAGE_DIR ?= build/pkg/$(GTAV_TARGET)/onionhen
 ETAHEN_PLUGIN_VERSION ?= 1.00
 ETAHEN_RUNTIME_VERSION ?= $(ETAHEN_PLUGIN_VERSION)
-ETAHEN_PACKAGE_DIR ?= build/pkg/etahen
+ETAHEN_PACKAGE_DIR ?= build/pkg/$(GTAV_TARGET)/etahen
 ETAHEN_RUNTIME ?= 0
 
-# The current production tree supports one exact target. The reproducible 01.005.000 build lives at
-# the signed archive/ppsa04264-01.005.000 tag and is intentionally absent from current build logic.
+# The primary target remains 01.010.002. Other exact targets are admitted only by a schema-2 JSON
+# profile whose input hashes, toolchain, features, and injection lane validate before make expands.
 GTAV_TARGET ?= ppsa04264-01.010.002
-ifneq ($(GTAV_TARGET),ppsa04264-01.010.002)
-$(error current builds support only ppsa04264-01.010.002; use archive/ppsa04264-01.005.000 for 01.005.000)
-endif
-
-# The target manifest is authoritative for the player-world readiness chain used by persistent
-# delivery. Keep these out of generic loader defaults so a manual build remains fail-closed; the
-# OnionHEN rule opts into this exact pair together with its readiness gate.
 GTAV_TARGET_MANIFEST := data/targets/$(GTAV_TARGET).json
+GTAV_TARGET_PROFILE := $(shell $(PYTHON) tools/target_build_config.py \
+	--target-manifest $(GTAV_TARGET_MANIFEST) --make)
+target_profile_value = $(patsubst $1=%,%,$(filter $1=%,$(GTAV_TARGET_PROFILE)))
+ifneq ($(call target_profile_value,profile_ok),1)
+$(error invalid or missing target profile: $(GTAV_TARGET_MANIFEST))
+endif
+GTAV_TARGET_ID := $(call target_profile_value,target_id)
+GTAV_TARGET_CONTENT_VERSION := $(call target_profile_value,content_version)
+GTAV_TARGET_CHANNEL := $(call target_profile_value,channel)
+GTAV_TARGET_NATIVE_JSON := $(call target_profile_value,native_json)
+GTAV_TARGET_NATIVE_HEADER := $(call target_profile_value,native_header)
+GTAV_TARGET_NATIVE_SHA256 := $(call target_profile_value,native_sha256)
+GTAV_TARGET_SCRIPT_JSON := $(call target_profile_value,script_json)
+GTAV_TARGET_SCRIPT_HEADER := $(call target_profile_value,script_header)
+GTAV_TARGET_SCRIPT_SHA256 := $(call target_profile_value,script_sha256)
+GTAV_TARGET_NATIVE_FEATURES := $(call target_profile_value,native_features)
+GTAV_TARGET_WORKER_TEXT := $(call target_profile_value,worker_text)
+GTAV_TARGET_TOASTS := $(call target_profile_value,toasts)
+GTAV_TARGET_VEHICLE_PREVIEW := $(call target_profile_value,vehicle_preview)
+GTAV_TARGET_INSTRUCTIONAL_SCALEFORM := $(call target_profile_value,instructional_scaleform)
+GTAV_TARGET_BUTTON_GLYPHS := $(call target_profile_value,button_glyphs)
+GTAV_TARGET_SCRIPT_GLOBALS := $(call target_profile_value,script_globals)
+GTAV_TARGET_PHASE_INTERCEPT := $(call target_profile_value,phase_intercept)
+GTAV_TARGET_PHASE_DRAW_LIST := $(call target_profile_value,phase_draw_list)
+GTAV_TARGET_INJECTION_LANE := $(call target_profile_value,injection_lane)
+GTAV_TARGET_PROBE_NOSTOP := $(call target_profile_value,probe_nostop)
+GTAV_TARGET_NOSTOP_IO := $(call target_profile_value,nostop_io)
+GTAV_TARGET_NOSTOP_STRICT := $(call target_profile_value,nostop_strict)
+GTAV_TARGET_VERIFY_WRITES := $(call target_profile_value,verify_writes)
+GTAV_TARGET_CAVE_BOOTSTRAP := $(call target_profile_value,cave_bootstrap)
+GTAV_TARGET_CAVE_INJECT := $(call target_profile_value,cave_inject)
+GTAV_TARGET_CLASSIC_INJECT := $(call target_profile_value,classic_inject)
+GTAV_TARGET_SELF_START := $(call target_profile_value,self_start)
+GTAV_TARGET_INSTALL_PHASE := $(call target_profile_value,install_phase)
+
+# The target manifest is authoritative for the player-world readiness chain and cave allocation.
 GTAV_TARGET_LOADER_READINESS := $(shell $(PYTHON) tools/target_loader_config.py \
 	--target-manifest $(GTAV_TARGET_MANIFEST))
 GTAV_TARGET_PLAYER_PED_ANCHOR := $(word 1,$(GTAV_TARGET_LOADER_READINESS))
@@ -72,7 +104,8 @@ RENDER_PHASE_INTERCEPT ?= 0
 GTAV_MENU_PHASE_DRAW_LIST ?= 0
 
 # The generated header and target manifest are the only publication-side target inputs.
-GTAV_MENU_NATIVE_ADDRESSES_HEADER ?= "gtavmenu/native_addresses_ppsa04264-01.010.002_generated.h"
+GTAV_MENU_NATIVE_ADDRESSES_HEADER ?= "$(GTAV_TARGET_NATIVE_HEADER)"
+GTAV_MENU_SCRIPT_GLOBALS_HEADER ?= "$(GTAV_TARGET_SCRIPT_HEADER)"
 PAYLOAD_LOADER_CAVE_ADDR ?= $(GTAV_TARGET_CAVE_ADDR)
 PAYLOAD_LOADER_CAVE_ALLOC ?= $(GTAV_TARGET_CAVE_ALLOC)
 

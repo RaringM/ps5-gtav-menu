@@ -1,0 +1,125 @@
+{
+  "schemaVersion": 2,
+  "targetId": "PPSA04264_01.005.000_DISC",
+  "titleId": "PPSA04264",
+  "contentId": "UP1004-PPSA04264_00-GTAVFULLGAMEDISC",
+  "titleName": "Grand Theft Auto V",
+  "contentVersion": "01.005.000",
+  "masterVersion": "01.00",
+  "sdkVersion": "0x0600000000000000",
+  "requiredSystemSoftwareVersion": "0x0720000000000000",
+  "binaryIdentity": {
+    "encryptedEboot": {
+      "size": 66008859,
+      "sha256": "60d394626ac62acd1b20d205599b104bb51756d468d3878ad14c230bfe305c11"
+    },
+    "normalizedElf": {
+      "size": 65928043,
+      "sha256": "e3e09caf8bca03fb466c32c626f69d6f608215eab0b8b93fdca8330a7cfb90b1"
+    }
+  },
+  "build": {
+    "channel": "development",
+    "toolchain": {
+      "payloadSdk": "0.43",
+      "llvmMajor": 20
+    },
+    "nativeAddresses": {
+      "json": "data/native_targets/crossmap-native-targets.json",
+      "header": "gtavmenu/native_addresses_generated.h",
+      "sha256": "2868691534fa4c3054d3afe392bf09d17ec2a43a9d0891198bdeb95253bf7606"
+    },
+    "scriptGlobals": {
+      "json": "data/script_globals/anchors-ppsa04264-01.005.000.json",
+      "header": "gtavmenu/script_globals_addresses_ppsa04264-01.005.000_generated.h",
+      "sha256": "62a68a19a8c5da48aca04b9405ba9f3b861bc4eb4d4549e7e4ab1743667fcc96"
+    },
+    "features": {
+      "nativeFeatures": true,
+      "workerTextOverlay": true,
+      "toasts": true,
+      "vehiclePreview": true,
+      "instructionalScaleform": true,
+      "buttonGlyphs": false,
+      "scriptGlobals": true,
+      "phaseIntercept": true,
+      "phaseDrawList": true
+    },
+    "injection": {
+      "lane": "ptrace-free-cave",
+      "probeNoStop": true,
+      "noStopIo": true,
+      "noStopStrict": true,
+      "verifyWrites": true,
+      "caveBootstrap": true,
+      "caveInject": true,
+      "classicInject": false,
+      "selfStartWorker": true,
+      "installRenderPhase": true
+    }
+  },
+  "loader": {
+    "status": "pinned",
+    "caveAddress": "0x347b000",
+    "caveAllocationBytes": "0x200000",
+    "runtimeImageBias": "0x400000",
+    "playerPedAnchor": "0x51cf258",
+    "playerPedOffset": "0x8",
+    "playerPedReadyMode": "nonzero",
+    "versionSignatureAddr": "0x1810870",
+    "versionSignatureExpectedCompact": "8b055e101704488b0f8901c3cccccccc",
+    "frameHookTarget": "0x18f7170",
+    "brokerContinuation": "0x18f7180",
+    "brokerPatchLen": 14,
+    "brokerStolenLen": 16,
+    "brokerExpectedBytesCompact": "554889e55350488b05db808d034889fb",
+    "note": "Single source for the watch/start loader pins. PLAYER_PED_ID resolves ped = *(*(playerPedAnchor)+playerPedOffset); ped != 0 is the player-world/load readiness predicate. versionSignatureAddr/versionSignatureExpectedCompact identify GET_FRAME_COUNT, and frameHookTarget identifies PLAYER_PED_ID (both addresses live in native_addresses_generated.h; guarded by tests). brokerContinuation/brokerPatchLen/brokerStolenLen/brokerExpectedBytesCompact are the loader-owned frame-hook patch contract at frameHookTarget (the 16-byte PLAYER_PED_ID prologue the loader writes the 14-byte jump into; also mirrored by make/targets.mk). The privileged-.text write guard range is liveMapping.text.{liveStart,liveEnd}.",
+    "tlsGameCtxOffset": "0x130",
+    "tlsCtxNativeThreadOffset": "0x188"
+  },
+  "renderPhase": {
+    "root": "0x3ef4880",
+    "leafVtable": "0x3d10e38",
+    "groupVtable": "0x3d10e60",
+    "taskId": "0x249760f7",
+    "original": "0x19d47d0",
+    "cycle": {
+      "epoch": "0x59818b4",
+      "reset": "0x4c4ae8c",
+      "producer": "0x591b8e8",
+      "consumer": "0x591b8ec",
+      "count0": "0x4c56a78",
+      "count1": "0x4c62600",
+      "text": "0x4c63a38",
+      "counter": "0x59818d4"
+    },
+    "fingerprints": {
+      "leafInvoke": {
+        "address": "0x32320d0",
+        "bytes": "ff6720"
+      },
+      "groupInvoke": {
+        "address": "0x3232180",
+        "bytes": "554889e55350488b5f204885db741390488b034889dfff5010488b5b184885db75ee4883c4085b5dc3cccccc"
+      },
+      "group2Dispatch": {
+        "address": "0x6840a0",
+        "bytes": "488b034889dfff5010488b5b184885db75ee"
+      },
+      "registration": {
+        "address": "0x69a36a",
+        "bytes": "488d3d5fa43301bef760972431d2e8532cb902"
+      }
+    }
+  },
+  "liveMapping": {
+    "text": {
+      "name": "executable",
+      "elfVaddrStart": "0x0",
+      "liveStart": "0x400000",
+      "liveEnd": "0x347c000",
+      "fileOffsetStart": "0x4000",
+      "addressFormula": "live = 0x400000 + elfVaddr"
+    }
+  }
+}

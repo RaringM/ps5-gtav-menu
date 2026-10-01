@@ -94,19 +94,12 @@ static int check_bytes(DiscoveryWalk* walk, uintptr_t address, const uint8_t* ex
 
 int gtav_render_phase_discover(GtavRenderPhaseRead read, void* context,
                                GtavRenderPhaseDiscovery* result) {
-  static const uint8_t kLeafInvoke[] = {0xff, 0x67, 0x20};
-  static const uint8_t kGroupDispatch[] = {
-      0x55, 0x48, 0x89, 0xe5, 0x53, 0x50, 0x48, 0x8b, 0x5f, 0x20, 0x48, 0x85, 0xdb, 0x74, 0x13,
-      0x90, 0x48, 0x8b, 0x03, 0x48, 0x89, 0xdf, 0xff, 0x50, 0x10, 0x48, 0x8b, 0x5b, 0x18, 0x48,
-      0x85, 0xdb, 0x75, 0xee, 0x48, 0x83, 0xc4, 0x08, 0x5b, 0x5d, 0xc3, 0xcc, 0xcc, 0xcc,
-  };
-  static const uint8_t kGroup2Dispatch[] = {0x48, 0x8b, 0x03, 0x48, 0x89, 0xdf, 0xff, 0x50, 0x10,
-                                            0x48, 0x8b, 0x5b, 0x18, 0x48, 0x85, 0xdb, 0x75, 0xee};
-  static const uint8_t kRegistration[] = {0x48, 0x8d, 0x3d, 0x42, 0x75, 0x3d, 0x01,
-                                          0xbe, 0xf7, 0x60, 0x97, 0x24, 0x31, 0xd2,
-                                          0xe8, 0x86, 0x80, 0xbb, 0x02};
-  static const uint64_t kLeafInvokePointer = 0x3494810ull;
-  static const uint64_t kGroupInvokePointer = 0x34948c0ull;
+  static const uint8_t kLeafInvoke[] = {GTAV_RENDER_PHASE_LEAF_INVOKE_BYTES};
+  static const uint8_t kGroupDispatch[] = {GTAV_RENDER_PHASE_GROUP_INVOKE_BYTES};
+  static const uint8_t kGroup2Dispatch[] = {GTAV_RENDER_PHASE_GROUP2_DISPATCH_BYTES};
+  static const uint8_t kRegistration[] = {GTAV_RENDER_PHASE_REGISTRATION_BYTES};
+  static const uint64_t kLeafInvokePointer = GTAV_RENDER_PHASE_LEAF_INVOKE_ADDR;
+  static const uint64_t kGroupInvokePointer = GTAV_RENDER_PHASE_GROUP_INVOKE_ADDR;
   DiscoveryWalk walk;
   uint64_t root_before = 0, root_after = 0;
   if (!read || !result) return -1;
@@ -115,10 +108,14 @@ int gtav_render_phase_discover(GtavRenderPhaseRead read, void* context,
   walk.read = read;
   walk.context = context;
   walk.result = result;
-  if (check_bytes(&walk, 0x3494810ull, kLeafInvoke, sizeof(kLeafInvoke)) != 0 ||
-      check_bytes(&walk, 0x34948c0ull, kGroupDispatch, sizeof(kGroupDispatch)) != 0 ||
-      check_bytes(&walk, 0x8beb31ull, kGroup2Dispatch, sizeof(kGroup2Dispatch)) != 0 ||
-      check_bytes(&walk, 0x8d7477ull, kRegistration, sizeof(kRegistration)) != 0 ||
+  if (check_bytes(&walk, GTAV_RENDER_PHASE_LEAF_INVOKE_ADDR, kLeafInvoke, sizeof(kLeafInvoke)) !=
+          0 ||
+      check_bytes(&walk, GTAV_RENDER_PHASE_GROUP_INVOKE_ADDR, kGroupDispatch,
+                  sizeof(kGroupDispatch)) != 0 ||
+      check_bytes(&walk, GTAV_RENDER_PHASE_GROUP2_DISPATCH_ADDR, kGroup2Dispatch,
+                  sizeof(kGroup2Dispatch)) != 0 ||
+      check_bytes(&walk, GTAV_RENDER_PHASE_REGISTRATION_ADDR, kRegistration,
+                  sizeof(kRegistration)) != 0 ||
       check_bytes(&walk, GTAV_RENDER_PHASE_DISCOVERY_LEAF_VTABLE + 16u,
                   (const uint8_t*)&kLeafInvokePointer, sizeof(kLeafInvokePointer)) != 0 ||
       check_bytes(&walk, GTAV_RENDER_PHASE_DISCOVERY_GROUP_VTABLE + 16u,

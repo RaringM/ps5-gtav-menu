@@ -103,9 +103,12 @@ GtavGlobalAddr gtav_global_decompose(uint32_t id);
 // #ifndef guards, so a -D override wins; an unset anchor stays 0. The fallbacks
 // below cover a build where the generated header is absent. Anchors of 0 make the
 // runtime latch FAILED rather than dereference a null base.
+#ifndef GTAV_MENU_SCRIPT_GLOBALS_HEADER
+#define GTAV_MENU_SCRIPT_GLOBALS_HEADER "gtavmenu/script_globals_addresses_generated.h"
+#endif
 #if defined(__has_include)
-#if __has_include("gtavmenu/script_globals_addresses_generated.h")
-#include "gtavmenu/script_globals_addresses_generated.h"
+#if __has_include(GTAV_MENU_SCRIPT_GLOBALS_HEADER)
+#include GTAV_MENU_SCRIPT_GLOBALS_HEADER
 #endif
 #endif
 #ifndef GTAV_SCRIPT_TABLE_ADDR
