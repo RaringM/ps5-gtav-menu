@@ -12,6 +12,7 @@
 #include "gtavmenu/build_pin.h"
 #include "gtavmenu/cave_bootstrap.h"
 #include "gtavmenu/command_mailbox.h"
+#include "gtavmenu/custom_mount.h"
 #include "gtavmenu/daemon_control.h"
 #include "gtavmenu/daemon_lifecycle.h"
 #include "gtavmenu/elf_inject.h"
@@ -222,6 +223,12 @@ static const GtavBuildPin gtav_build_pins[] = {{
 // (default); set 0 (menu-ctl --force) to deliberately re-inject the same running pid.
 #ifndef GTAV_PAYLOAD_INJECT_GUARD
 #define GTAV_PAYLOAD_INJECT_GUARD 1
+#endif
+
+// Read-only nullfs mount of the custom-asset root into GTA's sandbox (custom_mount.h). A failed
+// mount is logged and never blocks injection.
+#ifndef GTAV_PAYLOAD_CUSTOM_MOUNT
+#define GTAV_PAYLOAD_CUSTOM_MOUNT 0
 #endif
 
 // Executable (.text) live-address window of the target, from the target manifest's
@@ -2562,6 +2569,16 @@ static void daemon_release(void) {
 // it never ptraces the target while waiting. In the persistent daemon build it also
 // heartbeats the single-instance lock and honours a stop request during the wait, so
 // a daemon-stop lands even while GTA is closed (the relaunch-wait window).
+static void loader_custom_mount(int pid) {
+#if GTAV_PAYLOAD_CUSTOM_MOUNT
+  if (gtav_custom_mount(GTAV_PAYLOAD_TARGET_TITLE_ID) != 0) {
+    gtav_logf("custom mount: unavailable for pid=%d; continuing without custom assets", pid);
+  }
+#else
+  (void)pid;
+#endif
+}
+
 static int find_game_wait(const char* title_id, int* pid_out) {
 #if GTAV_PAYLOAD_WAIT_FOR_GAME || GTAV_PAYLOAD_PERSISTENT
   const unsigned long timeout_us = (unsigned long)GTAV_PAYLOAD_WAIT_TIMEOUT_SEC * 1000000UL;
@@ -2957,6 +2974,7 @@ int main(void) {
           served_token = cur_token;
           goto persistent_wait_instance;
         }
+        loader_custom_mount(pid);
         sp = wait_for_sp_ready(pid, pin);
         if (sp == GTAV_SP_READY_OK) {
           uint64_t inject_token = gtav_proc_app_id(pid);
@@ -3166,6 +3184,7 @@ int main(void) {
 #endif
 
 #if GTAV_MENU_PAYLOAD_INJECT
+    loader_custom_mount(pid);
     if (wait_for_sp_ready(pid, pin) != GTAV_SP_READY_OK) {
       gtav_logf("sp-ready gave up; not injecting");
       gtav_notify("GTAVMenu payload: player world not ready");

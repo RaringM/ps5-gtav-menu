@@ -1,0 +1,196 @@
+{
+  "schemaVersion": 2,
+  "targetId": "PPSA04263_01.010.002_DISC",
+  "titleId": "PPSA04263",
+  "contentId": "EP1004-PPSA04263_00-GTAVFULLGAMEDISC",
+  "titleName": "Grand Theft Auto V",
+  "contentVersion": "01.010.002",
+  "masterVersion": "01.00",
+  "sdkVersion": "0x0100000000000000",
+  "requiredSystemSoftwareVersion": "0x0100000000000000",
+  "binaryIdentity": {
+    "encryptedEboot": {
+      "size": 70682062,
+      "sha256": "e9fb70c05d1f2ac4fd220f50fb0dfb26e79f2f1ddae2b7d65d7bfcb1f1c3108d"
+    },
+    "normalizedElf": {
+      "size": 99012608,
+      "sha256": "8374dc2e7decdf94555390e041318a9c3aa49258145b22fa4382c5d33106c71a"
+    }
+  },
+  "build": {
+    "channel": "primary",
+    "toolchain": {
+      "payloadSdk": "0.43",
+      "llvmMajor": 20
+    },
+    "nativeAddresses": {
+      "json": "data/native_targets/production-native-addresses-ppsa04263-01.010.002.json",
+      "header": "gtavmenu/native_addresses_ppsa04263-01.010.002_generated.h",
+      "sha256": "3fb15b443104b33e1c57dad5c412677b00efba61daf58ec541550bdcf4cf9d24"
+    },
+    "scriptGlobals": {
+      "json": "data/script_globals/anchors-ppsa04263-01.010.002.json",
+      "header": "gtavmenu/script_globals_addresses_ppsa04263-01.010.002_generated.h",
+      "sha256": "6f564da4fde7d4d746fc21667cc778f8cd69504e792c6507ca31979cde8feed2"
+    },
+    "features": {
+      "nativeFeatures": true,
+      "workerTextOverlay": true,
+      "toasts": true,
+      "vehiclePreview": true,
+      "instructionalScaleform": true,
+      "buttonGlyphs": false,
+      "scriptGlobals": true,
+      "phaseIntercept": true,
+      "phaseDrawList": true
+    },
+    "injection": {
+      "lane": "ptrace-free-cave",
+      "probeNoStop": true,
+      "noStopIo": true,
+      "noStopStrict": true,
+      "verifyWrites": true,
+      "caveBootstrap": true,
+      "caveInject": true,
+      "classicInject": false,
+      "selfStartWorker": true,
+      "installRenderPhase": true
+    }
+  },
+  "runtime": {
+    "productionProfile": "phase-menu",
+    "installHook": true,
+    "dryRun": false,
+    "startsHidden": true,
+    "openChord": "R1 + D-pad Left",
+    "injectionLane": "ptrace-free cave bootstrap",
+    "targetElevation": false,
+    "note": "The production worker publishes immutable menu draw lists and the verified render-phase callback consumes them. Gameplay work drains on the existing game-thread hook. The live worker ignores runtime.cfg."
+  },
+  "loader": {
+    "status": "hardware-validated",
+    "caveAddress": "0x3796000",
+    "caveAllocationBytes": "0x200000",
+    "runtimeImageBias": "0x400000",
+    "playerPedAnchor": "0x5a89a88",
+    "playerPedOffset": "0x8",
+    "playerPedReadyMode": "nonzero",
+    "versionSignatureAddr": "0x1a51840",
+    "versionSignatureExpectedCompact": "8b054ac1b102488b0f8901c3cccccccc",
+    "frameHookTarget": "0x1bc8ed0",
+    "brokerContinuation": "0x1bc8ee0",
+    "brokerPatchLen": 14,
+    "brokerStolenLen": 16,
+    "brokerExpectedBytesCompact": "554889e55350488b05ab0bec034889fb",
+    "tlsGameCtxOffset": "0x140",
+    "tlsCtxNativeThreadOffset": "0x198",
+    "note": "PPSA04263 01.010.002 has the same accepted loader fingerprints and layout as the pinned PPSA04264 build. Identity, mapping bounds, writes, readback, and restoration remain fail-closed at runtime."
+  },
+  "renderPhase": {
+    "status": "hardware-validated",
+    "root": "0x4356178",
+    "leafVtable": "0x408f118",
+    "groupVtable": "0x408f140",
+    "taskId": "0x249760f7",
+    "original": "0x1cae9c0",
+    "cycle": {
+      "epoch": "0x61a623c",
+      "reset": "0x546e200",
+      "producer": "0x61a6ae8",
+      "consumer": "0x61a6aec",
+      "count0": "0x5479df8",
+      "count1": "0x5485980",
+      "text": "0x5486dc8",
+      "counter": "0x61a6264"
+    },
+    "fingerprints": {
+      "leafInvoke": {
+        "address": "0x3494810",
+        "bytes": "ff6720"
+      },
+      "groupInvoke": {
+        "address": "0x34948c0",
+        "bytes": "554889e55350488b5f204885db741390488b034889dfff5010488b5b184885db75ee4883c4085b5dc3cccccc"
+      },
+      "group2Dispatch": {
+        "address": "0x8beb31",
+        "bytes": "488b034889dfff5010488b5b184885db75ee"
+      },
+      "registration": {
+        "address": "0x8d7477",
+        "bytes": "488d3d42753d01bef760972431d2e88680bb02"
+      }
+    }
+  },
+  "liveMapping": {
+    "text": {
+      "liveStart": "0x3ff000",
+      "liveEnd": "0x3798000"
+    }
+  },
+  "nativeBridge": {
+    "status": "hardware_validated_for_production_profile",
+    "abiVersion": 1,
+    "addressAcceptanceSemantics": "exact_target_and_hardware_validation",
+    "runtimeInvocationValidated": true,
+    "authorizedForInjection": true,
+    "addresses": {
+      "getFrameCount": "0x1ae1b40",
+      "isControlPressed": "0x1b85080",
+      "isControlJustPressed": "0x1b855a0",
+      "drawRect": "0x1aa8900",
+      "beginTextCommandDisplayText": "0x1ac5d60",
+      "addTextComponentSubstringPlayerName": "0x1ac7390",
+      "endTextCommandDisplayText": "0x1ac5dc0",
+      "setTextScale": "0x1ac9520",
+      "setTextColour": "0x1ac9540",
+      "setTextFont": "0x1ac9610",
+      "setTextCentre": "0x1ac9570",
+      "setTextWrap": "0x1ac95d0",
+      "setTextJustification": "0x1ac95b0",
+      "setTextDropShadow": "0x1ac9620",
+      "setTextDropshadow": "0x1ac9620",
+      "setTextOutline": "0x1ac9640",
+      "isDisabledControlPressed": "0x1b86580",
+      "isDisabledControlJustPressed": "0x1b869a0",
+      "isDisabledControlJustReleased": "0x1b86c70",
+      "disableControlAction": "0x1b881f0",
+      "setInputExclusive": "0x1b880c0",
+      "getGameTimer": "0x1ae1b10",
+      "drawSprite": "0x1aa8c70",
+      "hasStreamedTextureDictLoaded": "0x1aa8790",
+      "requestStreamedTextureDict": "0x1aa85f0",
+      "playerId": "0x1bc8eb0",
+      "playerPedId": "0x1bc8ed0",
+      "setPlayerInvincible": "0x1bc9430",
+      "setEntityInvincible": "0x1a96160",
+      "setEntityHealth": "0x1a95e10",
+      "setPedArmour": "0x1b97db0",
+      "setPlayerWantedLevel": "0x1bc5c50",
+      "setPlayerWantedLevelNow": "0x1bc5e90"
+    },
+    "notes": [
+      "Addresses are specific to normalized ELF SHA-256 8374dc2e7decdf94555390e041318a9c3aa49258145b22fa4382c5d33106c71a.",
+      "The PPSA04263 executable differs from PPSA04264 in 40 executable bytes across nine regional ranges; all accepted native handlers and critical runtime fingerprints are byte-identical.",
+      "Target-specific one-shot and persistent hardware regressions validated runtime native invocation, a game-thread vehicle spawn, clean relaunch, and exact active hook retirement."
+    ]
+  },
+  "validation": {
+    "status": "hardware-accepted",
+    "date": "2026-10-04",
+    "deliveries": [
+      "standalone one-shot loader",
+      "standalone persistent watcher"
+    ],
+    "summary": "PID 1346 passed exact title/version detection, ptrace-free cave allocation and restoration, render-phase and frame-hook installation, increasing worker ticks, controller input, game-thread vehicle spawn, script-global transition 0 to 1, and cooperative worker stop with no error. After a clean GTA close, fresh Story Mode PID 1356 began with the exact original frame-hook bytes, passed persistent injection and liveness, then daemon-stop exact-restored the render callback to 0x1cae9c0 and all 16 original frame-hook bytes with ptrace=0. Target-guarded post-retirement reads confirmed both originals in the live process.",
+    "limitations": "Packaged OnionHEN and etaHEN delivery-specific lifecycle checks remain separate gates from target acceptance."
+  },
+  "notes": [
+    "This public manifest is the runtime target contract for the European disc title PPSA04263.",
+    "The normalized executable differs from PPSA04264 01.010.002 by 40 executable bytes in nine regional ranges; all compiled address sites and fingerprints are target-specific and verified against the recorded SHA-256.",
+    "Production injection is ptrace-free and performs no permanent target credential or root elevation."
+  ],
+  "originContentVersion": "01.000.000",
+  "targetContentVersion": "01.010.001"
+}

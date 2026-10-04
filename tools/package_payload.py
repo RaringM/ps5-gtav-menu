@@ -16,10 +16,10 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 DAEMON_NAME = "gtav-menu-daemon.elf"
 
 
-def render_readme(content_version: str) -> str:
+def render_readme(title_id: str, content_version: str) -> str:
     return f"""# GTAV-Menu — Standalone
 
-GTA V Enhanced (**PPSA04264, version {content_version}**) mod menu daemon.
+GTA V Enhanced (**{title_id}, version {content_version}**) mod menu daemon.
 `{DAEMON_NAME}` watches for GTA V launches and injects the menu after Story Mode loads.
 
 1. Copy the `GTAVMenu` folder to `/data/` on the PS5.
@@ -146,7 +146,7 @@ def stage_package(
         remote="/data/GTAVMenu/gtav-menu-feature-menu.elf",
     )
     readme_path = output / "README.md"
-    readme_path.write_text(render_readme(str(profile["contentVersion"])), encoding="utf-8")
+    readme_path.write_text(render_readme(str(profile["titleId"]), str(profile["contentVersion"])), encoding="utf-8")
     entries.append(
         {
             "path": "README.md",
@@ -165,6 +165,8 @@ def stage_package(
         "target": profile["stem"],
         "targetChannel": profile["channel"],
         "targetId": target["targetId"],
+        "titleId": target["titleId"],
+        "contentId": target["contentId"],
         "contentVersion": target["contentVersion"],
         "profile": config["profile"],
         "delivery": config["delivery"],

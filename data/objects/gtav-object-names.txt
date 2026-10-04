@@ -1,0 +1,123 @@
+# Curated object-spawner prop list for the menu's World > Spawn Object browser.
+#
+# One prop per line: `model<TAB>Label<TAB>Category`. The Category column drives the
+# in-menu category filter (mirrors the vehicle-class filter). Lines beginning with
+# '#' and blank lines are ignored.
+#
+# Every model here was verified to exist in this game version's prop dump
+# (data/objects/menyoo-PropList.txt, the vendored Menyoo prop list). These are stock, reliably
+# spawnable props -- map/LOD/proxy tiles are deliberately excluded. The runtime
+# still validates each with IS_MODEL_* before CREATE_OBJECT, so an unknown name
+# would degrade to "model not valid" rather than crash.
+#
+# Regenerate the C header after editing: `make object-registry`.
+
+# --- Containers ---
+prop_box_wood01a	Wood Box S	Containers
+prop_box_wood02a	Wood Box M	Containers
+prop_box_wood02a_pu	Crate	Containers
+prop_box_wood03a	Wood Box L	Containers
+prop_box_wood04a	Wood Box XL	Containers
+prop_crate_01a	Crate Small	Containers
+prop_crate_02a	Crate Large	Containers
+prop_boxpile_07d	Box Pile	Containers
+prop_cs_cardbox_01	Cardboard Box	Containers
+prop_pallet_02a	Pallet	Containers
+prop_tool_box_01	Tool Box	Containers
+prop_tool_box_04	Tool Box 2	Containers
+prop_toolchest_01	Tool Chest	Containers
+prop_toolchest_04	Tool Chest 2	Containers
+prop_skip_01a	Skip	Containers
+prop_dumpster_01a	Dumpster	Containers
+
+# --- Barrels ---
+prop_barrel_01a	Barrel	Barrels
+prop_barrel_02a	Oil Drum	Barrels
+prop_barrel_03a	Barrel Rusty	Barrels
+prop_barrel_pile_01	Barrel Pile	Barrels
+prop_barrel_pile_02	Barrel Pile 2	Barrels
+prop_gas_tank_01a	Gas Tank	Barrels
+prop_jerrycan_01a	Jerry Can	Barrels
+
+# --- Roadwork ---
+prop_roadcone01a	Cone Tall	Roadwork
+prop_roadcone02a	Traffic Cone	Roadwork
+prop_mp_cone_01	MP Cone	Roadwork
+prop_mp_cone_02	MP Cone 2	Roadwork
+prop_barrier_work01a	Barrier Fence	Roadwork
+prop_barrier_work02a	Barrier Mesh	Roadwork
+prop_barrier_work04a	Barrier Solid	Roadwork
+prop_barrier_work05	Barrier	Roadwork
+prop_barrier_work06a	Barrier Plastic	Roadwork
+prop_barrier_wat_01a	Water Barrier	Roadwork
+prop_barrier_wat_03a	Water Barrier 2	Roadwork
+prop_mp_barrier_01	MP Barrier	Roadwork
+prop_consign_01a	Sign Board	Roadwork
+prop_worklight_01a	Work Light	Roadwork
+prop_worklight_03a	Work Light 2	Roadwork
+prop_generator_03b	Generator	Roadwork
+
+# --- Ramps ---
+prop_mp_ramp_01	Ramp Small	Ramps
+prop_mp_ramp_02	Ramp Medium	Ramps
+prop_mp_ramp_03	Ramp Large	Ramps
+
+# --- Nature ---
+prop_tree_birch_01	Birch Tree	Nature
+prop_tree_cedar_02	Cedar Tree	Nature
+prop_tree_cedar_03	Cedar Tree 2	Nature
+prop_tree_pine_01	Pine Tree	Nature
+prop_tree_pine_02	Pine Tree 2	Nature
+prop_palm_med_01a	Palm Tree	Nature
+prop_palm_sm_01e	Palm Small	Nature
+prop_bush_med_01	Bush	Nature
+prop_bush_med_02	Bush 2	Nature
+prop_bush_med_03	Bush 3	Nature
+
+# --- Sports ---
+prop_beach_volball01	Beach Ball	Sports
+prop_basketball_net	Basketball Net	Sports
+prop_bowling_ball	Bowling Ball	Sports
+prop_pool_ball_01	Pool Ball	Sports
+prop_tennis_ball	Tennis Ball	Sports
+prop_golf_ball	Golf Ball	Sports
+prop_golf_iron_01	Golf Club	Sports
+
+# --- Hazards ---
+prop_barrel_exp_01a	Explosive Barrel	Hazards
+prop_tyre_spike_01	Spike Strip	Hazards
+prop_fire_hydrant_1	Fire Hydrant	Hazards
+prop_fire_hydrant_2	Fire Hydrant 2	Hazards
+
+# --- Street ---
+prop_traffic_01a	Traffic Light	Street
+prop_streetlight_01	Street Light	Street
+prop_streetlight_03b	Street Light 2	Street
+prop_postbox_01a	Post Box	Street
+prop_bin_01a	Trash Bin	Street
+prop_bin_07a	Trash Bin 2	Street
+prop_bin_08open	Trash Bin Open	Street
+prop_atm_01	ATM	Street
+prop_vend_soda_01	Soda Machine	Street
+prop_portaloo_01a	Portaloo	Street
+prop_cs_trolley_01	Trolley	Street
+
+# --- Furniture ---
+prop_bench_01a	Bench	Furniture
+prop_chair_01a	Chair	Furniture
+prop_cs_office_chair	Office Chair	Furniture
+
+# --- Fun ---
+prop_money_bag_01	Money Bag	Fun
+prop_cash_pile_01	Cash Pile	Fun
+prop_cash_crate_01	Cash Crate	Fun
+prop_cash_case_01	Cash Case	Fun
+prop_gold_bar	Gold Bar	Fun
+prop_ld_health_pack	Health Pack	Fun
+prop_michael_backpack	Backpack	Fun
+prop_cs_protest_sign_01	Protest Sign	Fun
+prop_tequila_bottle	Tequila Bottle	Fun
+prop_cs_burger_01	Burger	Fun
+prop_drug_package_02	Drug Package	Fun
+prop_weed_block_01	Weed Block	Fun
+p_parachute_s	Parachute	Fun

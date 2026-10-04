@@ -66,6 +66,7 @@ def loader_cflags(target_manifest: Path) -> list[str]:
         "-DGTAV_LOADER_TARGET_PIN_OVERRIDE=1",
         f'-DGTAV_LOADER_TARGET_PIN_ID=\\"{manifest["targetId"]}\\"',
         f'-DGTAV_LOADER_EXPECT_TARGET_ID=\\"{manifest["targetId"]}\\"',
+        f'-DGTAV_PAYLOAD_TARGET_TITLE_ID=\\"{manifest["titleId"]}\\"',
         f"-DGTAV_LOADER_TARGET_SP_READY_ADDR=0x{int(loader['playerPedAnchor'], 0):x}ull",
         f"-DGTAV_LOADER_TARGET_SP_READY_OFFSET=0x{int(loader['playerPedOffset'], 0):x}ull",
     ]

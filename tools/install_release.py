@@ -30,6 +30,7 @@ DEFAULT_KLOG_PORT = 9081
 # Repo-root-relative location of the staged bundle. Anchored on this file's location so
 # ``./gtavmenu`` works from any working directory.
 DEFAULT_BUNDLE = Path(__file__).resolve().parent.parent / "build/pkg/ppsa04264-01.010.002/standalone"
+TARGETS_DIR = Path(__file__).resolve().parent.parent / "data/targets"
 MANIFEST_SUFFIX = ".package-manifest.json"
 EXPECTED_TARGET_ID = "PPSA04264_01.010.002_DISC"
 EXPECTED_CONTENT_VERSION = "01.010.002"
@@ -65,13 +66,29 @@ def upload_entries(manifest: dict) -> list[dict]:
 
 def validate_bundle_safety(bundle: Path, manifest: dict) -> None:
     """Validate the staged runtime files before opening an FTP connection."""
-    if (
-        manifest.get("kind") != "gtavmenu-standalone-production"
-        or manifest.get("profile") != "production"
-        or manifest.get("targetId") != EXPECTED_TARGET_ID
-        or manifest.get("contentVersion") != EXPECTED_CONTENT_VERSION
-    ):
-        raise InstallError("bundle identity/profile is not the supported 01.010.002 production release")
+    target = manifest.get("target")
+    if not isinstance(target, str) or not target or "/" in target or ".." in target:
+        raise InstallError("bundle has an unsafe or missing target identity")
+    target_path = TARGETS_DIR / f"{target}.json"
+    if not target_path.is_file():
+        raise InstallError(f"bundle target is not supported by this checkout: {target}")
+    try:
+        target_manifest = json.loads(target_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise InstallError(f"cannot read target contract {target_path}: {exc}") from exc
+    target_sha256 = hashlib.sha256(target_path.read_bytes()).hexdigest()
+    expected_identity = {
+        "targetId": target_manifest.get("targetId"),
+        "titleId": target_manifest.get("titleId"),
+        "contentId": target_manifest.get("contentId"),
+        "contentVersion": target_manifest.get("contentVersion"),
+        "targetManifestSha256": target_sha256,
+    }
+    if manifest.get("kind") != "gtavmenu-standalone-production" or manifest.get("profile") != "production":
+        raise InstallError("bundle identity/profile is not a production standalone release")
+    mismatches = [key for key, expected in expected_identity.items() if manifest.get(key) != expected]
+    if mismatches:
+        raise InstallError("bundle identity/profile does not match its target contract: " + ", ".join(mismatches))
 
     roles = {str(entry.get("role")) for entry in manifest.get("files", [])}
     required_roles = {"daemon", "menu-worker", "documentation"}

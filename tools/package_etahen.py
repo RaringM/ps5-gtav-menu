@@ -16,11 +16,11 @@ from gtavmenu_tools.target_profile import expected_build_config, validate_manife
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
-def render_readme(content_version: str) -> str:
+def render_readme(title_id: str, content_version: str) -> str:
     return f"""# GTAV-Menu — etaHEN
 
 Toolbox-managed plugin for stock **etaHEN 2.5B or newer**, GTA V Enhanced
-**PPSA04264, version {content_version}**.
+**{title_id}, version {content_version}**.
 
 1. Copy `GTAV00001.plugin` to `/data/etaHEN/plugins/GTAV00001.plugin` on the PS5.
 2. Open etaHEN Toolbox, select **Plugins**, and enable `GTAV00001` under **Running**. Enable
@@ -130,13 +130,15 @@ def stage_package(
     staged_plugin = output / f"{plugin_id}.plugin"
     shutil.copy2(plugin, staged_plugin)
     readme = output / "README.md"
-    readme.write_text(render_readme(str(profile["contentVersion"])), encoding="utf-8")
+    readme.write_text(render_readme(str(profile["titleId"]), str(profile["contentVersion"])), encoding="utf-8")
 
     manifest = {
         "schemaVersion": 1,
         "kind": "gtavmenu-etahen-production",
         "target": target,
         "targetId": manifest_data["targetId"],
+        "titleId": manifest_data["titleId"],
+        "contentId": manifest_data["contentId"],
         "contentVersion": manifest_data["contentVersion"],
         "profile": "production",
         "delivery": "etahen",

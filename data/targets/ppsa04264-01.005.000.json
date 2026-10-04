@@ -19,7 +19,7 @@
     }
   },
   "build": {
-    "channel": "development",
+    "channel": "primary",
     "toolchain": {
       "payloadSdk": "0.43",
       "llvmMajor": 20
@@ -59,7 +59,7 @@
     }
   },
   "loader": {
-    "status": "pinned",
+    "status": "hardware-validated",
     "caveAddress": "0x347b000",
     "caveAllocationBytes": "0x200000",
     "runtimeImageBias": "0x400000",

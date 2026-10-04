@@ -47,7 +47,7 @@ jobs:
           unzip -q /tmp/ps5-payload-sdk.zip -d "$HOME"
       - name: Build and assemble release
         run: |
-          for target in ppsa04264-01.005.000 ppsa04264-01.010.002; do
+          for target in ppsa04264-01.005.000 ppsa04264-01.010.002 ppsa04263-01.010.002; do
             make GTAV_TARGET="$target" package-target
           done
           python3 tools/release.py assemble --tag "$RELEASE_TAG"

@@ -409,8 +409,8 @@ static uint32_t g_pending_confirm_action = GTAV_NATIVE_SHELL_ACTION_NONE;
    a toast) from a left/right cycler adjustment (just stages/scrolls a value -> stay
    quiet; the displayed "< value >" still refreshes via push_list_values). */
 static void handle_shell_action_param(uint32_t action, uint32_t param, int emit_toast) {
-  /* One-press confirm for destructive rows, controller-side only (emit_toast). The scripted /
-     mailbox lane (emit_toast = 0) and left/right cycler steps (param != 0) are never gated. */
+  /* One-press confirm for destructive rows, controller-side only. Left/right cycler steps
+     (param != 0) are never gated, and the mailbox lane pre-confirms its action. */
   if (emit_toast && param == 0u && action_needs_confirm(action)) {
     if (g_pending_confirm_action != action) {
       g_pending_confirm_action = action;
@@ -798,6 +798,9 @@ static const char* dispatch_menu_command(uint32_t command, uint64_t argument, co
       // action attempted if a feature crashes the game (only "(pre)" would appear).
       gtav_status_eventf(GTAV_MENU_EVENT_COMMAND, "%s activate action=%u (pre)", source,
                          (uint32_t)argument);
+      // A host command is already explicit: pre-confirm it so destructive rows run on the first
+      // request instead of arming the controller's "press again" prompt.
+      g_pending_confirm_action = (uint32_t)argument;
       handle_shell_action_param((uint32_t)argument, 0, 1);
       gtav_status_eventf(GTAV_MENU_EVENT_COMMAND, "%s activate action=%u (post)", source,
                          (uint32_t)argument);

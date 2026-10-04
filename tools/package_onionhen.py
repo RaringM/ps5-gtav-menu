@@ -15,10 +15,10 @@ from gtavmenu_tools.target_profile import expected_build_config, validate_manife
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
-def render_readme(content_version: str) -> str:
+def render_readme(title_id: str, content_version: str) -> str:
     return f"""# GTAV-Menu — OnionHEN
 
-OnionHEN v0.0.13 plugin for GTA V Enhanced (**PPSA04264, version {content_version}**).
+OnionHEN v0.0.13 plugin for GTA V Enhanced (**{title_id}, version {content_version}**).
 The plugin watches for GTA V launches and injects the menu after Story Mode loads.
 
 1. Copy `GTAV00001.elf` to `/data/OnionHEN/plugins/`.
@@ -120,13 +120,15 @@ def stage_package(
     staged_plugin = output / f"{plugin_id}.elf"
     shutil.copy2(plugin, staged_plugin)
     readme = output / "README.md"
-    readme.write_text(render_readme(str(profile["contentVersion"])), encoding="utf-8")
+    readme.write_text(render_readme(str(profile["titleId"]), str(profile["contentVersion"])), encoding="utf-8")
 
     manifest = {
         "schemaVersion": 1,
         "kind": "gtavmenu-onionhen-production",
         "target": target,
         "targetId": manifest_data["targetId"],
+        "titleId": manifest_data["titleId"],
+        "contentId": manifest_data["contentId"],
         "contentVersion": manifest_data["contentVersion"],
         "profile": "production",
         "delivery": "onionhen",

@@ -1,0 +1,928 @@
+# GTA V vehicle model candidate list for the dynamic registry.
+# Source: DurtyFree/gta-v-data-dumps vehicles.json (community datamined dump).
+# Format: <model_name>\t<display label>  (lines starting with # are ignored).
+# This is the full candidate SUPERSET; devtools/generators/generate_vehicle_registry.py with
+# an on-target --validation file trims it to models spawnable on this build.
+# 921 candidates.
+
+dinghy	Dinghy
+predator	Police Predator
+suntrap	Suntrap
+avisa	Avisa
+dinghy2	Dinghy
+dinghy3	Dinghy
+dinghy4	Dinghy
+dinghy5	Weaponized Dinghy
+jetmax	Jetmax
+kosatka	Kosatka
+longfin	Longfin
+marquis	Marquis
+patrolboat	Kurtz 31 Patrol Boat
+seashark	Seashark
+seashark2	Seashark
+seashark3	Seashark
+speeder	Speeder
+speeder2	Speeder
+squalo	Squalo
+submersible	Submersible
+submersible2	Kraken
+toro	Toro
+toro2	Toro
+tropic	Tropic
+tropic2	Tropic
+tug	Tug
+benson	Benson
+biff	Biff
+hauler	Hauler
+hauler2	Hauler Custom
+mule	Mule
+mule2	Mule
+mule3	Mule
+packer	Packer
+phantom	Phantom
+phantom4	Phantom
+pounder	Pounder
+benson2	Benson (Cluckin' Bell)
+cerberus	Apocalypse Cerberus
+cerberus2	Future Shock Cerberus
+cerberus3	Nightmare Cerberus
+mule4	Mule Custom
+mule5	Mule
+phantom2	Phantom Wedge
+phantom3	Phantom Custom
+pounder2	Pounder Custom
+stockade	Stockade
+stockade3	Stockade
+stockade4	Bobcat Security Stockade
+terbyte	Terrorbyte
+asbo	Asbo
+blista	Blista
+brioso	Brioso R/A
+brioso2	Brioso 300
+brioso3	Brioso 300 Widebody
+club	Club
+dilettante	Dilettante
+dilettante2	Dilettante
+issi2	Issi
+issi3	Issi Classic
+issi4	Apocalypse Issi
+issi5	Future Shock Issi
+issi6	Nightmare Issi
+kanjo	Blista Kanjo
+panto	Panto
+prairie	Prairie
+rhapsody	Rhapsody
+weevil	Weevil
+cogcabrio	Cognoscenti Cabrio
+driftfr36	FR36
+driftsentinel2	Sentinel XS
+eurosx32	Euros X32
+exemplar	Exemplar
+f620	F620
+felon	Felon
+felon2	Felon GT
+fr36	FR36
+jackal	Jackal
+kanjosj	Kanjo SJ
+oracle	Oracle XS
+oracle2	Oracle
+postlude	Postlude
+previon	Previon
+sentinel	Sentinel XS
+sentinel2	Sentinel
+windsor	Windsor
+windsor2	Windsor Drop
+zion	Zion
+zion2	Zion Cabrio
+bmx	BMX
+cruiser	Cruiser
+fixter	Fixter
+inductor	Inductor
+inductor2	Junk Energy Inductor
+scorcher	Scorcher
+tribike	Whippet Race Bike
+tribike2	Endurex Race Bike
+tribike3	Tri-Cycles Race Bike
+ambulance	Ambulance
+fbi	FIB
+fbi2	FIB
+riot	Police Riot
+sheriff	Sheriff Cruiser
+firetruk	Fire Truck
+lguard	Lifeguard
+pranger	Park Ranger
+pbus	Police Prison Bus
+polbuffalo	Buffalo Cruiser
+polbuffalo6	Buffalo STX Pursuit
+polcaracara	Caracara Pursuit
+polcoquette4	Coquette D10 Pursuit
+poldominator10	Dominator FX Interceptor
+poldorado	Dorado Cruiser
+polfaction2	Outreach Faction
+polgauntlet	Gauntlet Interceptor
+polgreenwood	Greenwood Cruiser
+police	Police Cruiser
+police2	Police Cruiser
+police3	Police Cruiser
+police4	Unmarked Cruiser
+police5	Stanier LE Cruiser
+policeb	Police Bike
+policeb2	Police Bike
+policeold1	Police Rancher
+policeold2	Police Roadcruiser
+policet	Police Transporter
+policet3	Burrito (Bail Enforcement)
+polimpaler5	Impaler SZ Cruiser
+polimpaler6	Impaler LX Cruiser
+polterminus	Terminus Patrol
+riot2	RCV
+sheriff2	Sheriff SUV
+buzzard2	Buzzard
+cargobob	Cargobob
+cargobob3	Cargobob
+cargobob4	Cargobob
+frogger	Frogger
+akula	Akula
+annihilator	Annihilator
+annihilator2	Annihilator Stealth
+buzzard	Buzzard Attack Chopper
+cargobob2	Cargobob
+cargobob5	DH-7 Iron Mule
+conada	Conada
+conada2	Weaponized Conada
+frogger2	Frogger
+havok	Havok
+hunter	FH-1 Hunter
+maverick	Maverick
+maverick2	Higgins Helitours Maverick
+polmav	Police Maverick
+savage	Savage
+seasparrow	Sea Sparrow
+seasparrow2	Sparrow
+seasparrow3	Sparrow
+skylift	Skylift
+supervolito	SuperVolito
+supervolito2	SuperVolito Carbon
+swift	Swift
+swift2	Swift Deluxe
+valkyrie	Valkyrie
+valkyrie2	Valkyrie MOD.0
+volatus	Volatus
+flatbed	Flatbed
+mixer	Mixer
+mixer2	Mixer
+rubble	Rubble
+tiptruck	Tipper
+tiptruck2	Tipper
+bulldozer	Dozer
+cutter	Cutter
+dump	Dump
+flatbed2	Custom Flatbed
+guardian	Guardian
+handler	Dock Handler
+barracks	Barracks
+barracks2	Barracks Semi
+barracks3	Barracks
+crusader	Crusader
+rhino	Rhino Tank
+apc	APC
+barrage	Barrage
+chernobog	Chernobog
+halftrack	Half-track
+khanjali	TM-02 Khanjali
+minitank	Invade and Persuade Tank
+scarab	Apocalypse Scarab
+scarab2	Future Shock Scarab
+scarab3	Nightmare Scarab
+thruster	Thruster
+trailersmall2	Anti-Aircraft Trailer
+vetir	Vetir
+sanchez	Sanchez (livery)
+stryder	Stryder
+vader	Vader
+akuma	Akuma
+avarus	Avarus
+bagger	Bagger
+bati	Bati 801
+bati2	Bati 801RR
+bf400	BF400
+carbonrs	Carbon RS
+chimera	Chimera
+cliffhanger	Cliffhanger
+daemon	Daemon
+daemon2	Daemon Custom
+deathbike	Apocalypse Deathbike
+deathbike2	Future Shock Deathbike
+deathbike3	Nightmare Deathbike
+defiler	Defiler
+diablous	Diabolus
+diablous2	Diabolus Custom
+double	Double-T
+enduro	Enduro
+esskey	Esskey
+faggio	Faggio Sport
+faggio2	Faggio
+faggio3	Faggio Mod
+fcr	FCR 1000
+fcr2	FCR 1000 Custom
+gargoyle	Gargoyle
+hakuchou	Hakuchou
+hakuchou2	Hakuchou Drag
+hexer	Hexer
+innovation	Innovation
+lectro	Lectro
+manchez	Manchez
+manchez2	Manchez Scout
+manchez3	Manchez Scout C
+nemesis	Nemesis
+nightblade	Nightblade
+oppressor	Oppressor
+oppressor2	Oppressor Mk II
+pcj	PCJ 600
+pizzaboy	Pizza Boy
+powersurge	Powersurge
+ratbike	Rat Bike
+reever	Reever
+rrocket	Rampant Rocket
+ruffian	Ruffian
+sanchez2	Sanchez
+sanctus	Sanctus
+shinobi	Shinobi
+shotaro	Shotaro
+sovereign	Sovereign
+thrust	Thrust
+vindicator	Vindicator
+vortex	Vortex
+wolfsbane	Wolfsbane
+zombiea	Zombie Bobber
+zombieb	Zombie Chopper
+dominator	Dominator
+gauntlet	Gauntlet
+phoenix	Phoenix
+arbitergt	Arbiter GT
+blade	Blade
+brigham	Brigham
+broadway	Broadway
+buccaneer	Buccaneer
+buccaneer2	Buccaneer Custom
+buffalo4	Buffalo STX
+buffalo5	Buffalo EVX
+chino	Chino
+chino2	Chino Custom
+clique	Clique
+clique2	Clique Wagon
+coquette3	Coquette BlackFin
+deviant	Deviant
+dominator10	Dominator FX
+dominator2	Pisswasser Dominator
+dominator3	Dominator GTX
+dominator4	Apocalypse Dominator
+dominator5	Future Shock Dominator
+dominator6	Nightmare Dominator
+dominator7	Dominator ASP
+dominator8	Dominator GTT
+dominator9	Dominator GT
+driftdominator10	Dominator FX
+driftdominator9	Dominator GT
+driftgauntlet4	Gauntlet Hellfire
+driftyosemite	Drift Yosemite
+dukes	Dukes
+dukes2	Duke O'Death
+dukes3	Beater Dukes
+ellie	Ellie
+eudora	Eudora
+faction	Faction
+faction2	Faction Custom 1
+faction3	Faction Custom Donk
+gauntlet2	Redwood Gauntlet
+gauntlet3	Gauntlet Classic
+gauntlet4	Gauntlet Hellfire
+gauntlet5	Gauntlet Classic Custom
+greenwood	Greenwood
+hermes	Hermes
+hotknife	Hotknife
+hustler	Hustler
+impaler	Impaler
+impaler2	Apocalypse Impaler
+impaler3	Future Shock Impaler
+impaler4	Nightmare Impaler
+impaler5	Impaler SZ
+impaler6	Impaler LX
+imperator	Apocalypse Imperator
+imperator2	Future Shock Imperator
+imperator3	Nightmare Imperator
+lurcher	Lurcher
+manana2	Manana Custom
+moonbeam	Moonbeam
+moonbeam2	Moonbeam Custom
+nightshade	Nightshade
+peyote2	Peyote Gasser
+picador	Picador
+ratloader	Rat-Loader
+ratloader2	Rat-Truck
+ruiner	Ruiner
+ruiner2	Ruiner 2000
+ruiner3	Ruiner
+ruiner4	Ruiner ZZ-8
+sabregt	Sabre Turbo
+sabregt2	Sabre Turbo Custom
+slamvan	Slamvan
+slamvan2	Lost Slamvan
+slamvan3	Slamvan Custom
+slamvan4	Apocalypse Slamvan
+slamvan5	Future Shock Slamvan
+slamvan6	Nightmare Slamvan
+stalion	Stallion
+stalion2	Burger Shot Stallion
+tahoma	Tahoma Coupe
+tampa	Tampa
+tampa3	Weaponized Tampa
+tampa4	Tampa GT
+tulip	Tulip
+tulip2	Tulip M-100
+vamos	Vamos
+vigero	Vigero
+vigero2	Vigero ZX
+vigero3	Vigero ZX Convertible
+virgo	Virgo
+virgo2	Virgo Classic Custom
+virgo3	Virgo Classic
+voodoo	Voodoo Custom
+voodoo2	Voodoo
+weevil2	Weevil Custom
+yosemite	Yosemite
+yosemite2	Drift Yosemite
+bfinjection	Injection
+bodhi2	Bodhi
+mesa3	Mesa
+rancherxl	Rancher XL
+rebel	Rusty Rebel
+bifta	Bifta
+blazer	Blazer
+blazer2	Blazer Lifeguard
+blazer3	Hot Rod Blazer
+blazer4	Street Blazer
+blazer5	Blazer Aqua
+boor	Boor
+brawler	Brawler
+bruiser	Apocalypse Bruiser
+bruiser2	Future Shock Bruiser
+bruiser3	Nightmare Bruiser
+brutus	Apocalypse Brutus
+brutus2	Future Shock Brutus
+brutus3	Nightmare Brutus
+caracara	Caracara
+caracara2	Caracara 4x4
+dloader	Duneloader
+draugur	Draugur
+driftl352	Drift Walton L35
+dubsta3	Dubsta 6x6
+dune	Dune Buggy
+dune2	Space Docker
+dune3	Dune FAV
+dune4	Ramp Buggy
+dune5	Ramp Buggy
+everon	Everon
+firebolt	Firebolt ASP
+freecrawler	Freecrawler
+hellion	Hellion
+insurgent	Insurgent Pick-Up
+insurgent2	Insurgent
+insurgent3	Insurgent Pick-Up Custom
+kalahari	Kalahari
+kamacho	Kamacho
+l35	Walton L35
+l352	Walton L35 Stock
+marshall	Marshall
+menacer	Menacer
+monster	Monster
+monster3	Apocalypse Sasquatch
+monster4	Future Shock Sasquatch
+monster5	Nightmare Sasquatch
+monstrociti	MonstroCiti
+nightshark	Nightshark
+outlaw	Outlaw
+patriot3	Patriot Mil-Spec
+rancherxl2	Rancher XL
+ratel	Ratel
+rcbandito	RC Bandito
+rebel2	Rebel
+riata	Riata
+sandking	Sandking XL
+sandking2	Sandking SWB
+technical	Technical
+technical2	Technical Aqua
+technical3	Technical Custom
+terminus	Terminus
+trophytruck	Trophy Truck
+trophytruck2	Desert Raid
+vagrant	Vagrant
+verus	Verus
+winky	Winky
+yosemite1500	Yosemite 1500
+yosemite3	Yosemite Rancher
+zhaba	Zhaba
+formula	PR4
+formula2	R88
+openwheel1	BR8
+openwheel2	DR1
+blimp	Atomic Blimp
+blimp2	Xero Blimp
+lazer	P-996 LAZER
+miljet	Miljet
+shamal	Shamal
+stunt	Mallard
+alkonost	RO-86 Alkonost
+alphaz1	Alpha-Z1
+avenger	Avenger
+avenger2	Avenger
+avenger3	Avenger
+avenger4	Avenger
+besra	Besra
+blimp3	Blimp
+bombushka	RM-10 Bombushka
+cargoplane	Cargo Plane
+cargoplane2	Cargo Plane
+cuban800	Cuban 800
+dodo	Dodo
+duster	Duster
+duster2	Duster 300-H
+howard	Howard NX-25
+hydra	Hydra
+jet	Jet
+luxor	Luxor
+luxor2	Luxor Deluxe
+mammatus	Mammatus
+microlight	Ultralight
+mogul	Mogul
+molotok	V-65 Molotok
+nimbus	Nimbus
+nokota	P-45 Nokota
+pyro	Pyro
+raiju	F-160 Raiju
+rogue	Rogue
+seabreeze	Seabreeze
+starling	LF-22 Starling
+streamer216	Streamer216
+strikeforce	B-11 Strikeforce
+titan	Titan
+titan2	Titan 250 D
+tula	Tula
+velum	Velum
+velum2	Velum 5-Seater
+vestra	Vestra
+volatol	Volatol
+cablecar	Cable Car
+freight	Freight Train
+freight2	Freight Train
+freightcar	Freight Train
+freightcar2	Freight Train
+freightcar3	Freight Train
+freightcont1	Freight Train
+freightcont2	Freight Train
+freightgrain	Freight Train
+metrotrain	Freight Train
+tankercar	Freight Train
+emperor2	Emperor
+asea	Asea
+asea2	Asea
+asterope	Asterope
+asterope2	Asterope GZ
+chavosv6	Chavos V6
+cinquemila	Cinquemila
+cog55	Cognoscenti 55
+cog552	Cognoscenti 55 (Armored)
+cognoscenti	Cognoscenti
+cognoscenti2	Cognoscenti (Armored)
+deity	Deity
+driftchavosv6	Chavos V6
+drifthardy	Hardy
+driftvorschlag	Vorschlaghammer
+emperor	Emperor
+emperor3	Emperor
+fugitive	Fugitive
+glendale	Glendale
+glendale2	Glendale Custom
+hardy	Hardy
+ingot	Ingot
+intruder	Intruder
+limo2	Turreted Limo
+minimus	Minimus
+premier	Premier
+primo	Primo
+primo2	Primo Custom
+regina	Regina
+rhinehart	Rhinehart
+romero	Romero Hearse
+schafter2	Schafter
+schafter5	Schafter V12 (Armored)
+schafter6	Schafter LWB (Armored)
+sentinel6	Sentinel XS4
+stafford	Stafford
+stanier	Stanier
+stratum	Stratum
+stretch	Stretch
+superd	Super Diamond
+surge	Surge
+tailgater	Tailgater
+tailgater2	Tailgater S
+vorschlaghammer	Vorschlaghammer
+warrener	Warrener
+warrener2	Warrener HKR
+washington	Washington
+airbus	Airport Bus
+bus	Bus
+rentalbus	Rental Shuttle Bus
+tourbus	Tour Bus
+trash	Trashmaster
+brickade	Brickade
+brickade2	Brickade 6x6
+coach	Dashound
+pbus2	Festival Bus
+rallytruck	Dune
+taxi	Taxi
+trash2	Trashmaster
+vivanite2	Vivanite
+wastelander	Wastelander
+euros	Euros
+rapidgt	Rapid GT
+rapidgt2	Rapid GT
+seven70	Seven-70
+specter	Specter
+specter2	Specter Custom
+sugoi	Sugoi
+surano	Surano
+alpha	Alpha
+banshee	Banshee
+banshee3	Banshee GTS
+bestiagts	Bestia GTS
+blista2	Blista Compact
+blista3	Go Go Monkey Blista
+buffalo	Buffalo
+buffalo2	Buffalo S
+buffalo3	Sprunk Buffalo
+calico	Calico GTF
+carbonizzare	Carbonizzare
+comet2	Comet
+comet3	Comet Retro Custom
+comet4	Comet Safari
+comet5	Comet SR
+comet6	Comet S2
+comet7	Comet S2 Cabrio
+coquette	Coquette
+coquette4	Coquette D10
+coquette6	Coquette D5
+corsita	Corsita
+coureur	La Coureuse
+cypher	Cypher
+drafter	8F Drafter
+driftcypher	Cypher
+drifteuros	Euros
+driftfuto	Futo GTX
+driftfuto2	Futo
+driftjester	Jester RR
+driftremus	Remus
+driftrt3000	RT3000
+driftsentinel	Sentinel Classic Widebody
+drifttampa	Drift Tampa
+driftzr350	ZR350
+elegy	Elegy Retro Custom
+elegy2	Elegy RH8
+envisage	Envisage
+everon2	Hotring Everon
+feltzer2	Feltzer
+flashgt	Flash GT
+furoregt	Furore GT
+fusilade	Fusilade
+futo	Futo
+futo2	Futo GTX
+gauntlet6	Hotring Hellfire
+gb200	GB200
+growler	Growler
+hotring	Hotring Sabre
+imorgon	Imorgon
+issi7	Issi Sport
+italigto	Itali GTO
+italirsx	Itali RSX
+jester	Jester
+jester2	Jester (Racecar)
+jester3	Jester Classic
+jester4	Jester RR
+jester5	Jester RR Widebody
+jugular	Jugular
+khamelion	Khamelion
+komoda	Komoda
+kuruma	Kuruma
+kuruma2	Kuruma (Armored)
+locust	Locust
+lynx	Lynx
+massacro	Massacro
+massacro2	Massacro (Racecar)
+neo	Neo
+neon	Neon
+ninef	9F
+ninef2	9F Cabrio
+niobe	Niobe
+omnis	Omnis
+omnisegt	Omnis e-GT
+panthere	Panthere
+paragon	Paragon R
+paragon2	Paragon R (Armored)
+paragon3	Paragon S
+pariah	Pariah
+penumbra	Penumbra
+penumbra2	Penumbra FF
+r300	300R
+raiden	Raiden
+rapidgt4	Rapid GT X
+raptor	Raptor
+remus	Remus
+revolter	Revolter
+rt3000	RT3000
+ruston	Ruston
+s95	S95
+schafter3	Schafter V12
+schafter4	Schafter LWB
+schlagen	Schlagen GT
+schwarzer	Schwartzer
+sentinel3	Sentinel
+sentinel4	Sentinel Classic Widebody
+sentinel5	Sentinel GTS
+sm722	SM722
+stingertt	Itali GTO Stinger TT
+streiter	Streiter
+sultan	Sultan
+sultan2	Sultan Classic
+sultan3	Sultan RS Classic
+tampa2	Drift Tampa
+tenf	10F
+tenf2	10F Widebody
+tropos	Tropos Rallye
+vectre	Vectre
+verlierer2	Verlierer
+veto	Veto Classic
+veto2	Veto Modern
+vstr	V-STR
+zr350	ZR350
+zr380	Apocalypse ZR380
+zr3802	Future Shock ZR380
+zr3803	Nightmare ZR380
+dynasty	Dynasty
+ztype	Z-Type
+ardent	Ardent
+astrale	Astrale
+btype	Roosevelt
+btype2	Fränken Stange
+btype3	Roosevelt Valor
+casco	Casco
+cheburek	Cheburek
+cheetah2	Cheetah Classic
+cheetah3	LSCM Cheetah Classic
+coquette2	Coquette Classic
+coquette5	Coquette D1
+deluxo	Deluxo
+driftcheburek	Cheburek
+driftjester3	Jester Classic
+driftnebula	Nebula Turbo
+fagaloa	Fagaloa
+feltzer3	Feltzer Classic
+gt500	GT500
+gt750	GT750
+infernus2	Infernus Classic
+itali2	Itali Classic
+jb700	JB 700
+jb7002	JB 700W
+mamba	Mamba
+manana	Manana
+michelli	Michelli GT
+monroe	Monroe
+nebula	Nebula Turbo
+peyote	Peyote
+peyote3	Peyote Custom
+pigalle	Pigalle
+rapidgt3	Rapid GT Classic
+retinue	Retinue
+retinue2	Retinue Mk II
+savestra	Savestra
+stinger	Stinger
+stingergt	Stinger GT
+stromberg	Stromberg
+swinger	Swinger
+toreador	Toreador
+torero	Torero
+tornado	Tornado
+tornado2	Tornado
+tornado3	Tornado
+tornado4	Tornado
+tornado5	Tornado Custom
+tornado6	Tornado Rat Rod
+turismo2	Turismo Classic
+uranus	Uranus LozSpeed
+viseris	Viseris
+z190	190z
+zion3	Zion Classic
+adder	Adder
+autarch	Autarch
+banshee2	Banshee 900R
+bullet	Bullet
+champion	Champion
+cheetah	Cheetah
+cyclone	Cyclone
+cyclone2	Cyclone II
+deveste	Deveste Eight
+emerus	Emerus
+entity2	Entity XXR
+entity3	Entity MT
+entityxf	Entity XF
+fmj	FMJ
+fmj2	FMJ MK V
+furia	Furia
+gp1	GP1
+ignus	Ignus
+ignus2	Weaponized Ignus
+infernus	Infernus
+italigtb	Itali GTB
+italigtb2	Itali GTB Custom
+krieger	Krieger
+le7b	RE-7B
+lm87	LM87
+luiva	Luiva
+nero	Nero
+nero2	Nero Custom
+osiris	Osiris
+penetrator	Penetrator
+pfister811	811
+pipistrello	Pipistrello
+prototipo	X80 Proto
+reaper	Reaper
+s80	S80RR
+sc1	SC1
+scramjet	Scramjet
+sheava	ETR1
+sultanrs	Sultan RS
+suzume	Suzume
+t20	T20
+taipan	Taipan
+tempesta	Tempesta
+tezeract	Tezeract
+thrax	Thrax
+tigon	Tigon
+torero2	Torero XO
+turismo3	Turismo Omaggio
+turismor	Turismo R
+tyrant	Tyrant
+tyrus	Tyrus
+vacca	Vacca
+vagner	Vagner
+vigilante	Vigilante
+virtue	Virtue
+visione	Visione
+voltic	Voltic
+voltic2	Rocket Voltic
+xa21	XA-21
+xtreme	X-treme
+zeno	Zeno
+zentorno	Zentorno
+zorrusso	Zorrusso
+baller	Baller
+bjxl	BeeJay XL
+granger	Granger
+mesa	Mesa
+novak	Novak
+seminole	Seminole
+aleutian	Aleutian
+astron	Astron
+astron2	Astron Custom
+baller2	Baller
+baller3	Baller LE
+baller4	Baller LE LWB
+baller5	Baller LE (Armored)
+baller6	Baller LE LWB (Armored)
+baller7	Baller ST
+baller8	Baller ST-D
+castigator	Castigator
+cavalcade	Cavalcade
+cavalcade2	Cavalcade
+cavalcade3	Cavalcade XL
+contender	Contender
+dorado	Dorado
+dubsta	Dubsta
+dubsta2	Dubsta
+everon3	Everon RS
+fq2	FQ 2
+granger2	Granger 3600LX
+gresley	Gresley
+habanero	Habanero
+huntley	Huntley S
+issi8	Issi Rally
+iwagen	I-Wagen
+jubilee	Jubilee
+landstalker	Landstalker
+landstalker2	Landstalker XL
+mesa2	Mesa
+patriot	Patriot
+patriot2	Patriot Stretch
+radi	Radius
+rebla	Rebla GTS
+rocoto	Rocoto
+seminole2	Seminole Frontier
+serrano	Serrano
+squaddie	Squaddie
+toros	Toros
+vivanite	Vivanite
+woodlander	Woodlander
+xls	XLS
+xls2	XLS (Armored)
+airtug	Airtug
+caddy2	Caddy
+forklift	Forklift
+mower	Lawn Mower
+ripley	Ripley
+sadler	Sadler
+towtruck	Tow Truck
+tractor	Tractor
+towtruck2	Tow Truck
+utillitruck3	Utility Truck
+armytanker	Army Trailer
+armytrailer	Army Trailer
+armytrailer2	Army Trailer
+baletrailer	Baletrailer
+boattrailer	Boat Trailer
+boattrailer2	Boat Trailer
+boattrailer3	Boat Trailer
+caddy	Caddy
+caddy3	Caddy
+docktrailer	docktrailer
+docktug	Docktug
+driftkeitora	Keitora
+freighttrailer	freighttrailer
+graintrailer	Graintrailer
+keitora	Keitora
+proptrailer	proptrailer
+raketrailer	Trailer
+sadler2	Sadler
+scrap	Scrap Truck
+slamtruck	Slamtruck
+tanker	Trailer
+tanker2	tanker2
+towtruck3	Tow Truck
+towtruck4	Tow Truck
+tr2	Trailer
+tr3	Trailer
+tr4	Trailer
+tractor2	Fieldmaster
+tractor3	Fieldmaster
+trailerlarge	Mobile Operations Center
+trailerlogs	Trailer
+trailers	Trailer
+trailers2	Trailer
+trailers3	Trailer
+trailers4	Trailer
+trailers5	Trailer
+trailersmall	Trailer
+trflat	Trailer
+tvtrailer	Trailer
+tvtrailer2	Trailer
+utillitruck	Utility Truck
+utillitruck2	Utility Truck
+bison2	Bison
+bison3	Bison
+burrito	Burrito
+burrito4	Burrito
+camper	Camper
+surfer	Surfer
+surfer2	Surfer
+taco	Taco Van
+bison	Bison
+bobcatxl	Bobcat XL
+boxville	Boxville
+boxville2	Boxville
+boxville3	Boxville
+boxville4	Boxville
+boxville5	Armored Boxville
+boxville6	Boxville (LSDS)
+burrito2	Bugstars Burrito
+burrito3	Burrito
+burrito5	Burrito
+gburrito	Gang Burrito
+gburrito2	Gang Burrito
+journey	Journey
+journey2	Journey II
+minivan	Minivan
+minivan2	Minivan Custom
+paradise	Paradise
+pony	Pony
+pony2	Pony
+rumpo	Rumpo
+rumpo2	Rumpo
+rumpo3	Rumpo Custom
+speedo	Speedo
+speedo2	Clown Van
+speedo4	Speedo Custom
+speedo5	Speedo Custom
+surfer3	Surfer Custom
+youga	Youga
+youga2	Youga Classic
+youga3	Youga Classic 4x4
+youga4	Youga Custom
+youga5	Youga Custom
