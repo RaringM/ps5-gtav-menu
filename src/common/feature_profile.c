@@ -38,8 +38,8 @@ int gtav_feature_profile_save(const char* path, const GtavFeatureProfile* profil
 
   if (!profile) return -1;
 
-  // Enter the game's root so a relative-or-/data path resolves the same way the
-  // runtime config write does; always leave the guard before touching the FILE.
+  // Loader processes can enter the console root; injected workers use the mounted path already
+  // present in the game sandbox. Always leave the guard before touching the FILE.
   rooted = gtav_rootdir_enter(&rootdir) == 0;
   fp = fopen(path ? path : GTAV_FEATURE_PROFILE_DEFAULT_PATH, "w");
   if (rooted) {

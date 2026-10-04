@@ -3,14 +3,15 @@
 #include <stdint.h>
 
 #include "gtavmenu/keybinds.h"
+#include "gtavmenu/profile_storage.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/* Default on-console profile path. Lives under the same /data/GTAVMenu directory the
- * runtime config and log use, so a setup survives a menu restart. */
-#define GTAV_FEATURE_PROFILE_DEFAULT_PATH "/data/GTAVMenu/profile.cfg"
+/* Default path as seen by the sandboxed worker. The loader mounts the persistent host-side state
+ * directory here before injection, so a setup survives menu and game restarts. */
+#define GTAV_FEATURE_PROFILE_DEFAULT_PATH GTAV_PROFILE_STORAGE_PATH
 /* v3 appended companion + cruise cyclers; v4 appended the companion aggression cycler; v5
  * appended the companion weapon cycler; v6 appended the companion accuracy cycler. The loader
  * memsets unknown fields to 0 before parsing, so older files load with the new fields defaulting
