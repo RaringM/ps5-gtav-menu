@@ -736,10 +736,14 @@ static const ShellItem kSpawnedEntitiesItems[] = {
      GTAV_NATIVE_SHELL_ACTION_CLEAR_SPAWNED_OBJECTS, "Needs main-thread hook", 0},
     {"Clear All Spawned", SHELL_ROW_ACTION, SHELL_MENU_NONE,
      GTAV_NATIVE_SHELL_ACTION_CLEAR_SPAWNED_ALL, "Needs main-thread hook", 0},
-    // Spooner-lite: Save Map is worker-direct (getters + file); Load Map self-refuses until the
-    // game-thread hook is live (it streams + CREATE_*s), so it carries no static lock.
+    // Spooner-lite: Save/Load parse and publish worker-side; streaming + CREATE_* run through the
+    // game-thread chain. Cancel atomically stops that chain before its next entry.
     {"Save Map", SHELL_ROW_ACTION, SHELL_MENU_NONE, GTAV_NATIVE_SHELL_ACTION_SAVE_MAP, nullptr, 0},
     {"Load Map", SHELL_ROW_ACTION, SHELL_MENU_NONE, GTAV_NATIVE_SHELL_ACTION_LOAD_MAP, nullptr, 0},
+    {"Cancel Map Load", SHELL_ROW_ACTION, SHELL_MENU_NONE, GTAV_NATIVE_SHELL_ACTION_CANCEL_MAP_LOAD,
+     nullptr, 0},
+    {"Check Custom Assets", SHELL_ROW_ACTION, SHELL_MENU_NONE,
+     GTAV_NATIVE_SHELL_ACTION_PROBE_CUSTOM_MOUNT, nullptr, 0},
     // Last-object tweaks. Duplicate/Attach/Detach touch entity managers (gated until the hook is
     // live); Object Alpha is a worker-safe transparency cycler.
     {"Duplicate Last Object", SHELL_ROW_ACTION, SHELL_MENU_NONE,

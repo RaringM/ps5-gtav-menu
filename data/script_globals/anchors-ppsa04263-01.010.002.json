@@ -1,0 +1,60 @@
+{
+  "_comment": [
+    "Hand-authored RE input for the script-globals subsystem (the despawn-global",
+    "MP-cars-in-SP fix). Unlike the native table, these anchors are NOT resolved by",
+    "the crossmap join -- they are version-specific machine addresses reverse-",
+    "engineered once per game build from the PS5 eboot with a disassembler, then",
+    "baked into a generated header by devtools/generators/generate_script_globals_header.py.",
+    "Set each anchor's \"addr\" to the absolute live virtual address (the eboot maps",
+    "at its fixed link base with no ASLR slide, so the disassembler vaddr is the",
+    "live VA). Leave it null until RE'd; a null anchor emits 0 and the runtime",
+    "latches FAILED rather than dereferencing null. See docs/script-globals-design.md."
+  ],
+  "gameBuild": "GTA V Enhanced (PS5) PPSA04263 / 01.010.002",
+  "targetId": "ppsa04263-01.010.002",
+  "_targetIdComment": [
+    "Target-specific anchors for PPSA04263 01.010.002.",
+    "Both the globals base and global indices are validated per title; never infer compatibility from a shared content version."
+  ],
+  "analysisInputSha256": "8374dc2e7decdf94555390e041318a9c3aa49258145b22fa4382c5d33106c71a",
+  "despawnGlobalIndex": {
+    "macro": "GTAV_DESPAWN_GLOBAL_INDEX",
+    "value": 4520961,
+    "note": "Live bytecode scan on PPSA04263 01.010.002 independently returned 4520961. The runtime writes only after an explicit vehicle spawn arms the capability."
+  },
+  "prologueGlobalIndex": {
+    "macro": "GTAV_PROLOGUE_GLOBAL_INDEX",
+    "value": 0,
+    "note": "Unset for 01.010.002; Skip Prologue remains disabled."
+  },
+  "prologueGlobalCandidates": [],
+  "anchors": [
+    {
+      "name": "SCRIPT_TABLE",
+      "macro": "GTAV_SCRIPT_TABLE_ADDR",
+      "addr": null,
+      "verifiedLive": false,
+      "lead": "Current 01.010 IDA re-audit: ScriptStore string live 0x3bbb1bd, sole xref live 0x1ca59ce, fwAssetStore object live 0x5984dd8. NOT yet the Menyoo {Header*,hash}[] table -- follow the store pool to the program array. See docs/script-globals-design.md s8.",
+      "method": [
+        "PC-Enhanced FindScript pattern 48 03 05 <disp32> 4c 85 c0 0f 84 returns",
+        "0 hits on PS5 (separately compiled). Located g_ScriptStore via the",
+        "'ScriptStore' .rodata string xref. Historical tool output was from an older workspace;",
+        "the required 01.010 ELF was re-audited with IDA Pro MCP on 2026-09-21.",
+        "Remaining: follow the asset-store pool to the {scrProgram*, hash} program",
+        "array; validate by finding shop_controller name_hash 0x39DA738B."
+      ]
+    },
+    {
+      "name": "GLOBALS_BASE",
+      "macro": "GTAV_GLOBALS_BASE_ADDR",
+      "addr": "0x6155e90",
+      "verifiedLive": true,
+      "lead": "Live-verified PPSA04263 01.010.002 globals pointer table. The resolved block 17 and despawn slot were readable and the slot was writable with value 0 before injection.",
+      "method": [
+        "Matched the PPSA04263 01.010.002 accessor bytes against its normalized executable.",
+        "Fail-closed read-only validation on PID 1346 observed 15 plausible pointers and 49 null entries, resolved block 17, and confirmed the target slot was writable without changing it.",
+        "A separate read-only live bytecode scan independently resolved global index 4520961."
+      ]
+    }
+  ]
+}

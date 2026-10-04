@@ -1,0 +1,1111 @@
+# GTA V pedestrian model list for the menu ped catalog (skin / spawn ped / bodyguard).
+# Source: data/peds/menyoo-PedList.xml (Menyoo community-curated PedList).
+# Format: <model_name>\t<caption>\t<Category>  (lines starting with # are ignored).
+# Regenerate from the Menyoo dump with `make ped-names`; rebuild the header with
+# `make ped-registry`. The runtime validates each model with IS_MODEL_* before use.
+# 1104 peds across 14 categories.
+
+player_zero	Michael	Player
+p_michael_02	Michael Aged	Player
+player_one	Franklin	Player
+p_franklin_02	Franklin Aged	Player
+player_two	Trevor	Player
+mp_f_freemode_01	Freemode MP Female	Player
+mp_m_freemode_01	Freemode MP Male	Player
+a_c_boar	Boar	Animal
+a_c_boar_02	Boar 2 (Halloween)	Animal
+a_c_cat_01	Cat	Animal
+a_c_cat_02	Cat 2	Animal
+a_c_chickenhawk	Hawk	Animal
+a_c_chimp	Chimp 2	Animal
+a_c_chimp_02	Chimp	Animal
+a_c_chop	Chop (Young)	Animal
+a_c_chop_02	Chop (Old)	Animal
+a_c_cormorant	Cormorant	Animal
+a_c_cow	Cow	Animal
+a_c_coyote	Coyote	Animal
+a_c_coyote_02	Coyote (Halloween)	Animal
+a_c_crow	Crow	Animal
+a_c_deer	Deer	Animal
+a_c_deer_02	Deer (Halloween)	Animal
+a_c_dolphin	Dolphin	Animal
+a_c_fish	Fish	Animal
+a_c_hen	Hen	Animal
+a_c_humpback	Humpback Whale	Animal
+a_c_husky	Husky	Animal
+a_c_killerwhale	Killer Whale	Animal
+a_c_mtlion	Mountain Lion	Animal
+a_c_mtlion_02	Mountain Lion (Halloween)	Animal
+a_c_pig	Pig	Animal
+a_c_pigeon	Pigeon	Animal
+a_c_poodle	Poodle	Animal
+a_c_pug_02	Pug (Halloween)	Animal
+a_c_pug	Pug	Animal
+a_c_rabbit_01	Rabbit	Animal
+a_c_rabbit_02	Rabbit (Huge)	Animal
+a_c_rat	Rat	Animal
+a_c_retriever	Retriever	Animal
+a_c_rhesus	Rhesus The Chimp	Animal
+a_c_rottweiler	Rottweiler	Animal
+a_c_rottweiler_02	Rottweiler 2	Animal
+a_c_seagull	Seagull	Animal
+a_c_sharkhammer	Hammerhead Shark	Animal
+a_c_sharktiger	Tiger Shark	Animal
+a_c_shepherd	Australian Shepherd	Animal
+a_c_stingray	Stingray	Animal
+a_c_westy	Westie	Animal
+a_c_panther	Panther	Animal
+a_f_m_beach_01	Beach Female	Ambient Female
+a_f_m_bevhills_01	Beverly Hills Female	Ambient Female
+a_f_m_bevhills_02	Beverly Hills Female 2	Ambient Female
+a_f_m_bodybuild_01	Bodybuilder Female	Ambient Female
+a_f_m_business_02	Business Female 2	Ambient Female
+a_f_m_downtown_01	Downtown Female	Ambient Female
+a_f_m_eastsa_01	East SA Female	Ambient Female
+a_f_m_eastsa_02	East SA Female 2	Ambient Female
+a_f_m_fatbla_01	Fat Black Female	Ambient Female
+a_f_m_fatcult_01	Fat Cult Female	Ambient Female
+a_f_m_fatwhite_01	Fat White Female	Ambient Female
+a_f_m_genbiker_01	General Biker Female	Ambient Female
+a_f_m_genstreet_01	General Street Young Female	Ambient Female
+a_f_m_ktown_01	Korean Female	Ambient Female
+a_f_m_ktown_02	Korean Female 2	Ambient Female
+a_f_m_prolhost_01	Prologue Host Female	Ambient Female
+a_f_m_salton_01	Salton Female	Ambient Female
+a_f_m_skidrow_01	Skid Row Female	Ambient Female
+a_f_m_soucent_01	South Central Female	Ambient Female
+a_f_m_soucent_02	South Central Female 2	Ambient Female
+a_f_m_soucentmc_01	South Central MC Female	Ambient Female
+a_f_m_tourist_01	Tourist Female	Ambient Female
+a_f_m_tramp_01	Tramp Female	Ambient Female
+a_f_m_trampbeac_01	Beach Tramp Female	Ambient Female
+a_f_o_genstreet_01	General Street Old Female	Ambient Female
+a_f_o_indian_01	Indian Old Female	Ambient Female
+a_f_o_ktown_01	Korean Old Female	Ambient Female
+a_f_o_salton_01	Salton Old Female	Ambient Female
+a_f_o_soucent_01	South Central Old Female	Ambient Female
+a_f_o_soucent_02	South Central Old Female 2	Ambient Female
+a_f_y_beach_01	Beach Young Female	Ambient Female
+a_f_y_beach_02	Beach Young Female 2	Ambient Female
+a_f_y_bevhills_01	Beverly Hills Young Female	Ambient Female
+a_f_y_bevhills_02	Beverly Hills Young Female 2	Ambient Female
+a_f_y_bevhills_03	Beverly Hills Young Female 3	Ambient Female
+a_f_y_bevhills_04	Beverly Hills Young Female 4	Ambient Female
+a_f_y_bevhills_05	Beverly Hills Young Female 5	Ambient Female
+a_f_y_business_01	Business Young Female	Ambient Female
+a_f_y_business_02	Business Young Female 2	Ambient Female
+a_f_y_business_03	Business Young Female 3	Ambient Female
+a_f_y_business_04	Business Young Female 4	Ambient Female
+a_f_y_carclub_01	Car Club Female 1	Ambient Female
+a_f_y_carclub_02	Car Club Female 2	Ambient Female
+a_f_y_clubcust_01	Club Customer Female 1	Ambient Female
+a_f_y_clubcust_02	Club Customer Female 2	Ambient Female
+a_f_y_clubcust_03	Club Customer Female 3	Ambient Female
+a_f_y_clubcust_04	Club Customer Female 4	Ambient Female
+a_f_y_eastsa_01	East SA Young Female	Ambient Female
+a_f_y_eastsa_02	East SA Young Female 2	Ambient Female
+a_f_y_eastsa_03	East SA Young Female 3	Ambient Female
+a_f_y_epsilon_01	Epsilon Female	Ambient Female
+a_f_y_femaleagent	Female Agent	Ambient Female
+a_f_y_fitness_01	Fitness Female	Ambient Female
+a_f_y_fitness_02	Fitness Female 2	Ambient Female
+a_f_y_gencaspat_01	Casual Casino Guest	Ambient Female
+a_f_y_genhot_01	General Hot Young Female	Ambient Female
+a_f_y_golfer_01	Golfer Young Female	Ambient Female
+a_f_y_hiker_01	Hiker Female	Ambient Female
+a_f_y_hippie_01	Hippie Female	Ambient Female
+a_f_y_hipster_01	Hipster Female	Ambient Female
+a_f_y_hipster_02	Hipster Female 2	Ambient Female
+a_f_y_hipster_03	Hipster Female 3	Ambient Female
+a_f_y_hipster_04	Hipster Female 4	Ambient Female
+a_f_y_indian_01	Indian Young Female	Ambient Female
+a_f_y_juggalo_01	Juggalo Female	Ambient Female
+a_f_y_runner_01	Jogger Female	Ambient Female
+a_f_y_rurmeth_01	Rural Meth Addict Female	Ambient Female
+a_f_y_scdressy_01	Dressy Female	Ambient Female
+a_f_y_skater_01	Skater Female	Ambient Female
+a_f_y_smartcaspat_01	Formal Casino Guest	Ambient Female
+a_f_y_soucent_01	South Central Young Female	Ambient Female
+a_f_y_soucent_02	South Central Young Female 2	Ambient Female
+a_f_y_soucent_03	South Central Young Female 3	Ambient Female
+a_f_y_studioparty_01	Studio Party Female	Ambient Female
+a_f_y_studioparty_02	Studio Party Female 2	Ambient Female
+a_f_y_tennis_01	Tennis Player Female	Ambient Female
+a_f_y_topless_01	Topless	Ambient Female
+a_f_y_tourist_01	Tourist Young Female	Ambient Female
+a_f_y_tourist_02	Tourist Young Female 2	Ambient Female
+a_f_y_vinewood_01	Vinewood Female	Ambient Female
+a_f_y_vinewood_02	Vinewood Female 2	Ambient Female
+a_f_y_vinewood_03	Vinewood Female 3	Ambient Female
+a_f_y_vinewood_04	Vinewood Female 4	Ambient Female
+a_f_y_yoga_01	Yoga Female	Ambient Female
+a_m_m_acult_01	Altruist Cult Mid-Age Male	Ambient Male
+a_m_m_afriamer_01	African American Male	Ambient Male
+a_m_m_bankrobber_01	Bank Robber Male	Ambient Male
+a_m_m_beach_01	Beach Male	Ambient Male
+a_m_m_beach_02	Beach Male 2	Ambient Male
+a_m_m_bevhills_01	Beverly Hills Male	Ambient Male
+a_m_m_bevhills_02	Beverly Hills Male 2	Ambient Male
+a_m_m_business_01	Business Male	Ambient Male
+a_m_m_eastsa_01	East SA Male	Ambient Male
+a_m_m_eastsa_02	East SA Male 2	Ambient Male
+a_m_m_farmer_01	Farmer	Ambient Male
+a_m_m_fatlatin_01	Fat Latino Male	Ambient Male
+a_m_m_genbiker_01	General Biker Male	Ambient Male
+a_m_m_genfat_01	General Fat Male	Ambient Male
+a_m_m_genfat_02	General Fat Male 2	Ambient Male
+a_m_m_golfer_01	Golfer Male	Ambient Male
+a_m_m_hasjew_01	Hasidic Jew Male	Ambient Male
+a_m_m_hillbilly_01	Hillbilly Male	Ambient Male
+a_m_m_hillbilly_02	Hillbilly Male 2	Ambient Male
+a_m_m_indian_01	Indian Male	Ambient Male
+a_m_m_ktown_01	Korean Male	Ambient Male
+a_m_m_malibu_01	Malibu Male	Ambient Male
+a_m_m_mexcntry_01	Mexican Rural	Ambient Male
+a_m_m_mexlabor_01	Mexican Labourer	Ambient Male
+a_m_m_mlcrisis_01	Midlife Crisis Casino Bikers	Ambient Male
+a_m_m_og_boss_01	OG Boss	Ambient Male
+a_m_m_paparazzi_01	Paparazzi Male	Ambient Male
+a_m_m_polynesian_01	Polynesian	Ambient Male
+a_m_m_prolhost_01	Prologue Host Male	Ambient Male
+a_m_m_rurmeth_01	Rural Meth Addict Male	Ambient Male
+a_m_m_salton_01	Salton Male	Ambient Male
+a_m_m_salton_02	Salton Male 2	Ambient Male
+a_m_m_salton_03	Salton Male 3	Ambient Male
+a_m_m_salton_04	Salton Male 4	Ambient Male
+a_m_m_skater_01	Skater Male	Ambient Male
+a_m_m_skidrow_01	Skid Row Male	Ambient Male
+a_m_m_socenlat_01	South Central Latino Male	Ambient Male
+a_m_m_soucent_01	South Central Male	Ambient Male
+a_m_m_soucent_02	South Central Male 2	Ambient Male
+a_m_m_soucent_03	South Central Male 3	Ambient Male
+a_m_m_soucent_04	South Central Male 4	Ambient Male
+a_m_m_stlat_02	Latino Street Male 2	Ambient Male
+a_m_m_tennis_01	Tennis Player Male	Ambient Male
+a_m_m_tourist_01	Tourist Male	Ambient Male
+a_m_m_tramp_01	Tramp Male	Ambient Male
+a_m_m_trampbeac_01	Beach Tramp Male	Ambient Male
+a_m_m_tranvest_01	Transvestite Male	Ambient Male
+a_m_m_tranvest_02	Transvestite Male 2	Ambient Male
+a_m_m_studioparty_01	Studio Party Male	Ambient Male
+a_m_o_acult_01	Altruist Cult Old Male	Ambient Male
+a_m_o_acult_02	Altruist Cult Old Male 2	Ambient Male
+a_m_o_beach_01	Beach Old Male	Ambient Male
+a_m_o_beach_02	Beach Old Male 2	Ambient Male
+a_m_o_genstreet_01	General Street Old Male	Ambient Male
+a_m_o_ktown_01	Korean Old Male	Ambient Male
+a_m_o_salton_01	Salton Old Male	Ambient Male
+a_m_o_soucent_01	South Central Old Male	Ambient Male
+a_m_o_soucent_02	South Central Old Male 2	Ambient Male
+a_m_o_soucent_03	South Central Old Male 3	Ambient Male
+a_m_o_tramp_01	Tramp Old Male	Ambient Male
+a_m_y_acult_01	Altruist Cult Young Male	Ambient Male
+a_m_y_acult_02	Altruist Cult Young Male 2	Ambient Male
+a_m_y_beach_01	Beach Young Male	Ambient Male
+a_m_y_beach_02	Beach Young Male 2	Ambient Male
+a_m_y_beach_03	Beach Young Male 3	Ambient Male
+a_m_y_beach_04	Beach Young Male 4	Ambient Male
+a_m_y_beachvesp_01	Vespucci Beach Male	Ambient Male
+a_m_y_beachvesp_02	Vespucci Beach Male 2	Ambient Male
+a_m_y_bevhills_01	Beverly Hills Young Male	Ambient Male
+a_m_y_bevhills_02	Beverly Hills Young Male 2	Ambient Male
+a_m_y_breakdance_01	Breakdancer Male	Ambient Male
+a_m_y_busicas_01	Business Casual	Ambient Male
+a_m_y_business_01	Business Young Male	Ambient Male
+a_m_y_business_02	Business Young Male 2	Ambient Male
+a_m_y_business_03	Business Young Male 3	Ambient Male
+a_m_y_carclub_01	Car Club Male 1	Ambient Male
+a_m_y_carclub_02	Car Club Male 2	Ambient Male
+a_m_y_clubcust_01	Club Customer Male 1	Ambient Male
+a_m_y_clubcust_02	Club Customer Male 2	Ambient Male
+a_m_y_clubcust_03	Club Customer Male 3	Ambient Male
+a_m_y_clubcust_04	Club Customer Male 4	Ambient Male
+a_m_y_cyclist_01	Cyclist Male	Ambient Male
+a_m_y_dhill_01	Downhill Cyclist	Ambient Male
+a_m_y_downtown_01	Downtown Male	Ambient Male
+a_m_y_eastsa_01	East SA Young Male	Ambient Male
+a_m_y_eastsa_02	East SA Young Male 2	Ambient Male
+a_m_y_epsilon_01	Epsilon Male	Ambient Male
+a_m_y_epsilon_02	Epsilon Male 2	Ambient Male
+a_m_y_gay_01	Gay Male	Ambient Male
+a_m_y_gay_02	Gay Male 2	Ambient Male
+a_m_y_gencaspat_01	Casual Casino Guests	Ambient Male
+a_m_y_genstreet_01	General Street Young Male	Ambient Male
+a_m_y_genstreet_02	General Street Young Male 2	Ambient Male
+a_m_y_golfer_01	Golfer Young Male	Ambient Male
+a_m_y_hasjew_01	Hasidic Jew Young Male	Ambient Male
+a_m_y_hiker_01	Hiker Male	Ambient Male
+a_m_y_hippy_01	Hippie Male	Ambient Male
+a_m_y_hipster_01	Hipster Male	Ambient Male
+a_m_y_hipster_02	Hipster Male 2	Ambient Male
+a_m_y_hipster_03	Hipster Male 3	Ambient Male
+a_m_y_indian_01	Indian Young Male	Ambient Male
+a_m_y_jetski_01	Jetskier	Ambient Male
+a_m_y_juggalo_01	Juggalo Male	Ambient Male
+a_m_y_ktown_01	Korean Young Male	Ambient Male
+a_m_y_ktown_02	Korean Young Male 2	Ambient Male
+a_m_y_latino_01	Latino Young Male	Ambient Male
+a_m_y_methhead_01	Meth Addict	Ambient Male
+a_m_y_mexthug_01	Mexican Thug	Ambient Male
+a_m_y_motox_01	Motocross Biker	Ambient Male
+a_m_y_motox_02	Motocross Biker 2	Ambient Male
+a_m_y_musclbeac_01	Beach Muscle Male	Ambient Male
+a_m_y_musclbeac_02	Beach Muscle Male 2	Ambient Male
+a_m_y_polynesian_01	Polynesian Young	Ambient Male
+a_m_y_roadcyc_01	Road Cyclist	Ambient Male
+a_m_y_runner_01	Jogger Male	Ambient Male
+a_m_y_runner_02	Jogger Male 2	Ambient Male
+a_m_y_salton_01	Salton Young Male	Ambient Male
+a_m_y_skater_01	Skater Young Male	Ambient Male
+a_m_y_skater_02	Skater Young Male 2	Ambient Male
+a_m_y_smartcaspat_01	Formal Casino Guests	Ambient Male
+a_m_y_soucent_01	South Central Young Male	Ambient Male
+a_m_y_soucent_02	South Central Young Male 2	Ambient Male
+a_m_y_soucent_03	South Central Young Male 3	Ambient Male
+a_m_y_soucent_04	South Central Young Male 4	Ambient Male
+a_m_y_stbla_01	Black Street Male	Ambient Male
+a_m_y_stbla_02	Black Street Male 2	Ambient Male
+a_m_y_stlat_01	Latino Street Young Male	Ambient Male
+a_m_y_studioparty_01	Studio Party Male 2	Ambient Male
+a_m_y_stwhi_01	White Street Male	Ambient Male
+a_m_y_stwhi_02	White Street Male 2	Ambient Male
+a_m_y_sunbathe_01	Sunbather Male	Ambient Male
+a_m_y_surfer_01	Surfer	Ambient Male
+a_m_y_tattoocust_01	Tattoo Cust Male	Ambient Male
+a_m_y_vindouche_01	Vinewood Douche	Ambient Male
+a_m_y_vinewood_01	Vinewood Male	Ambient Male
+a_m_y_vinewood_02	Vinewood Male 2	Ambient Male
+a_m_y_vinewood_03	Vinewood Male 3	Ambient Male
+a_m_y_vinewood_04	Vinewood Male 4	Ambient Male
+a_m_y_yoga_01	Yoga Male	Ambient Male
+cs_amandatownley	Amanda De Santa	Cutscene
+cs_amandatownley_02	Amanda Aged	Cutscene
+cs_andreas	Andreas Sanchez	Cutscene
+cs_ashley	Ashley Butler	Cutscene
+cs_bankman	Bank Manager	Cutscene
+cs_barry	Barry	Cutscene
+cs_beverly	Beverly Felton	Cutscene
+cs_brad	Brad	Cutscene
+cs_bradcadaver	Brad's Cadaver	Cutscene
+cs_carbuyer	Car Buyer	Cutscene
+cs_casey	Casey	Cutscene
+cs_chengsr	Wei Cheng Sr	Cutscene
+cs_chrisformage	Cris Formage	Cutscene
+cs_clay	Clay Simons (The Lost)	Cutscene
+cs_dale	Dale	Cutscene
+cs_davenorton	Dave Norton	Cutscene
+cs_debra	Debra	Cutscene
+cs_denise	Denise	Cutscene
+cs_devin	Devin	Cutscene
+cs_dom	Dom Beasley	Cutscene
+cs_dreyfuss	Peter Dreyfuss	Cutscene
+cs_drfriedlander	Dr. Friedlander	Cutscene
+cs_drfriedlander_02	Dr. Friedlander 2	Cutscene
+cs_fabien	Fabien	Cutscene
+cs_fbisuit_01	FIB Suit	Cutscene
+cs_floyd	Floyd Hebert	Cutscene
+cs_guadalope	Guadalope	Cutscene
+cs_gurk	GURK?	Cutscene
+cs_hunter	Hunter	Cutscene
+cs_janet	Janet	Cutscene
+cs_jewelass	Jeweller Assistant	Cutscene
+cs_jimmyboston	Jimmy Boston	Cutscene
+cs_jimmydisanto	Jimmy De Santa	Cutscene
+cs_jimmydisanto2	Jimmy De Santa 2	Cutscene
+cs_joeminuteman	Minuteman Joe	Cutscene
+cs_johnnyklebitz	Johnny Klebitz	Cutscene
+cs_josef	Josef	Cutscene
+cs_josh	Josh	Cutscene
+cs_karen_daniels	Karen Daniels	Cutscene
+cs_lamardavis	Lamar Davis	Cutscene
+cs_lamardavis_02	Lamar Davis 2	Cutscene
+cs_lazlow	Lazlow	Cutscene
+cs_lazlow_2	Lazlow 2	Cutscene
+cs_lestercrest	Lester Crest	Cutscene
+cs_lestercrest_2	Lester Crest 2	Cutscene
+cs_lestercrest_3	Lester Crest 3	Cutscene
+cs_lifeinvad_01	Life Invader	Cutscene
+cs_magenta	Magenta	Cutscene
+cs_manuel	Manuel	Cutscene
+cs_marnie	Marnie Allen	Cutscene
+cs_martinmadrazo	Martin Madrazo	Cutscene
+cs_martinmadrazo_02	Martin Madrazo 2	Cutscene
+cs_maryann	Mary-Ann Quinn	Cutscene
+cs_michelle	Michelle	Cutscene
+cs_milton	Milton McIlroy	Cutscene
+cs_molly	Molly	Cutscene
+cs_movpremf_01	Movie Premiere Female	Cutscene
+cs_movpremmale	Movie Premiere Male	Cutscene
+cs_mrk	Ferdinand Kerimov (Mr. K)	Cutscene
+cs_mrs_thornhill	Mrs. Thornhill	Cutscene
+cs_mrsphillips	Mrs. Phillips	Cutscene
+cs_natalia	Natalia	Cutscene
+cs_nervousron	Nervous Ron	Cutscene
+cs_nervousron_02	Nervous Ron 2	Cutscene
+cs_nigel	Nigel	Cutscene
+cs_old_man1a	Old Man 1	Cutscene
+cs_old_man2	Old Man 2	Cutscene
+cs_omega	Omega	Cutscene
+cs_orleans	Bigfoot	Cutscene
+cs_paper	United Paper Man	Cutscene
+cs_patricia	Patricia	Cutscene
+cs_patricia_02	Patricia 2	Cutscene
+cs_priest	Priest	Cutscene
+cs_prolsec_02	Prologue Security 2	Cutscene
+cs_russiandrunk	Russian Drunk	Cutscene
+cs_siemonyetarian	Simeon Yetarian	Cutscene
+cs_solomon	Solomon Richards	Cutscene
+cs_stevehains	Steve Haines	Cutscene
+cs_stretch	Stretch	Cutscene
+cs_tanisha	Tanisha	Cutscene
+cs_taocheng	Tao Cheng	Cutscene
+cs_taocheng2	Tao Cheng (Casino)	Cutscene
+cs_taostranslator	Tao's Translator	Cutscene
+cs_taostranslator2	Tao's Translator 2	Cutscene
+cs_tenniscoach	Tennis Coach	Cutscene
+cs_terry	Terry	Cutscene
+cs_tom	Tom	Cutscene
+cs_tomepsilon	Epsilon Tom	Cutscene
+cs_tracydisanto	Tracey De Santa	Cutscene
+cs_wade	Wade	Cutscene
+cs_zimbor	Zimbor	Cutscene
+csb_abigail	Abigail Mathers	Cutscene
+csb_agatha	Agatha Baker	Cutscene
+csb_agent	Agent	Cutscene
+csb_agent14_02	Agent 14 - Version 2	Cutscene
+csb_alan	Alan Jerome	Cutscene
+csb_anita	Anita Mendoza	Cutscene
+csb_anton	Anton Beaudelaire	Cutscene
+csb_ary	Dr Dre	Cutscene
+csb_ary_02	Dr Dre 2	Cutscene
+csb_avery	Avery Duggan	Cutscene
+csb_avischwartzman_02	Avi Schwartzman 2	Cutscene
+csb_avischwartzman_03	Avi Schwartzman 3	Cutscene
+csb_avi_04	Avi Schwartzman 4	Cutscene
+csb_avon	Avon Hertz	Cutscene
+csb_ballas_leader	Ballas Leader	Cutscene
+csb_ballasog	Ballas OG	Cutscene
+csb_billionaire	Billionaire Male	Cutscene
+csb_bogdan	Bogdan	Cutscene
+csb_bride	Bride	Cutscene
+csb_brucie2	Brucie Kibbutz	Cutscene
+csb_bryony	Bryony	Cutscene
+csb_burgerdrug	Burger Shot Drug Worker	Cutscene
+csb_callgirl_01	Call Girl 1	Cutscene
+csb_callgirl_02	Call Girl 2	Cutscene
+csb_car3guy1	Car 3 Guy 1	Cutscene
+csb_car3guy2	Car 3 Guy 2	Cutscene
+csb_celeb_01	Celebrity 1	Cutscene
+csb_charlie_reed	Charlie Reed 2	Cutscene
+csb_chef	Chef	Cutscene
+csb_chef2	Chef Again	Cutscene
+csb_chef_03	Chef 3	Cutscene
+csb_chin_goon	Chinese Goon	Cutscene
+csb_cletus	Cletus	Cutscene
+csb_cop	Cop	Cutscene
+csb_customer	Customer	Cutscene
+csb_dax	Dax	Cutscene
+csb_denise_friend	Denise's Friend	Cutscene
+csb_dix	DJ Dixon	Cutscene
+csb_djblamadon	DJ Black Madonna	Cutscene
+csb_drugdealer	Drug Dealer	Cutscene
+csb_englishdave	English Dave	Cutscene
+csb_englishdave_02	English Dave 2	Cutscene
+csb_faber_02	Faber	Cutscene
+csb_fos_rep	Fame Or Shame Rep	Cutscene
+csb_g	Gerald	Cutscene
+csb_georginacheng	Georgina Cheng	Cutscene
+csb_golfer_a	Golfer	Cutscene
+csb_golfer_b	Golfer 2	Cutscene
+csb_groom	Groom	Cutscene
+csb_grove_str_dlr	Grove Street Dealer	Cutscene
+csb_gustavo	Gustavo	Cutscene
+csb_hao	Hao	Cutscene
+csb_hao_02	Hao 2	Cutscene
+csb_helmsmanpavel	Helmsman Pavel 1	Cutscene
+csb_helmsmanpavel_02	Helmsman Pavel 2	Cutscene
+csb_huang	Huang	Cutscene
+csb_hugh	Hugh Welsh	Cutscene
+csb_imani	Imani	Cutscene
+csb_imran	Imran Shinowa	Cutscene
+csb_isldj_00	Island Dj	Cutscene
+csb_isldj_01	Island Dj 1	Cutscene
+csb_isldj_02	Island Dj 2	Cutscene
+csb_isldj_03	Island Dj 3	Cutscene
+csb_isldj_04	Island Dj 4	Cutscene
+csb_jackhowitzer	Jack Howitzer	Cutscene
+csb_jamalamir	Jamal Amir	Cutscene
+csb_janitor	Janitor	Cutscene
+csb_jenettee	Jenette	Cutscene
+csb_jio	Jimmy Lovine 1	Cutscene
+csb_jio_02	Jimmy Lovine 2	Cutscene
+csb_johnny_guns	Johnny Guns	Cutscene
+csb_jodimarshall	Jodi Marshall	Cutscene
+csb_juanstrickler	El Rubio	Cutscene
+csb_labrat	Labrat	Cutscene
+csb_luchadora	Luchadora	Cutscene
+csb_maude	Maude	Cutscene
+csb_maude_02	Maude Bottom Dollar Bounties	Cutscene
+csb_miguelmadrazo	Miguel Madrazo	Cutscene
+csb_mimi	Mimi	Cutscene
+csb_mjo	DJ Pooh	Cutscene
+csb_mjo_02	DJ Pooh 2	Cutscene
+csb_money	Avi Schwartzman	Cutscene
+csb_moodyman_02	Moodyman	Cutscene
+csb_mp_agent14	Agent 14	Cutscene
+csb_mrs_r	Mrs. Rackman	Cutscene
+csb_musician_00	Musician Male	Cutscene
+csb_mweather	Merryweather Merc	Cutscene
+csb_ortega	Ortega	Cutscene
+csb_oscar	Oscar 1	Cutscene
+csb_oscar_02	Oscar 2	Cutscene
+csb_paige	Paige Harris	Cutscene
+csb_party_promo	Party Promoter	Cutscene
+csb_popov	Dima Popov	Cutscene
+csb_porndudes	Porn Dude	Cutscene
+csb_prologuedriver	Prologue Driver	Cutscene
+csb_prolsec	Prologue Security	Cutscene
+csb_ramp_gang	Families Gang Member	Cutscene
+csb_rafdeangelis	Raf De Angelis	Cutscene
+csb_ramp_hic	Hick	Cutscene
+csb_ramp_hipster	Hipster	Cutscene
+csb_ramp_marine	Marine	Cutscene
+csb_ramp_mex	Mexican	Cutscene
+csb_rashcosvki	Maxim Rashkovsky	Cutscene
+csb_reporter	Reporter	Cutscene
+csb_req_officer	Charlie Reed	Cutscene
+csb_roccopelosi	Rocco Pelosi	Cutscene
+csb_screen_writer	Screenwriter	Cutscene
+csb_security_a	Security Male	Cutscene
+csb_sessanta	sessanta	Cutscene
+csb_sol	Soloman	Cutscene
+csb_soundeng_00	Sound Engineer	Cutscene
+csb_sss	Scott Storch (Cayo Perico)	Cutscene
+csb_stripper_01	Stripper	Cutscene
+csb_stripper_02	Stripper 2	Cutscene
+csb_talcc	Tale of Us 1	Cutscene
+csb_talmm	Tale of Us 2	Cutscene
+csb_thornton	Thornton Duggan	Cutscene
+csb_tomcasino	Tom Connors	Cutscene
+csb_tonya	Tonya	Cutscene
+csb_tonyprince	'Gay' Tony Prince	Cutscene
+csb_trafficwarden	Traffic Warden	Cutscene
+csb_undercover	Undercover Cop	Cutscene
+csb_valentina	Valentina	Cutscene
+csb_vagos_leader	Vagos Gang Leader	Cutscene
+csb_vagspeak	Vagos Funeral Speaker	Cutscene
+csb_vernon	Vernon	Cutscene
+csb_vincent	Vincent (Casino)	Cutscene
+csb_vincent_2	Vincent	Cutscene
+csb_vincent_4	Vincent 4	Cutscene
+csb_wendy	Wendy	Cutscene
+csb_weiss	Mr Faber	Cutscene
+csb_yusufamir	Yusuf Amir	Cutscene
+g_f_importexport_01	Gang Female (Import-Export)	Gang Female
+g_f_y_ballas_01	Ballas Female	Gang Female
+g_f_y_families_01	Families Female	Gang Female
+g_f_y_lost_01	The Lost MC Female	Gang Female
+g_f_y_vagos_01	Vagos Female	Gang Female
+g_f_m_fooliganz_01	Fooliganz Female	Gang Female
+g_m_importexport_01	Gang Male (Import-Export)	Gang Male
+g_m_m_armboss_01	Armenian Boss	Gang Male
+g_m_m_armgoon_01	Armenian Goon	Gang Male
+g_m_m_armlieut_01	Armenian Lieutenant	Gang Male
+g_m_m_casrn_01	Casino Guests?	Gang Male
+g_m_m_chemwork_01	Chemical Plant Worker	Gang Male
+g_m_m_chiboss_01	Chinese Boss	Gang Male
+g_m_m_chicold_01	Chinese Goon Older	Gang Male
+g_m_m_chigoon_01	Chinese Goon	Gang Male
+g_m_m_chigoon_02	Chinese Goon 2	Gang Male
+g_m_m_fooliganz_01	Fooliganz Male	Gang Male
+g_m_m_korboss_01	Korean Boss	Gang Male
+g_m_m_mexboss_01	Mexican Boss	Gang Male
+g_m_m_mexboss_02	Mexican Boss 2	Gang Male
+g_m_m_prisoners_01	Gang Prisoner Male	Gang Male
+g_m_m_slasher_01	Gang Slasher Male	Gang Male
+g_m_m_cartelguards_01	Cartel Guard 1	Gang Male
+g_m_m_cartelgoons_01	Cartel Goon	Gang Male
+g_m_m_cartelguards_02	Cartel Guard 2	Gang Male
+g_m_m_friedlandergoons_01	Friedlander Goon	Gang Male
+g_m_m_maragrande_01	Mara Grande Gang Male	Gang Male
+g_m_m_genthug_01	Generic Thug	Gang Male
+g_m_m_goons_01	Goon	Gang Male
+g_m_m_knoway_01	KnoWay Goon	Gang Male
+g_m_y_armgoon_02	Armenian Goon 2	Gang Male
+g_m_y_azteca_01	Azteca	Gang Male
+g_m_y_ballaeast_01	Ballas East Male	Gang Male
+g_m_y_ballaorig_01	Ballas Original Male	Gang Male
+g_m_y_ballasout_01	Ballas South Male	Gang Male
+g_m_y_famca_01	Families CA Male	Gang Male
+g_m_y_famdnf_01	Families DNF Male	Gang Male
+g_m_y_famfor_01	Families FOR Male	Gang Male
+g_m_y_korean_01	Korean Young Male	Gang Male
+g_m_y_korean_02	Korean Young Male 2	Gang Male
+g_m_y_korlieut_01	Korean Lieutenant	Gang Male
+g_m_y_lost_01	The Lost MC Male	Gang Male
+g_m_y_lost_02	The Lost MC Male 2	Gang Male
+g_m_y_lost_03	The Lost MC Male 3	Gang Male
+g_m_y_mexgang_01	Mexican Gang Member	Gang Male
+g_m_y_mexgoon_01	Mexican Goon	Gang Male
+g_m_y_mexgoon_02	Mexican Goon 2	Gang Male
+g_m_y_mexgoon_03	Mexican Goon 3	Gang Male
+g_m_y_pologoon_01	Polynesian Goon	Gang Male
+g_m_y_pologoon_02	Polynesian Goon 2	Gang Male
+g_m_y_salvaboss_01	Salvadoran Boss	Gang Male
+g_m_y_salvagoon_01	Salvadoran Goon	Gang Male
+g_m_y_salvagoon_02	Salvadoran Goon 2	Gang Male
+g_m_y_salvagoon_03	Salvadoran Goon 3	Gang Male
+g_m_y_strpunk_01	Street Punk	Gang Male
+g_m_y_strpunk_02	Street Punk 2	Gang Male
+g_f_m_undeadmage	Undead Mage	Gang Male
+ig_abigail	Abigail Mathers	Story
+ig_acidlabcook	Acid Lab Cook	Story
+ig_agatha	Agatha Baker	Story
+ig_agent	Agent Male	Story
+ig_agent14_02	Agent 14 - Version 2	Story
+ig_agent_02	Agent Female	Story
+ig_ahronward	Ahron Ward (Chop Shop)	Story
+ig_amandatownley	Amanda De Santa	Story
+ig_andreas	Andreas Sanchez	Story
+ig_armsmanufac_01	Arms Manufacturer 1	Story
+ig_ary	Dr Dre	Story
+ig_ary_02	Dr Dre	Story
+ig_ashley	Ashley Butler	Story
+ig_avery	Avery Duggan	Story
+ig_avischwartzman_02	Avi Schawrtzman	Story
+ig_avischwartzman_03	Avi Schwartzman 3	Story
+ig_avi_04	Avi Schwartzman 4	Story
+ig_avon	Avon Hertz	Story
+ig_ballas_leader	Ballas Leader	Story
+ig_ballasog	Ballas OG	Story
+ig_bankman	Bank Manager	Story
+ig_barry	Barry	Story
+ig_benny	Benny	Story
+ig_benny_02	Benny (Los Santos Tuners)	Story
+ig_bestmen	Best Man	Story
+ig_beverly	Beverly Felton	Story
+ig_billionaire	Billionaire	Story
+ig_bountytarget_01	Bottom Dollar Bounty 1	Story
+ig_bountytarget_05	Bottom Dollar Bounty 5	Story
+ig_bountytarget_02	Bottom Dollar Bounty 2	Story
+ig_bountytarget_03	Bottom Dollar Bounty 3	Story
+ig_bountytarget_04	Bottom Dollar Bounty 4	Story
+ig_bountytarget_06	Bottom Dollar Bounty 6	Story
+ig_brad	Brad	Story
+ig_bride	Bride	Story
+ig_brucie2	Brucie Kibbutz	Story
+ig_callgirl_01	Call Girl	Story
+ig_callgirl_02	Call Girl 2	Story
+ig_car3guy1	Car 3 Guy 1	Story
+ig_car3guy2	Car 3 Guy 2	Story
+ig_casey	Casey	Story
+ig_charlie_reed	Charlie Reed 2	Story
+ig_celeb_01	Celeb 1	Story
+ig_chef	Chef	Story
+ig_chef2	Chef 2	Story
+ig_chef_03	Chef 3	Story
+ig_chengsr	Wei Cheng	Story
+ig_chrisformage	Cris Formage	Story
+ig_clay	Clay Simons (The Lost)	Story
+ig_claypain	Clay Jackson (The Pain Giver)	Story
+ig_cletus	Cletus	Story
+ig_dale	Dale	Story
+ig_davenorton	Dave Norton	Story
+ig_dax	Dax	Story
+ig_denise	Denise	Story
+ig_devin	Devin	Story
+ig_dix	Dixon	Story
+ig_djblamadon	DJ Black Madonna	Story
+ig_djblamrupert	DJ Rupert	Story
+ig_djblamryanh	DJ Ryan H	Story
+ig_djblamryans	DJ Ryan S	Story
+ig_djdixmanager	DJ Dixon Manager	Story
+ig_djgeneric_01	Generic DJ	Story
+ig_djsolfotios	DJ Fotios	Story
+ig_djsoljakob	DJ Jakob	Story
+ig_djsolmanager	Soloman Manager	Story
+ig_djsolmike	DJ Mike T	Story
+ig_djsolrobt	DJ Rob T	Story
+ig_djtalaurelia	DJ Aurelia	Story
+ig_djtalignazio	DJ Ignazio	Story
+ig_dom	Dom Beasley	Story
+ig_dreyfuss	Peter Dreyfuss	Story
+ig_drfriedlander	Dr. Friedlander	Story
+ig_drfriedlander_02	Dr. Friedlander 2	Story
+ig_drugdealer	Drugdealer	Story
+ig_englishdave	English Dave	Story
+ig_englishdave_02	English Dave 2	Story
+ig_entourage_a	Entourage Female 1	Story
+ig_entourage_b	Entourage Female 2	Story
+ig_faber_02	Faber	Story
+ig_fabien	Fabien	Story
+ig_fbisuit_01	FIB Suit	Story
+ig_fibleader_01	FIB Leader	Story
+ig_floyd	Floyd Hebert	Story
+ig_fooliganz_01	Fooliganz Female	Story
+ig_fooliganz_02	Fooliganz 2 Female	Story
+ig_furry	Furry	Story
+ig_g	Gerald	Story
+ig_georginacheng	Georgina Cheng	Story
+ig_golfer_a	Golfer Male	Story
+ig_golfer_b	Golfer Male 2	Story
+ig_groom	Groom	Story
+ig_guadalope	Guadalope	Story
+ig_gunvanseller	Gun Van Seller	Story
+ig_hao	Hao	Story
+ig_hao_02	Hao	Story
+ig_hippyleader	Hippy Leader	Story
+ig_huang	Huang	Story
+ig_hunter	Hunter	Story
+ig_imani	Imani	Story
+ig_jamalamir	Jamal Amir	Story
+ig_janet	Janet	Story
+ig_jay_norris	Jay Norris	Story
+ig_jaywalker	Jay Walker	Story
+ig_jenettee	Jenette	Story
+ig_jewelass	Jeweller Assistant	Story
+ig_jimmyboston	Jimmy Boston	Story
+ig_jimmyboston_02	Jimmy Boston 2	Story
+ig_jimmydisanto	Jimmy De Santa	Story
+ig_jimmydisanto2	Jimmy De Santa 2	Story
+ig_jio_02	Jimmy Lovine	Story
+ig_joeminuteman	Minuteman Joe	Story
+ig_johnnyklebitz	Johnny Klebitz	Story
+ig_johnny_guns	Johnny Guns	Story
+ig_josef	Josef	Story
+ig_josh	Josh	Story
+ig_karen_daniels	Karen Daniels	Story
+ig_kerrymcintosh	Kerry McIntosh	Story
+ig_kerrymcintosh_02	Kerry McIntosh 2	Story
+ig_labrat	Labrat	Story
+ig_lacey_jones_02	Lacy Jones 2	Story
+ig_lamardavis	Lamar Davis	Story
+ig_lamardavis_02	Lamar Davis 2	Story
+ig_lazlow	Lazlow	Story
+ig_lazlow_2	Lazlow 2	Story
+ig_lestercrest	Lester Crest	Story
+ig_lestercrest_2	Lester Crest 2	Story
+ig_lestercrest_3	Lester Crest 3	Story
+ig_lifeinvad_01	Life Invader	Story
+ig_lifeinvad_02	Life Invader 2	Story
+ig_lildee	Lil Dee	Story
+ig_luchadora	luchadora	Story
+ig_madrazodriver_01	Madrazo's Driver	Story
+ig_magenta	Magenta	Story
+ig_manuel	Manuel	Story
+ig_marnie	Marnie Allen	Story
+ig_maryann	Mary-Ann Quinn	Story
+ig_martinmadrazo_02	Martin Madrazo 2	Story
+ig_maude	Maude	Story
+ig_maudebf	Murph	Story
+ig_mechanic_01	Mechanic Male (Red's Auto Parts)	Story
+ig_mechanic_02	Mechanic Female (Red's Auto Parts)	Story
+ig_mechanic_03	Mechanic (Vinewood Car Club)	Story
+ig_michelle	Michelle	Story
+ig_milton	Milton McIlroy	Story
+ig_mimi	Mimi	Story
+ig_musician_00	Musician 00	Story
+ig_molly	Molly	Story
+ig_money	Avi Schawrtzman	Story
+ig_moodyman_02	Moodyman	Story
+ig_mp_agent14	Agent 14	Story
+ig_mrk	Ferdinand Kerimov (Mr. K)	Story
+ig_mrs_thornhill	Mrs. Thornhill	Story
+ig_mrsphillips	Mrs. Phillips	Story
+ig_natalia	Natalia	Story
+ig_nervousron	Nervous Ron	Story
+ig_nervousron_02	Nervous Ron 2	Story
+ig_nigel	Nigel	Story
+ig_old_man1a	Old Man 1	Story
+ig_old_man2	Old Man 2	Story
+ig_omega	Omega	Story
+ig_oneil	O'Neil Brothers	Story
+ig_orleans	Bigfoot / Sasquash	Story
+ig_ortega	Ortega	Story
+ig_paige	Paige Harris	Story
+ig_paper	United Paper Man	Story
+ig_patricia	Patricia	Story
+ig_patricia_02	Patricia 2	Story
+ig_party_promo	Party Promoter	Story
+ig_pernell_moss	Pernell Moss	Story
+ig_pilot_02	Pilot 2	Story
+ig_popov	Dima Popov	Story
+ig_priest	Priest	Story
+ig_prolsec_02	Prologue Security 2	Story
+ig_rafdeangelis	Raf De Angelis	Story
+ig_ramp_gang	Families Gang Member?	Story
+ig_ramp_hic	Hick	Story
+ig_ramp_hipster	Hipster	Story
+ig_ramp_mex	Mexican	Story
+ig_rashcosvki	Maxim Rashkovsky	Story
+ig_req_officer	Charlie Reed	Story
+ig_roccopelosi	Rocco Pelosi	Story
+ig_roostermccraw	Rooster McCraw	Story
+ig_russiandrunk	Russian Drunk	Story
+ig_sacha	Sacha Yetarian	Story
+ig_screen_writer	Screenwriter	Story
+ig_security_a	Security Male	Story
+ig_sessanta	Sessanta	Story
+ig_siemonyetarian	Simeon Yetarian	Story
+ig_skeleton_01	Skeleton	Story
+ig_sol	Soloman	Story
+ig_solomon	Solomon Richards	Story
+ig_soundeng_00	Sound Engineer Female	Story
+ig_stevehains	Steve Haines	Story
+ig_stretch	Stretch	Story
+ig_subcrewhead	Sub Crew Head	Story
+ig_talcc	Tale of Us 1	Story
+ig_talina	Talina	Story
+ig_talmm	Tale of Us 2	Story
+ig_tanisha	Tanisha	Story
+ig_taocheng	Tao Cheng	Story
+ig_taocheng2	Tao Cheng (Casino)	Story
+ig_taostranslator	Tao's Translator	Story
+ig_taostranslator2	Tao's Translator (Casino)	Story
+ig_tenniscoach	Tennis Coach	Story
+ig_terry	Terry	Story
+ig_thornton	Thornton Duggan	Story
+ig_tomcasino	Tom Connors	Story
+ig_tomepsilon	Epsilon Tom	Story
+ig_tonya	Tonya	Story
+ig_tonyprince	Tony Prince	Story
+ig_tracydisanto	Tracey De Santa	Story
+ig_trafficwarden	Traffic Warden	Story
+ig_tylerdix	Tyler Dixon	Story
+ig_tylerdix_02	Tyler Dixon 2	Story
+ig_vagos_leader	Vagos Gang Leader	Story
+ig_vagspeak	Vagos Funeral Speaker	Story
+ig_valencheat	Valentine's Cheater Male	Story
+ig_valentina	Valentina	Story
+ig_vernon	Vernon	Story
+ig_vincent	Vincent	Story
+ig_vincent_2	Vincent 2	Story
+ig_vincent_3	Vincent 3	Story
+ig_vincent_4	Vincent 4	Story
+ig_wade	Wade	Story
+ig_wendy	Wendy	Story
+ig_weiss	Mr Faber	Story
+ig_yusufamir	Yusuf Amir	Story
+ig_zimbor	Zimbor	Story
+ig_malc	Malc	Story
+ig_gustavo	Gustavo	Story
+ig_gustavo_02	Gustavo 2	Story
+ig_helmsmanpavel	Helmsman Pavel 1	Story
+ig_helmsmanpavel_02	Helmsman Pavel 2	Story
+ig_isldj_00	Island Dj	Story
+ig_isldj_01	Island Dj 1	Story
+ig_isldj_02	Island Dj 2	Story
+ig_isldj_03	Island Dj 3	Story
+ig_isldj_04	Island Dj 4	Story
+ig_isldj_04_d_01	Island Dj 4D	Story
+ig_isldj_04_d_02	Island Dj 4D2	Story
+ig_isldj_04_e_01	Island Dj 4E	Story
+ig_jackie	Jackie	Story
+ig_jio	Jimmy Lovine	Story
+ig_jodimarshall	Jodi Marshall	Story
+ig_juanstrickler	Juan Strickler	Story
+ig_kaylee	Kaylee	Story
+ig_miguelmadrazo	Miguel Madrazo	Story
+ig_mjo	DJ Pooh	Story
+ig_mjo_02	DJ Pooh 2	Story
+ig_oldrichguy	Old Rich Guy	Story
+ig_oscar_02	Oscar 2	Story
+ig_pilot	Pilot	Story
+ig_sss	Scott Storch	Story
+ig_warehouseboss	Lupe	Story
+ig_mason_duggan	Mason Duggan	Story
+ig_zombie_dj_01	Zombie DJ	Story
+mp_f_bennymech_01	Benny Mechanic (Female)	Multiplayer
+mp_f_boatstaff_01	Boat-Staff Female	Multiplayer
+mp_f_cardesign_01	Office Garage Mechanic (Female)	Multiplayer
+mp_f_chbar_01	Clubhouse Bar Female	Multiplayer
+mp_f_cocaine_01	Biker Cocaine Female	Multiplayer
+mp_f_counterfeit_01	Biker Counterfeit Female	Multiplayer
+mp_f_deadhooker	Dead Hooker	Multiplayer
+mp_f_execpa_01	Executive PA Female	Multiplayer
+mp_f_execpa_02	Executive PA Female 2	Multiplayer
+mp_f_forgery_01	Biker Forgery Female	Multiplayer
+mp_f_helistaff_01	Heli-Staff Female	Multiplayer
+mp_f_meth_01	Biker Meth Female	Multiplayer
+mp_f_misty_01	Misty	Multiplayer
+mp_f_stripperlite	Stripper Lite (Female)	Multiplayer
+mp_f_weed_01	Biker Weed Female	Multiplayer
+mp_g_m_pros_01	Pros	Multiplayer
+mp_m_avongoon	Avon Goon	Multiplayer
+mp_m_boatstaff_01	Boat-Staff Male	Multiplayer
+mp_m_bogdangoon	Bogdan Goon	Multiplayer
+mp_m_claude_01	Claude Speed	Multiplayer
+mp_m_cocaine_01	Biker Cocaine Male	Multiplayer
+mp_m_counterfeit_01	Biker Counterfeit Male	Multiplayer
+mp_m_exarmy_01	Ex-Army Male	Multiplayer
+mp_m_execpa_01	Executive PA Male	Multiplayer
+mp_m_famdd_01	Families DD Male	Multiplayer
+mp_m_fibsec_01	FIB Security	Multiplayer
+mp_m_forgery_01	Biker Forgery Male	Multiplayer
+mp_m_g_vagfun_01	Vagos Funeral	Multiplayer
+mp_m_marston_01	John Marston	Multiplayer
+mp_m_meth_01	Biker Meth Male	Multiplayer
+mp_m_niko_01	Niko Bellic	Multiplayer
+mp_m_securoguard_01	Securoserve Guard (Male)	Multiplayer
+mp_m_shopkeep_01	Shopkeeper (Male)	Multiplayer
+mp_m_waremech_01	Warehouse Mechanic (Male)	Multiplayer
+mp_m_weed_01	Biker Weed Male	Multiplayer
+mp_s_m_armoured_01	Armoured Van Security Male	Multiplayer
+mp_m_weapexp_01	Weapon Exp (Male)	Multiplayer
+mp_m_weapwork_01	Weapon Work (Male)	Multiplayer
+s_f_m_autoshop_01	Autoshop Worker Female	Scenario Female
+s_f_m_fembarber	Barber Female	Scenario Female
+s_f_m_maid_01	Maid	Scenario Female
+s_f_m_retailstaff_01	Retailstaff	Scenario Female
+s_f_m_shop_high	Sales Assistant (High-End)	Scenario Female
+s_f_m_studioassist_01	Studio Assistant	Scenario Female
+s_f_m_sweatshop_01	Sweatshop Worker	Scenario Female
+s_f_m_warehouse_01	Warehouse Employee Female	Scenario Female
+s_f_y_airhostess_01	Air Hostess	Scenario Female
+s_f_y_bartender_01	Bartender	Scenario Female
+s_f_y_baywatch_01	Baywatch Female	Scenario Female
+s_f_y_casino_01	Casino Staff	Scenario Female
+s_f_y_clubbar_01	Club Bartender Female	Scenario Female
+s_f_y_clubbar_02	Club Bartender Female 2	Scenario Female
+s_f_y_cop_01	Cop Female	Scenario Female
+s_f_y_factory_01	Factory Worker Female	Scenario Female
+s_f_y_hooker_01	Hooker	Scenario Female
+s_f_y_hooker_02	Hooker 2	Scenario Female
+s_f_y_hooker_03	Hooker 3	Scenario Female
+s_f_y_migrant_01	Migrant Female	Scenario Female
+s_f_y_movprem_01	Movie Premiere Female	Scenario Female
+s_f_y_ranger_01	Park Ranger Female	Scenario Female
+s_f_y_scrubs_01	Hospital Scrubs Female	Scenario Female
+s_f_y_sheriff_01	Sheriff Female	Scenario Female
+s_f_y_shop_low	Sales Assistant (Low-End)	Scenario Female
+s_f_y_shop_mid	Sales Assistant (Mid-Price)	Scenario Female
+s_f_y_stripper_01	Stripper	Scenario Female
+s_f_y_stripper_02	Stripper 2	Scenario Female
+s_f_y_stripperlite	Stripper Lite	Scenario Female
+s_f_y_sweatshop_01	Sweatshop Worker Young	Scenario Female
+s_f_y_beachbarstaff_01	Beach Bar Staff	Scenario Female
+s_m_m_autoshop_03	Autoshop Worker 3	Scenario Male
+s_m_m_ammucountry	Ammu-Nation Rural Clerk	Scenario Male
+s_m_m_armoured_01	Armoured Van Security	Scenario Male
+s_m_m_armoured_02	Armoured Van Security 2	Scenario Male
+s_m_m_autoshop_01	Autoshop Worker	Scenario Male
+s_m_m_autoshop_02	Autoshop Worker 2	Scenario Male
+s_m_m_bailoffice_01	Bail Office Worker	Scenario Male
+s_m_m_bouncer_01	Bouncer	Scenario Male
+s_m_m_bouncer_02	Bouncer 2	Scenario Male
+s_m_m_ccrew_01	Crew Member	Scenario Male
+s_m_m_ccrew_02	Crew Member 2	Scenario Male
+s_m_m_ccrew_03	Crew Member 3	Scenario Male
+s_m_m_chemsec_01	Chemical Plant Security	Scenario Male
+s_m_m_ciasec_01	IAA Security	Scenario Male
+s_m_m_cntrybar_01	Bartender (Rural)	Scenario Male
+s_m_m_cop_01	Cop Male 2	Scenario Male
+s_m_m_dockwork_01	Dock Worker	Scenario Male
+s_m_m_doctor_01	Doctor	Scenario Male
+s_m_m_fiboffice_01	FIB Office Worker	Scenario Male
+s_m_m_fiboffice_02	FIB Office Worker 2	Scenario Male
+s_m_m_fibsec_01	FIB Security	Scenario Male
+s_m_m_gaffer_01	Gaffer	Scenario Male
+s_m_m_gardener_01	Gardener	Scenario Male
+s_m_m_gentransport	Transport Worker Male	Scenario Male
+s_m_m_hairdress_01	Hairdresser Male	Scenario Male
+s_m_m_hazmatworker_01	Hazmat Worker Male	Scenario Male
+s_m_m_highsec_01	High Security	Scenario Male
+s_m_m_highsec_02	High Security 2	Scenario Male
+s_m_m_highsec_03	High Security 3	Scenario Male
+s_m_m_highsec_04	High Security 4	Scenario Male
+s_m_m_highsec_05	High Security 5	Scenario Male
+s_m_m_highsec_06	High Security 6	Scenario Male
+s_m_m_janitor	Janitor	Scenario Male
+s_m_m_lathandy_01	Latino Handyman Male	Scenario Male
+s_m_m_lifeinvad_01	Life Invader Male	Scenario Male
+s_m_m_linecook	Line Cook	Scenario Male
+s_m_m_lsmetro_01	LS Metro Worker Male	Scenario Male
+s_m_m_mariachi_01	Mariachi	Scenario Male
+s_m_m_marine_01	Marine	Scenario Male
+s_m_m_marine_02	Marine 2	Scenario Male
+s_m_m_migrant_01	Migrant Male	Scenario Male
+s_m_m_movalien_01	Alien	Scenario Male
+s_m_m_movprem_01	Movie Premiere Male	Scenario Male
+s_m_m_movspace_01	Movie Astronaut	Scenario Male
+s_m_m_paramedic_01	Paramedic	Scenario Male
+s_m_m_pilot_01	Pilot	Scenario Male
+s_m_m_pilot_02	Pilot 2	Scenario Male
+s_m_m_postal_01	Postal Worker Male	Scenario Male
+s_m_m_postal_02	Postal Worker Male 2	Scenario Male
+s_m_m_prisguard_01	Prison Guard	Scenario Male
+s_m_m_raceorg_01	Racer Organisator	Scenario Male
+s_m_m_scientist_01	Scientist	Scenario Male
+s_m_m_security_01	Security Guard	Scenario Male
+s_m_m_snowcop_01	Snow Cop Male	Scenario Male
+s_m_m_strperf_01	Street Performer	Scenario Male
+s_m_m_strpreach_01	Street Preacher	Scenario Male
+s_m_m_strvend_01	Street Vendor	Scenario Male
+s_m_m_studioassist_02	Studio Assistant Male	Scenario Male
+s_m_m_studioprod_01	Studio Producer Male	Scenario Male
+s_m_m_studiosoueng_02	Studio Sound Engineer Male	Scenario Male
+s_m_m_subcrew_01	Sub Crew Male	Scenario Male
+s_m_m_tattoo_01	Tattoo Artist 2	Scenario Male
+s_m_m_trucker_01	Trucker Male	Scenario Male
+s_m_m_ups_01	UPS Driver	Scenario Male
+s_m_m_ups_02	UPS Driver 2	Scenario Male
+s_m_m_warehouse_01	Warehouse Employee Male	Scenario Male
+s_m_m_drugprocess_01	Drug Processer	Scenario Male
+s_m_m_fieldworker_01	Field Worker	Scenario Male
+s_m_o_busker_01	Busker	Scenario Male
+s_m_y_airworker	Air Worker Male	Scenario Male
+s_m_y_ammucity_01	Ammu-Nation City Clerk	Scenario Male
+s_m_y_armymech_01	Army Mechanic	Scenario Male
+s_m_y_autopsy_01	Autopsy Tech	Scenario Male
+s_m_y_barman_01	Barman	Scenario Male
+s_m_y_baywatch_01	Baywatch Male	Scenario Male
+s_m_y_blackops_01	Black Ops Soldier	Scenario Male
+s_m_y_blackops_02	Black Ops Soldier 2	Scenario Male
+s_m_y_blackops_03	Black Ops Soldier 3	Scenario Male
+s_m_y_busboy_01	Busboy	Scenario Male
+s_m_y_casino_01	Casino Staff	Scenario Male
+s_m_y_chef_01	Chef	Scenario Male
+s_m_y_clown_01	Clown	Scenario Male
+s_m_y_clubbar_01	Club Bartender Male	Scenario Male
+s_m_y_construct_01	construction Worker	Scenario Male
+s_m_y_construct_02	construction Worker 2	Scenario Male
+s_m_y_cop_01	Cop Male	Scenario Male
+s_m_y_dealer_01	Dealer	Scenario Male
+s_m_y_devinsec_01	Devin's Security	Scenario Male
+s_m_y_dockwork_01	Dock Worker	Scenario Male
+s_m_y_doorman_01	Doorman	Scenario Male
+s_m_y_dwservice_01	DW Airport Worker	Scenario Male
+s_m_y_dwservice_02	DW Airport Worker 2	Scenario Male
+s_m_y_factory_01	Factory Worker Male	Scenario Male
+s_m_y_fireman_01	Fireman Male	Scenario Male
+s_m_y_garbage	Garbage Worker	Scenario Male
+s_m_y_grip_01	Grip	Scenario Male
+s_m_y_hwaycop_01	Highway Cop	Scenario Male
+s_m_y_marine_01	Marine Young	Scenario Male
+s_m_y_marine_02	Marine Young 2	Scenario Male
+s_m_y_marine_03	Marine Young 3	Scenario Male
+s_m_y_mime	Mime Artist	Scenario Male
+s_m_y_pestcont_01	Pest Control	Scenario Male
+s_m_y_pilot_01	Pilot	Scenario Male
+s_m_y_prismuscl_01	Prisoner (Muscular)	Scenario Male
+s_m_y_prisoner_01	Prisoner	Scenario Male
+s_m_y_ranger_01	Ranger Male	Scenario Male
+s_m_y_robber_01	Robber	Scenario Male
+s_m_y_sheriff_01	Sheriff Male	Scenario Male
+s_m_y_shop_mask	Mask Salesman	Scenario Male
+s_m_y_strvend_01	Street Vendor Young	Scenario Male
+s_m_y_swat_01	SWAT	Scenario Male
+s_m_y_uscg_01	US Coastguard	Scenario Male
+s_m_y_valet_01	Valet	Scenario Male
+s_m_y_waiter_01	Waiter	Scenario Male
+s_m_y_waretech_01	Warehouse Technician	Scenario Male
+s_m_y_westsec_01	Duggan Secruity	Scenario Male
+s_m_y_westsec_02	Duggan Security 2	Scenario Male
+s_m_y_winclean_01	Window Cleaner	Scenario Male
+s_m_y_xmech_01	Mechanic	Scenario Male
+s_m_y_xmech_02	MC Clubhouse Mechanic	Scenario Male
+s_m_y_xmech_02_mp	MC Clubhouse Mechanic 2?	Scenario Male
+u_f_m_casinocash_01	Casino Cashier	Story Scenario Female
+u_f_m_casinoshop_01	Casino shop owner	Story Scenario Female
+u_f_m_corpse_01	Corpse Female	Story Scenario Female
+u_f_m_debbie_01	Debbie (Agatha's Secretary)	Story Scenario Female
+u_f_m_drowned_01	Drowned Victim Female	Story Scenario Female
+u_f_m_miranda	Miranda	Story Scenario Female
+u_f_m_miranda_02	Miranda 2	Story Scenario Female
+u_f_m_promourn_01	Prologue Mourner Female	Story Scenario Female
+u_f_o_carol	Carol	Story Scenario Female
+u_f_o_eileen	Eileen	Story Scenario Female
+u_f_o_moviestar	Movie Star Female	Story Scenario Female
+u_f_o_prolhost_01	Prologue Host Old Female	Story Scenario Female
+u_f_y_beth	Beth	Story Scenario Female
+u_f_y_bikerchic	Biker Chic Female	Story Scenario Female
+u_f_y_comjane	Jane	Story Scenario Female
+u_f_y_corpse_01	Corpse Young Female	Story Scenario Female
+u_f_y_corpse_02	Corpse Young Female 2	Story Scenario Female
+u_f_y_danceburl_01	Female Club Dancer (Burlesque)	Story Scenario Female
+u_f_y_dancelthr_01	Female Club Dancer (Leather)	Story Scenario Female
+u_f_y_dancerave_01	Female Club Dancer (Rave)	Story Scenario Female
+u_f_y_hotposh_01	Hot Posh Female	Story Scenario Female
+u_f_y_jewelass_01	Jeweller Assistant	Story Scenario Female
+u_f_y_lauren	Lauren	Story Scenario Female
+u_f_y_mistress	Mistress	Story Scenario Female
+u_f_y_poppymich	Poppy Mitchell	Story Scenario Female
+u_f_y_poppymich_02	Poppy Mitchell 2	Story Scenario Female
+u_f_y_princess	Princess	Story Scenario Female
+u_f_y_spyactress	Spy Actress	Story Scenario Female
+u_f_y_taylor	Taylor	Story Scenario Female
+u_m_m_yeti	Yeti (White Bigfoot / Sassquash)	Story Scenario Male
+u_m_m_aldinapoli	Al Di Napoli Male	Story Scenario Male
+u_m_m_bankman	Bank Manager Male	Story Scenario Male
+u_m_m_bikehire_01	Bike Hire Guy	Story Scenario Male
+u_m_m_blane	Blane	Story Scenario Male
+u_m_m_curtis	Curtis	Story Scenario Male
+u_m_m_doa_01	DOA Male	Story Scenario Male
+u_m_m_edtoh	Ed Toh	Story Scenario Male
+u_m_m_fibarchitect	FIB Architect	Story Scenario Male
+u_m_m_filmdirector	Movie Director	Story Scenario Male
+u_m_m_glenstank_01	Glen-Stank Male	Story Scenario Male
+u_m_m_griff_01	Griff	Story Scenario Male
+u_m_m_jesus_01	Jesus	Story Scenario Male
+u_m_m_jewelsec_01	Jeweller Security	Story Scenario Male
+u_m_m_jewelthief	Jewel Thief	Story Scenario Male
+u_m_m_juggernaut_03	Avon Juggernaut 3	Story Scenario Male
+u_m_m_markfost	Mark Fostenburg	Story Scenario Male
+u_m_m_partytarget	Party Target	Story Scenario Male
+u_m_m_prolsec_01	Prologue Security	Story Scenario Male
+u_m_m_promourn_01	Prologue Mourner Male	Story Scenario Male
+u_m_m_rivalpap	Rival Paparazzo	Story Scenario Male
+u_m_m_spyactor	Spy Actor	Story Scenario Male
+u_m_m_streetart_01	Street Art Male	Story Scenario Male
+u_m_m_vince	Vince	Story Scenario Male
+u_m_m_willyfist	Love Fist Willy	Story Scenario Male
+u_m_m_yulemonster	The Gooch (Grinch Parody)	Story Scenario Male
+u_m_o_dean	Dean	Story Scenario Male
+u_m_o_filmnoir	Movie Corpse (Suited)	Story Scenario Male
+u_m_o_finguru_01	Financial Guru	Story Scenario Male
+u_m_o_taphillbilly	Jesco White (Tapdancing Hillbilly)	Story Scenario Male
+u_m_o_tramp_01	Tramp Old Male	Story Scenario Male
+u_m_y_abner	Abner	Story Scenario Male
+u_m_y_antonb	Anton Beaudelaire	Story Scenario Male
+u_m_y_babyd	Baby D	Story Scenario Male
+u_m_y_baygor	Kifflom Guy	Story Scenario Male
+u_m_y_burgerdrug_01	Burger Drug Worker	Story Scenario Male
+u_m_y_caleb	Caleb	Story Scenario Male
+u_m_y_chip	Chip	Story Scenario Male
+u_m_y_corpse_01	Dead Courier	Story Scenario Male
+u_m_y_croupthief_01	Casino Thief	Story Scenario Male
+u_m_y_cyclist_01	Cyclist Male	Story Scenario Male
+u_m_y_danceburl_01	Male Club Dancer (Burlesque)	Story Scenario Male
+u_m_y_dancelthr_01	Male Club Dancer (Leather)	Story Scenario Male
+u_m_y_dancerave_01	Male Club Dancer (Rave)	Story Scenario Male
+u_m_y_fibmugger_01	FIB Mugger	Story Scenario Male
+u_m_y_gabriel	Gabriel	Story Scenario Male
+u_m_y_guido_01	Guido	Story Scenario Male
+u_m_y_gunvend_01	Gun Vendor	Story Scenario Male
+u_m_y_hippie_01	Hippie Male	Story Scenario Male
+u_m_y_imporage	Impotent Rage	Story Scenario Male
+u_m_y_juggernaut_02	Avon Juggernaut 2	Story Scenario Male
+u_m_y_juggernaut_01	Avon Juggernaut	Story Scenario Male
+u_m_y_justin	Justin Sex Tape Male	Story Scenario Male
+u_m_y_mani	Mani	Story Scenario Male
+u_m_y_militarybum	Ex-Mil Bum	Story Scenario Male
+u_m_y_paparazzi	Paparazzi Young Male	Story Scenario Male
+u_m_y_party_01	Partygoer Male	Story Scenario Male
+u_m_y_pogo_01	Pogo the Monkey	Story Scenario Male
+u_m_y_prisoner_01	Prisoner	Story Scenario Male
+u_m_y_proldriver_01	Prologue Driver	Story Scenario Male
+u_m_y_rsranger_01	Republican Space Ranger	Story Scenario Male
+u_m_y_sbike	Sports Biker	Story Scenario Male
+u_m_y_smugmech_01	Hangar Mechanic	Story Scenario Male
+u_m_y_staggrm_01	Stag Party Groom	Story Scenario Male
+u_m_y_tattoo_01	Tattoo Artist	Story Scenario Male
+u_m_y_ushi	Ushi	Story Scenario Male
+u_m_y_zombie_01	Zombie	Story Scenario Male
+hc_driver	Jewel Heist Driver	Others
+hc_gunman	Jewel Heist Gunman	Others
+hc_hacker	Jewel Heist Hacker	Others
+g_m_m_zombie_01	Zombie 1	Others
+g_m_m_zombie_02	Zombie 2	Others
+g_m_m_zombie_03	Zombie 3	Others
+g_m_m_zombie_04	Zombie 4	Others
+g_m_m_zombie_05	Zombie 5	Others

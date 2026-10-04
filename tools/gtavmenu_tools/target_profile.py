@@ -90,6 +90,12 @@ def validate_manifest(
     target_id = manifest.get("targetId")
     if not isinstance(target_id, str) or not target_id:
         raise TargetProfileError("target manifest is missing targetId")
+    title_id = manifest.get("titleId")
+    content_id = manifest.get("contentId")
+    if not isinstance(title_id, str) or not title_id:
+        raise TargetProfileError("target manifest is missing titleId")
+    if not isinstance(content_id, str) or not content_id:
+        raise TargetProfileError("target manifest is missing contentId")
     loader = _object(manifest, "loader", "loader")
     live = _object(manifest, "liveMapping", "liveMapping")
     text = _object(live, "text", "liveMapping.text")
@@ -219,6 +225,8 @@ def validate_manifest(
     return {
         "stem": stem,
         "targetId": target_id,
+        "titleId": title_id,
+        "contentId": content_id,
         "contentVersion": manifest["contentVersion"],
         "channel": channel,
         "nativeAddresses": native_input,
@@ -246,6 +254,8 @@ def expected_build_config(manifest: dict[str, object], delivery: str) -> dict[st
     assert isinstance(features, dict) and isinstance(injection, dict)
     expected = {
         "target_id": str(profile["targetId"]),
+        "title_id": str(profile["titleId"]),
+        "content_id": str(profile["contentId"]),
         "content_version": str(profile["contentVersion"]),
         "target_channel": str(profile["channel"]),
         "native_input_sha256": str(profile["nativeAddresses"]["sha256"]),

@@ -1,0 +1,72 @@
+{
+  "schemaVersion": 1,
+  "name": "GTAVMenu Portable Test Yard",
+  "description": "Eight stock props placed ahead of the player for the first custom-map smoke test.",
+  "placement": "relative",
+  "entries": [
+    {
+      "kind": "object",
+      "model": "prop_barrier_work05",
+      "position": [-3.0, 8.0, 0.0],
+      "rotation": [0.0, 0.0, 0.0],
+      "frozen": true,
+      "placeOnGround": true
+    },
+    {
+      "kind": "object",
+      "model": "prop_barrier_work05",
+      "position": [0.0, 8.0, 0.0],
+      "rotation": [0.0, 0.0, 0.0],
+      "frozen": true,
+      "placeOnGround": true
+    },
+    {
+      "kind": "object",
+      "model": "prop_barrier_work05",
+      "position": [3.0, 8.0, 0.0],
+      "rotation": [0.0, 0.0, 0.0],
+      "frozen": true,
+      "placeOnGround": true
+    },
+    {
+      "kind": "object",
+      "model": "prop_roadcone02a",
+      "position": [-4.0, 6.0, 0.0],
+      "rotation": [0.0, 0.0, 0.0],
+      "frozen": true,
+      "placeOnGround": true
+    },
+    {
+      "kind": "object",
+      "model": "prop_roadcone02a",
+      "position": [4.0, 6.0, 0.0],
+      "rotation": [0.0, 0.0, 0.0],
+      "frozen": true,
+      "placeOnGround": true
+    },
+    {
+      "kind": "object",
+      "model": "prop_worklight_01a",
+      "position": [-4.0, 10.0, 0.0],
+      "rotation": [0.0, 0.0, 180.0],
+      "frozen": true,
+      "placeOnGround": true
+    },
+    {
+      "kind": "object",
+      "model": "prop_worklight_01a",
+      "position": [4.0, 10.0, 0.0],
+      "rotation": [0.0, 0.0, 180.0],
+      "frozen": true,
+      "placeOnGround": true
+    },
+    {
+      "kind": "object",
+      "model": "prop_mp_ramp_01",
+      "position": [0.0, 13.0, 0.0],
+      "rotation": [0.0, 0.0, 0.0],
+      "frozen": true,
+      "placeOnGround": true
+    }
+  ]
+}

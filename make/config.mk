@@ -42,6 +42,8 @@ ifneq ($(call target_profile_value,profile_ok),1)
 $(error invalid or missing target profile: $(GTAV_TARGET_MANIFEST))
 endif
 GTAV_TARGET_ID := $(call target_profile_value,target_id)
+GTAV_TARGET_TITLE_ID := $(call target_profile_value,title_id)
+GTAV_TARGET_CONTENT_ID := $(call target_profile_value,content_id)
 GTAV_TARGET_CONTENT_VERSION := $(call target_profile_value,content_version)
 GTAV_TARGET_CHANNEL := $(call target_profile_value,channel)
 GTAV_TARGET_NATIVE_JSON := $(call target_profile_value,native_json)

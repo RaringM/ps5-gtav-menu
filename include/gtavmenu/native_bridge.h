@@ -388,7 +388,8 @@ enum {
   // modify-existing weapon-field setter (NOT the give/remove weapon-manager lane).
   GTAV_NATIVE_SHELL_ACTION_CYCLE_WEAPON_TINT = 212,
   // World > Spawned Entities > Save/Load Map (Spooner-lite). SAVE_MAP captures the live spawned
-  // rosters (kind + model + transform) to /data/GTAVMenu/map.cfg, worker-direct (getters + file).
+  // rosters (kind + model + transform) to /data/GTAVMenu/custom/maps/active.map.cfg,
+  // worker-direct (getters + file).
   // LOAD_MAP reads the file and kicks off the streaming re-spawn; LOAD_MAP_STEP is the per-entity
   // game-thread job (REQUEST_MODEL -> CREATE_* at the saved transform -> track), self-requeuing
   // while the model streams and chaining to the next entity. LOAD_MAP_STEP has no menu row.
@@ -486,6 +487,15 @@ enum {
   GTAV_NATIVE_SHELL_ACTION_CYCLE_ATTACH_FLASH = 247,
   GTAV_NATIVE_SHELL_ACTION_APPLY_ATTACHMENTS = 248,
   GTAV_NATIVE_SHELL_ACTION_REMOVE_ATTACHMENTS = 249,
+  // Cancel an in-progress versioned/legacy map load. The worker clears the published load claim;
+  // any already-created entities remain roster-owned and can be removed with Clear Spawned.
+  GTAV_NATIVE_SHELL_ACTION_CANCEL_MAP_LOAD = 250,
+  // Report whether the custom-asset probe file is readable from inside GTA, through the loader's
+  // sandbox mount and through /data. Worker-direct file reads only.
+  GTAV_NATIVE_SHELL_ACTION_PROBE_CUSTOM_MOUNT = 251,
+  // Experimental game-thread job: mount the custom root as the engine device prefix gtavmenu:/
+  // and read the probe's size through it (GTAV_MENU_ENABLE_CUSTOM_DEVICE builds only).
+  GTAV_NATIVE_SHELL_ACTION_MOUNT_CUSTOM_DEVICE = 252,
   // Sentinel: one past the highest action id, for iterating the action space (e.g. the
   // list-value push loop in menu.c). Not a dispatchable action.
   GTAV_NATIVE_SHELL_ACTION_COUNT,

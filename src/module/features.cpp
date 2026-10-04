@@ -1,6 +1,7 @@
 #include "gtavmenu/features.h"
 
 #include "gtavmenu/abi.h"
+#include "gtavmenu/custom_assets.h"
 #include "gtavmenu/feature_catalog.h"
 #include "gtavmenu/feature_profile.h"
 #include "gtavmenu/log.h"
@@ -150,12 +151,19 @@ extern "C" void gtav_menu_frame_tick(void);
 #define GTAV_MENU_ENABLE_VEHICLE_PREVIEW 0
 #endif
 
+// Experimental engine device mount of the custom root as gtavmenu:/ (features/custom_device.inc).
+#ifndef GTAV_MENU_ENABLE_CUSTOM_DEVICE
+#define GTAV_MENU_ENABLE_CUSTOM_DEVICE 0
+#endif
+
 #include "gtavmenu/native_invoke.hpp"
 
+#include <errno.h>
 #include <math.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/stat.h>
 #include <time.h>
 #include <unistd.h>
 
@@ -837,6 +845,7 @@ static float feat_cosf(float x) {
 #include "features/keybinds.inc"
 #include "features/session.inc"
 #include "features/spooner.inc"
+#include "features/custom_device.inc"
 #include "features/spooner_tweaks.inc"
 #include "features/instructional_buttons.inc"
 // clang-format on
@@ -1810,6 +1819,8 @@ extern "C" uint32_t gtav_features_activate(uint32_t action) {
     // Spooner load step CREATE_*s an entity at a saved transform (allocation-class). It is enqueued
     // directly by load_map(), but list it here too so the gating model stays honest.
     case GTAV_NATIVE_SHELL_ACTION_LOAD_MAP_STEP:
+    // The engine device mount uses the game thread's allocator and file-system lock.
+    case GTAV_NATIVE_SHELL_ACTION_MOUNT_CUSTOM_DEVICE:
     // Fireworks streams a named PTFX asset (allocation/streaming class, like REQUEST_MODEL) then
     // starts the fx -> game/script thread, with non-blocking self-requeue while the asset loads.
     case GTAV_NATIVE_SHELL_ACTION_SPAWN_FIREWORKS:
@@ -1901,6 +1912,8 @@ extern "C" int gtav_features_save_slot_occupied(uint32_t action) {
       return spawn_saved_vehicle();
     case GTAV_NATIVE_SHELL_ACTION_LOAD_MAP_STEP:
       return load_map_step(param);
+    case GTAV_NATIVE_SHELL_ACTION_MOUNT_CUSTOM_DEVICE:
+      return mount_custom_device();
     case GTAV_NATIVE_SHELL_ACTION_SPAWN_FIREWORKS:
       return spawn_fireworks();
     case GTAV_NATIVE_SHELL_ACTION_TELEPORT_LAST_VEHICLE:
@@ -2383,6 +2396,10 @@ static uint32_t activate_worker_direct_action(uint32_t action, uint32_t param) {
       return save_map();
     case GTAV_NATIVE_SHELL_ACTION_LOAD_MAP:
       return load_map();
+    case GTAV_NATIVE_SHELL_ACTION_CANCEL_MAP_LOAD:
+      return cancel_map_load();
+    case GTAV_NATIVE_SHELL_ACTION_PROBE_CUSTOM_MOUNT:
+      return probe_custom_mount();
     case GTAV_NATIVE_SHELL_ACTION_CYCLE_AUTOPILOT_MODE:
       return cycle_autopilot_mode(param);
     case GTAV_NATIVE_SHELL_ACTION_CYCLE_AUTOPILOT_AGGRESSION:
@@ -2455,6 +2472,7 @@ static uint32_t activate_worker_direct_action(uint32_t action, uint32_t param) {
     case GTAV_NATIVE_SHELL_ACTION_CLEAR_SPAWNED_ALL:
     case GTAV_NATIVE_SHELL_ACTION_BRING_BODYGUARDS:
     case GTAV_NATIVE_SHELL_ACTION_DISMISS_BODYGUARDS:
+    case GTAV_NATIVE_SHELL_ACTION_MOUNT_CUSTOM_DEVICE:
       return unavailable(action, "needs main-thread hook (not yet enabled)");
     case GTAV_NATIVE_SHELL_ACTION_CYCLE_CLOCK_HOUR:
       return cycle_clock_hour(param);

@@ -45,13 +45,21 @@ def decrypted_eboot(stem: str | None = None) -> Path | None:
     """A locally dumped, decrypted eboot for `stem`, or None if none is present.
 
     These images are large and gitignored, so every caller must tolerate their absence (CI has none).
-    Naming is historical: the first build's image is ``eboot.ida.elf``, later ones are
-    ``eboot-<version>.elf``.
+    Prefer title-and-version-specific paths. Version-only names are retained as a
+    compatibility fallback for the historical PPSA04264 evidence, but are ambiguous
+    once two regional titles share one content version.
     """
     stem = stem or DEFAULT_MANIFEST_STEM
     version = stem.split("-", 1)[1] if "-" in stem else stem
     analysis = REPO_ROOT / "build/analysis"
-    candidates = [analysis / f"eboot-{version}.elf", analysis / f"eboot-{stem}.elf"]
+    candidates = [
+        analysis / f"eboot-{stem}.elf",
+        analysis / stem / "eboot.normalized.elf",
+        analysis / stem / "eboot.native.normalized.elf",
+        REPO_ROOT / "research" / "artifacts" / stem.split("-", 1)[0] / version / "eboot.normalized.elf",
+    ]
+    if stem.startswith("ppsa04264-"):
+        candidates.append(analysis / f"eboot-{version}.elf")
     if version == "01.005.000":
         candidates += [analysis / "eboot.ida.elf", REPO_ROOT / "ref/eboot.elf", REPO_ROOT / "eboot.elf"]
     return next((c for c in candidates if c.is_file()), None)
@@ -82,7 +90,15 @@ def manifest_path(stem: str | None = None) -> Path:
 
 def all_manifest_paths() -> list[Path]:
     """Every supported-build manifest (excludes the dev-unknown template)."""
-    return sorted(TARGETS_DIR.glob("ppsa04264-*.json"))
+    paths = []
+    for path in sorted(TARGETS_DIR.glob("*.json")):
+        try:
+            manifest = read_json(path)
+        except (OSError, ValueError):
+            continue
+        if isinstance(manifest.get("titleId"), str) and isinstance(manifest.get("contentVersion"), str):
+            paths.append(path)
+    return paths
 
 
 def all_manifests() -> list[dict]:

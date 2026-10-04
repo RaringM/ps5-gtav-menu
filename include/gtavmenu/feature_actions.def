@@ -131,6 +131,9 @@ GTAV_ACTION_NAME(CYCLE_WEAPON_TINT, "cycle_weapon_tint")
 GTAV_ACTION_NAME(SAVE_MAP, "save_map")
 GTAV_ACTION_NAME(LOAD_MAP, "load_map")
 GTAV_ACTION_NAME(LOAD_MAP_STEP, "load_map_step")
+GTAV_ACTION_NAME(CANCEL_MAP_LOAD, "cancel_map_load")
+GTAV_ACTION_NAME(PROBE_CUSTOM_MOUNT, "probe_custom_mount")
+GTAV_ACTION_NAME(MOUNT_CUSTOM_DEVICE, "mount_custom_device")
 
 /* Los Santos Customs */
 GTAV_ACTION_NAME(LS_MAX_PERFORMANCE, "ls_max_performance")

@@ -20,7 +20,7 @@ from typing import NoReturn
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 TARGET = "ppsa04264-01.010.002"
-TARGETS = ("ppsa04264-01.005.000", TARGET)
+TARGETS = ("ppsa04264-01.005.000", TARGET, "ppsa04263-01.010.002")
 TAG_RE = re.compile(r"v[A-Za-z0-9][A-Za-z0-9._-]*\Z")
 ZIP_TIMESTAMP = (1980, 1, 1, 0, 0, 0)
 PACKAGE_LAYOUTS = {
@@ -93,6 +93,7 @@ def target_metadata(target: str) -> dict[str, object]:
         "target": target,
         "targetId": manifest["targetId"],
         "titleId": manifest["titleId"],
+        "contentId": manifest["contentId"],
         "contentVersion": manifest["contentVersion"],
         "releaseChannel": "local-publication-candidate" if channel == "primary" else "local-development-candidate",
     }
@@ -105,7 +106,7 @@ def verify_package(
     required = {
         "schemaVersion": 1,
         "kind": kind,
-        **{key: value for key, value in target_metadata(target).items() if key != "titleId"},
+        **target_metadata(target),
         "profile": "production",
         "delivery": delivery,
         "requiresHardwareValidation": True,

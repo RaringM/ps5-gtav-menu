@@ -147,7 +147,9 @@ GTAV_ACTION_DESC(CYCLE_WEAPON_TINT, "Recolour your equipped weapon")
 
 /* Spooner-lite scene save/load */
 GTAV_ACTION_DESC(SAVE_MAP, "Save all spawned entities to a map file")
-GTAV_ACTION_DESC(LOAD_MAP, "Re-spawn the entities from your saved map")
+GTAV_ACTION_DESC(LOAD_MAP, "Load the active custom map at its saved or relative anchor")
+GTAV_ACTION_DESC(CANCEL_MAP_LOAD, "Stop streaming and spawning the current map")
+GTAV_ACTION_DESC(PROBE_CUSTOM_MOUNT, "Check that custom assets are visible to the game")
 
 /* Self extras */
 GTAV_ACTION_DESC(CLEAN_SELF, "Wash off blood and wetness")

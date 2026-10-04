@@ -10,7 +10,7 @@
 .PHONY: all menu-live onionhen _onionhen onionhen-plugin-build package-onionhen \
 	etahen _etahen etahen-plugin-build package-etahen clean help FORCE require-ps5-sdk \
 	payload-loader-build deploy-payload-loader deploy-built-payload-loader package-payload _package-payload package-target \
-	feature-menu-frame-hook-playerped-build
+	feature-menu-frame-hook-playerped-build custom-map custom-texture-pack
 
 # Sources linked into the injected menu worker ELF (COMMON_SRCS comes from flags.mk,
 # which the root Makefile includes before this file).
@@ -61,11 +61,20 @@ help:
 	@echo "  make deploy-payload-loader     Deploy the loader to PS5 (prospero-deploy)"
 	@echo "  make package-payload           Bundle the persistent daemon and worker"
 	@echo "  make package-target            Build all three versioned delivery packages"
+	@echo "  make custom-map               Build the portable stock-prop map test package"
+	@echo "  make custom-texture-pack      Build the verified inactive authored-texture pack"
 	@echo "Select an exact profile with GTAV_TARGET=ppsa04264-01.005.000 (default: 01.010.002)."
 	@echo "Launch the default target with ./menu-ctl.sh cave-inject."
 
 # Ordinary builds produce the complete supported menu. Building never deploys it.
 all: payload-loader-build feature-menu-frame-hook-playerped-build
+
+custom-map:
+	$(PYTHON) tools/prepare_map.py data/maps/gtavmenu-test-yard.json \
+		--output-dir build/maps/gtavmenu-test-yard
+
+custom-texture-pack:
+	$(PYTHON) tools/prepare_custom_pack.py prepare
 
 require-ps5-sdk:
 	@test "$(PS5_TOOLCHAIN_AVAILABLE)" = "1" || { \
@@ -111,7 +120,8 @@ $(BUILD_CONFIG_STAMP): FORCE tools/write_build_stamp.py tools/target_loader_conf
 		| $(BUILD_PROFILE_DIR) require-ps5-sdk
 	$(PYTHON) tools/write_build_stamp.py --output $@ --compiler "$(CC)" \
 		--set target=$(GTAV_TARGET) --set profile=$(GTAV_BUILD_PROFILE) \
-		--set target_id=$(GTAV_TARGET_ID) --set content_version=$(GTAV_TARGET_CONTENT_VERSION) \
+		--set target_id=$(GTAV_TARGET_ID) --set title_id=$(GTAV_TARGET_TITLE_ID) \
+		--set content_id=$(GTAV_TARGET_CONTENT_ID) --set content_version=$(GTAV_TARGET_CONTENT_VERSION) \
 		--set target_channel=$(GTAV_TARGET_CHANNEL) \
 		--set native_input_sha256=$(GTAV_TARGET_NATIVE_SHA256) \
 		--set script_globals_input_sha256=$(GTAV_TARGET_SCRIPT_SHA256) \
@@ -129,6 +139,7 @@ $(BUILD_CONFIG_STAMP): FORCE tools/write_build_stamp.py tools/target_loader_conf
 		--set require_context=$(FRAME_HOOK_REQUIRE_CONTEXT) \
 		--set pad_input=$(ENABLE_PAD_INPUT) --set pad_hook=$(PAD_HOOK) \
 		--set vehicle_preview=$(GTAV_MENU_ENABLE_VEHICLE_PREVIEW) \
+		--set custom_device=$(GTAV_MENU_ENABLE_CUSTOM_DEVICE) \
 		--set instructional_scaleform=$(GTAV_MENU_ENABLE_INSTRUCTIONAL_SCALEFORM) \
 		--set button_glyphs=$(GTAV_MENU_ENABLE_BUTTON_GLYPHS) \
 		--set worker_text=$(GTAV_MENU_ENABLE_WORKER_TEXT_OVERLAY) \
@@ -175,6 +186,7 @@ $(BUILD_CONFIG_STAMP): FORCE tools/write_build_stamp.py tools/target_loader_conf
 		--set loader_broker=$(PAYLOAD_LOADER_INSTALL_BROKER) \
 		--set loader_phase=$(PAYLOAD_LOADER_INSTALL_RENDER_PHASE) \
 		--set loader_guard=$(PAYLOAD_LOADER_INJECT_GUARD) \
+		--set loader_custom_mount=$(PAYLOAD_LOADER_CUSTOM_MOUNT) \
 		--set loader_verify_version=$(PAYLOAD_LOADER_VERIFY_VERSION)
 
 # OnionHEN-managed persistent watcher for the exact target-selected injection lane. The menu
@@ -232,6 +244,7 @@ $(ONIONHEN_DAEMON_ELF): $(PAYLOAD_LOADER_SRCS) src/payload_loader/embedded_worke
 		-DGTAV_PAYLOAD_SP_READY_POLL_USEC=$(PAYLOAD_LOADER_SP_READY_POLL_USEC) \
 		-DGTAV_PAYLOAD_SP_READY_POLL_MAX_USEC=$(PAYLOAD_LOADER_SP_READY_POLL_MAX_USEC) \
 		-DGTAV_PAYLOAD_INJECT_GUARD=$(PAYLOAD_LOADER_INJECT_GUARD) \
+		-DGTAV_PAYLOAD_CUSTOM_MOUNT=$(PAYLOAD_LOADER_CUSTOM_MOUNT) \
 		-DGTAV_LOADER_VERIFY_VERSION=$(PAYLOAD_LOADER_VERIFY_VERSION) \
 		-DGTAV_MENU_EMBEDDED_WORKER=1 \
 		$(LOADER_TARGET_CFLAGS) \
@@ -313,6 +326,7 @@ $(ETAHEN_RUNTIME_ELF): $(PAYLOAD_LOADER_SRCS) src/common/supervisor_lifecycle.c 
 		-DGTAV_PAYLOAD_SP_READY_POLL_USEC=$(PAYLOAD_LOADER_SP_READY_POLL_USEC) \
 		-DGTAV_PAYLOAD_SP_READY_POLL_MAX_USEC=$(PAYLOAD_LOADER_SP_READY_POLL_MAX_USEC) \
 		-DGTAV_PAYLOAD_INJECT_GUARD=$(PAYLOAD_LOADER_INJECT_GUARD) \
+		-DGTAV_PAYLOAD_CUSTOM_MOUNT=$(PAYLOAD_LOADER_CUSTOM_MOUNT) \
 		-DGTAV_LOADER_VERIFY_VERSION=$(PAYLOAD_LOADER_VERIFY_VERSION) \
 		-DGTAV_MANAGED_RUNTIME=1 \
 		-DGTAV_MENU_EMBEDDED_WORKER=1 \
@@ -408,6 +422,7 @@ $(PAYLOAD_LOADER_ELF): $(PAYLOAD_LOADER_SRCS) src/payload_loader/embedded_worker
 		-DGTAV_PAYLOAD_SP_READY_POLL_USEC=$(PAYLOAD_LOADER_SP_READY_POLL_USEC) \
 		-DGTAV_PAYLOAD_SP_READY_POLL_MAX_USEC=$(PAYLOAD_LOADER_SP_READY_POLL_MAX_USEC) \
 		-DGTAV_PAYLOAD_INJECT_GUARD=$(PAYLOAD_LOADER_INJECT_GUARD) \
+		-DGTAV_PAYLOAD_CUSTOM_MOUNT=$(PAYLOAD_LOADER_CUSTOM_MOUNT) \
 		-DGTAV_LOADER_VERIFY_VERSION=$(PAYLOAD_LOADER_VERIFY_VERSION) \
 		-DGTAV_MENU_EMBEDDED_WORKER=$(GTAV_MENU_EMBEDDED_WORKER) \
 		$(LOADER_TARGET_CFLAGS) \

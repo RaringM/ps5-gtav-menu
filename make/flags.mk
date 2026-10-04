@@ -69,6 +69,10 @@ FEATURE_MENU_CFLAGS += -DGTAV_MENU_SCRIPT_GLOBALS_HEADER=\"$(subst ",,$(GTAV_MEN
 # these off fail-closed so the worker can't call feature-layer functions that
 # were compiled out.
 GTAV_MENU_ENABLE_VEHICLE_PREVIEW ?= 0
+# Experimental engine device mount of the custom root as gtavmenu:/ (features/custom_device.inc).
+# Hardware-unverified, so off by default; enable with CUSTOM_DEVICE=1 ./menu-ctl.sh cave-inject.
+GTAV_MENU_ENABLE_CUSTOM_DEVICE ?= 0
+FEATURE_MENU_CFLAGS += -DGTAV_MENU_ENABLE_CUSTOM_DEVICE=$(GTAV_MENU_ENABLE_CUSTOM_DEVICE)
 GTAV_MENU_ENABLE_BUTTON_GLYPHS ?= 0
 GTAV_MENU_ENABLE_INSTRUCTIONAL_SCALEFORM ?= 0
 
@@ -297,6 +301,10 @@ PAYLOAD_LOADER_SP_READY_POLL_MAX_USEC ?= 5000000 # gentle backoff cap (usec)
 # stack workers or race stale-lock replacement. Production/menu-ctl requires 1. Value 0 exists only
 # for isolated host/research builds and is unsafe for deployment because remote unmap is unavailable.
 PAYLOAD_LOADER_INJECT_GUARD ?= 1
+# Read-only nullfs mount of /data/GTAVMenu/custom into GTA's sandbox, visible to the game as
+# /gtavmenu (include/gtavmenu/custom_mount.h). Hardware-unverified, so off by default; enable with
+# CUSTOM_MOUNT=1 ./menu-ctl.sh cave-inject (or watch).
+PAYLOAD_LOADER_CUSTOM_MOUNT ?= 0
 # Target-version guard: before injecting, the loader reads a stable native handler's prologue
 # (GET_FRAME_COUNT -- real game code we never patch) and refuses to inject if it does not match
 # the bytes recorded for PPSA04264 01.010.002, so the pinned native/hook addresses can never be
@@ -332,4 +340,6 @@ PAYLOAD_LOADER_SRCS := \
 	src/common/rootdir.c \
 	src/common/runtime_config.c \
 	src/common/strutil.c \
-	src/common/hex.c
+	src/common/hex.c \
+	src/common/custom_mount_pick.c \
+	src/payload_loader/custom_mount.c

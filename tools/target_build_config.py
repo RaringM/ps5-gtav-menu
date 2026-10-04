@@ -22,6 +22,8 @@ def make_tokens(profile: dict[str, object]) -> list[str]:
     values = {
         "profile_ok": 1,
         "target_id": profile["targetId"],
+        "title_id": profile["titleId"],
+        "content_id": profile["contentId"],
         "content_version": profile["contentVersion"],
         "channel": profile["channel"],
         "native_json": native["json"],
