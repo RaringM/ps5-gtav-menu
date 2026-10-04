@@ -132,6 +132,7 @@ $(BUILD_CONFIG_STAMP): FORCE tools/write_build_stamp.py tools/target_loader_conf
 		--set release_llvm_major=$(PS5_LLVM_MAJOR) \
 		--set unvalidated_toolchain=$(GTAV_ALLOW_UNVALIDATED_TOOLCHAIN) \
 		--set worker_rootdir=0 \
+		--set profile_storage_mount=1 \
 		--set native_features=$(FEATURE_MENU_ENABLE_NATIVE_FEATURES) \
 		--set frame_hook=$(FEATURE_MENU_ENABLE_FRAME_HOOK) \
 		--set external_frame_hook=$(FRAME_HOOK_EXTERNAL_INSTALL) \

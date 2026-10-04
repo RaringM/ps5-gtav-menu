@@ -51,6 +51,7 @@ static const GtavBuildPin gtav_build_pins[] = {{
 #include "gtavmenu/notify.h"
 #include "gtavmenu/patch_broker.h"
 #include "gtavmenu/proc_backend.h"
+#include "gtavmenu/profile_storage.h"
 #include "gtavmenu/render_phase_discovery.h"
 #include "gtavmenu/runtime_config.h"
 #include "gtavmenu/supervisor_lifecycle.h"
@@ -2579,6 +2580,12 @@ static void loader_custom_mount(int pid) {
 #endif
 }
 
+static void loader_profile_storage_mount(int pid) {
+  if (gtav_profile_storage_mount(GTAV_PAYLOAD_TARGET_TITLE_ID) != 0) {
+    gtav_logf("profile mount: unavailable for pid=%d; profile save/load will be unavailable", pid);
+  }
+}
+
 static int find_game_wait(const char* title_id, int* pid_out) {
 #if GTAV_PAYLOAD_WAIT_FOR_GAME || GTAV_PAYLOAD_PERSISTENT
   const unsigned long timeout_us = (unsigned long)GTAV_PAYLOAD_WAIT_TIMEOUT_SEC * 1000000UL;
@@ -2974,6 +2981,7 @@ int main(void) {
           served_token = cur_token;
           goto persistent_wait_instance;
         }
+        loader_profile_storage_mount(pid);
         loader_custom_mount(pid);
         sp = wait_for_sp_ready(pid, pin);
         if (sp == GTAV_SP_READY_OK) {
@@ -3184,6 +3192,7 @@ int main(void) {
 #endif
 
 #if GTAV_MENU_PAYLOAD_INJECT
+    loader_profile_storage_mount(pid);
     loader_custom_mount(pid);
     if (wait_for_sp_ready(pid, pin) != GTAV_SP_READY_OK) {
       gtav_logf("sp-ready gave up; not injecting");

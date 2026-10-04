@@ -242,13 +242,13 @@ typedef struct GtavDebugStats {
  * is on (i.e. the overlay should draw). Safe to call every render tick. */
 int gtav_features_debug_stats(GtavDebugStats* out);
 
-/* Settings persistence: capture the current toggle/cycler state into a profile and
- * restore it (re-applying live state). Both reuse the on-/data INI IO in
- * feature_profile.c via the rootdir guard; failures are non-fatal. */
+/* Settings persistence: capture the current toggle/cycler state into a profile and restore it
+ * (re-applying live state). The loader mounts the profile storage directory into GTA's sandbox;
+ * feature_profile.c performs ordinary INI IO there. Failures are non-fatal. */
 struct GtavFeatureProfile; /* defined in feature_profile.h */
 void gtav_features_export_profile(struct GtavFeatureProfile* out);
 void gtav_features_import_profile(const struct GtavFeatureProfile* in);
-/* Save/load the default profile path (/data/GTAVMenu/profile.cfg). Return 0 on
+/* Save/load the default profile path (/data/GTAVMenu/state/profile.cfg). Return 0 on
  * success, non-zero if the file could not be written/read. */
 int gtav_features_profile_save_default(void);
 int gtav_features_profile_load_default(void);
