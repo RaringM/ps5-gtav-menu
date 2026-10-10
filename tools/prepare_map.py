@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build a reviewed GTAV-Menu map.cfg from a named-model JSON manifest.
+"""Build a stock-model scene from JSON or an explicit YMAP XML placement snapshot.
 
 The output uses only stock model names. The runtime still checks every hash with
 IS_MODEL_VALID and IS_MODEL_IN_CDIMAGE before requesting or creating an entity.
@@ -11,11 +11,15 @@ import argparse
 import hashlib
 import json
 import math
-import os
 import re
+import sys
+import tempfile
 from collections import Counter
 from pathlib import Path
 
+from gtavmenu_tools import custom_pack_schema as package_io
+from gtavmenu_tools.asset_formats import AssetError
+from gtavmenu_tools.asset_maps import read_ymap_placements, snapshot_import_record
 from gtavmenu_tools.hashes import joaat
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -31,9 +35,18 @@ MAX_SOURCE_BYTES = 1024 * 1024
 MODEL_RE = re.compile(r"[a-z0-9_]{1,31}\Z")
 TOP_KEYS = {"schemaVersion", "name", "description", "placement", "entries"}
 ENTRY_KEYS = {"kind", "model", "position", "rotation", "frozen", "placeOnGround"}
+QUALIFICATION = {
+    "strictManifestValidated": True,
+    "hashesDerivedFromModelNames": True,
+    "curatedModelMembershipVerified": True,
+    "runtimeModelValidationRequired": True,
+    "usesStockModelsOnly": True,
+    "customResourceLoadingRequired": False,
+    "hardwareQualified": False,
+}
 
 
-class MapError(ValueError):
+class MapError(AssetError):
     pass
 
 
@@ -42,12 +55,10 @@ def digest(blob: bytes) -> str:
 
 
 def read_source(path: Path) -> bytes:
-    if path.is_symlink() or not path.is_file():
-        raise MapError("map source must be a regular non-symlink file")
-    blob = path.read_bytes()
-    if not blob or len(blob) > MAX_SOURCE_BYTES:
-        raise MapError("map source is empty or exceeds 1 MiB")
-    return blob
+    try:
+        return package_io.read_regular(path, maximum=MAX_SOURCE_BYTES)
+    except package_io.CustomPackSchemaError as exc:
+        raise MapError(str(exc)) from exc
 
 
 def catalogue(path: Path) -> set[str]:
@@ -68,7 +79,10 @@ def vector(value: object, label: str, limit: float) -> tuple[float, float, float
     for component in value:
         if isinstance(component, bool) or not isinstance(component, (int, float)):
             raise MapError(f"{label} contains a non-number")
-        number = float(component)
+        try:
+            number = float(component)
+        except OverflowError as exc:
+            raise MapError(f"{label} contains an out-of-range value") from exc
         if not math.isfinite(number) or abs(number) > limit:
             raise MapError(f"{label} contains a non-finite or out-of-range value")
         result.append(number)
@@ -76,16 +90,22 @@ def vector(value: object, label: str, limit: float) -> tuple[float, float, float
 
 
 def validate(source: dict, catalogues: dict[str, set[str]]) -> tuple[dict, bytes]:
+    if type(source) is not dict:
+        raise MapError("map source root must be an object")
     if set(source) - TOP_KEYS:
         raise MapError(f"unknown top-level fields: {sorted(set(source) - TOP_KEYS)}")
-    if source.get("schemaVersion") != 1:
+    if type(source.get("schemaVersion")) is not int or source["schemaVersion"] != 1:
         raise MapError("schemaVersion must be 1")
     name = source.get("name")
-    if not isinstance(name, str) or not name.isascii() or not 1 <= len(name) <= 64:
-        raise MapError("name must be 1-64 ASCII characters")
+    if not isinstance(name, str) or not 1 <= len(name) <= 64 or any(not 32 <= ord(char) <= 126 for char in name):
+        raise MapError("name must be 1-64 printable ASCII characters")
     description = source.get("description", "")
-    if not isinstance(description, str) or not description.isascii() or len(description) > 256:
-        raise MapError("description must be at most 256 ASCII characters")
+    if (
+        not isinstance(description, str)
+        or len(description) > 256
+        or any(not 32 <= ord(char) <= 126 for char in description)
+    ):
+        raise MapError("description must be at most 256 printable ASCII characters")
     placement = source.get("placement")
     if placement not in ("absolute", "relative"):
         raise MapError("placement must be absolute or relative")
@@ -153,46 +173,11 @@ def validate(source: dict, catalogues: dict[str, set[str]]) -> tuple[dict, bytes
     )
 
 
-def write_atomic(path: Path, blob: bytes) -> None:
-    if path.is_symlink() or (path.exists() and not path.is_file()):
-        raise MapError(f"output is not a regular file: {path}")
-    temporary = path.with_name(path.name + ".tmp")
-    if temporary.exists() or temporary.is_symlink():
-        raise MapError(f"temporary output already exists: {temporary}")
-    try:
-        temporary.write_bytes(blob)
-        os.replace(temporary, path)
-    finally:
-        if temporary.exists() and not temporary.is_symlink():
-            temporary.unlink()
-
-
-def prepare(source_path: Path, output_dir: Path) -> dict:
-    before = read_source(source_path)
-    try:
-        source = json.loads(before)
-    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
-        raise MapError(f"map source is not valid UTF-8 JSON: {exc}") from exc
-    if not isinstance(source, dict):
-        raise MapError("map source root must be an object")
-    catalogues = {kind: catalogue(path) for kind, path in CATALOGS.items()}
-    map_info, cfg = validate(source, catalogues)
-    if read_source(source_path) != before:
-        raise MapError("map source changed during preparation")
-    if output_dir.is_symlink() or (output_dir.exists() and not output_dir.is_dir()):
-        raise MapError("output directory must be a real directory")
-    output_dir.mkdir(parents=True, exist_ok=True)
-    cfg_path = output_dir / "map.cfg"
-    report_path = output_dir / "manifest.json"
-    source_name = (
-        source_path.resolve().relative_to(ROOT).as_posix()
-        if source_path.resolve().is_relative_to(ROOT)
-        else source_path.name
-    )
+def _report(source_record: dict, map_info: dict, cfg: bytes, *, imported: bool) -> dict:
     report = {
-        "schemaVersion": 1,
+        "schemaVersion": 2 if imported else 1,
         "kind": "gtavmenu-custom-map-package",
-        "source": {"path": source_name, "bytes": len(before), "sha256": digest(before)},
+        "source": source_record,
         "map": map_info,
         "artifact": {
             "path": "map.cfg",
@@ -201,55 +186,132 @@ def prepare(source_path: Path, output_dir: Path) -> dict:
             "consolePath": "/data/GTAVMenu/custom/maps/active.map.cfg",
             "format": "GTAVMAP,1",
         },
-        "qualification": {
-            "strictManifestValidated": True,
-            "hashesDerivedFromModelNames": True,
-            "curatedModelMembershipVerified": True,
-            "runtimeModelValidationRequired": True,
-            "usesStockModelsOnly": True,
-            "customResourceLoadingRequired": False,
-            "hardwareQualified": False,
-        },
+        "qualification": dict(QUALIFICATION),
     }
-    report_blob = (json.dumps(report, indent=2, sort_keys=True) + "\n").encode("ascii")
-    write_atomic(cfg_path, cfg)
-    write_atomic(report_path, report_blob)
-    if cfg_path.read_bytes() != cfg or report_path.read_bytes() != report_blob or read_source(source_path) != before:
-        raise MapError("map package readback or source identity check failed")
+    if imported:
+        report["import"] = snapshot_import_record()
+    return report
+
+
+def _publish(output_dir: Path, files: dict[str, bytes]) -> None:
+    # Reuse the strict package publisher's native no-replace and owned-cleanup
+    # primitives, not its different resource schema. No unsafe rename fallback.
+    package_io._encoded_publication_path(output_dir)
+    if output_dir.exists() or output_dir.is_symlink():
+        verify_package(output_dir)
+        if any(read_source(output_dir / name) != blob for name, blob in files.items()):
+            raise MapError("existing map package differs; choose a new output directory")
+        return
+    output_dir.parent.mkdir(parents=True, exist_ok=True)
+    temporary = Path(tempfile.mkdtemp(prefix=".gtavmenu-map-", suffix=".tmp", dir=output_dir.parent))
+    identity = None
+    try:
+        created = temporary.lstat()
+        identity = (created.st_dev, created.st_ino)
+        for name, blob in files.items():
+            with (temporary / name).open("xb") as stream:
+                stream.write(blob)
+        verify_package(temporary)
+        if any(read_source(temporary / name) != blob for name, blob in files.items()):
+            raise MapError("staged map differs from the complete expected package")
+        package_io._rename_directory_noreplace(temporary, output_dir)
+    except BaseException as exc:
+        if identity is None:
+            exc.add_note(f"Could not establish staging ownership; retained staging: {temporary}")
+            raise
+        try:
+            package_io._cleanup_staging(temporary, identity)
+        except BaseException as cleanup_error:
+            exc.add_note(f"Could not clean staging {temporary}: {cleanup_error}")
+        raise
+
+
+def prepare(
+    source_path: Path, output_dir: Path, *, input_format: str = "json", acknowledge_placement_only: bool = False
+) -> dict:
+    if input_format not in ("json", "ymap-xml"):
+        raise MapError("input format must be json or ymap-xml")
+    if input_format == "json" and acknowledge_placement_only:
+        raise MapError("placement-only acknowledgment is valid only with --input-format ymap-xml")
+    before = read_source(source_path)
+    catalogues = {kind: catalogue(path) for kind, path in CATALOGS.items()}
+    source = (
+        read_ymap_placements(before, catalogues["object"], acknowledge_placement_only=acknowledge_placement_only)
+        if input_format == "ymap-xml"
+        else package_io.load_json(before, "map source")
+    )
+    map_info, cfg = validate(source, catalogues)
+    source_name = (
+        source_path.resolve().relative_to(ROOT).as_posix()
+        if source_path.resolve().is_relative_to(ROOT)
+        else source_path.name
+    )
+    report = _report(
+        {"path": source_name, "bytes": len(before), "sha256": digest(before)},
+        map_info,
+        cfg,
+        imported=input_format == "ymap-xml",
+    )
+    files = {"map.cfg": cfg, "manifest.json": package_io.canonical_json(report)}
+    if any(len(blob) > MAX_SOURCE_BYTES for blob in files.values()):
+        raise MapError("map package exceeds the verification byte budget")
+    if read_source(source_path) != before:
+        raise MapError("map source changed during preparation")
+    _publish(output_dir, files)
     return report
 
 
 def verify_package(output_dir: Path) -> dict:
     if output_dir.is_symlink() or not output_dir.is_dir():
         raise MapError("map package must be a real directory")
-    report_path = output_dir / "manifest.json"
-    cfg_path = output_dir / "map.cfg"
-    if report_path.is_symlink() or cfg_path.is_symlink():
-        raise MapError("map package files must not be symlinks")
-    report_blob = read_source(report_path)
-    cfg = read_source(cfg_path)
-    try:
-        report = json.loads(report_blob)
-    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
-        raise MapError(f"map package manifest is invalid: {exc}") from exc
-    artifact = report.get("artifact") if isinstance(report, dict) else None
-    qualification = report.get("qualification") if isinstance(report, dict) else None
+    found = set()
+    for child in output_dir.iterdir():
+        if child.name not in {"map.cfg", "manifest.json"} or child.is_symlink() or not child.is_file():
+            raise MapError("map package must contain exactly two regular files and no other entries")
+        found.add(child.name)
+    if found != {"map.cfg", "manifest.json"}:
+        raise MapError("map package is missing required files")
+    report_blob, cfg = read_source(output_dir / "manifest.json"), read_source(output_dir / "map.cfg")
+    report = package_io.load_json(report_blob, "map package manifest")
+    version = report.get("schemaVersion")
+    if type(version) is not int or version not in (1, 2):
+        raise MapError("unsupported map package version")
+    source_record, recorded = report.get("source"), report.get("map")
     if (
-        report.get("schemaVersion") != 1
-        or report.get("kind") != "gtavmenu-custom-map-package"
-        or not isinstance(artifact, dict)
-        or artifact.get("path") != "map.cfg"
-        or artifact.get("bytes") != len(cfg)
-        or artifact.get("sha256") != digest(cfg)
-        or artifact.get("consolePath") != "/data/GTAVMenu/custom/maps/active.map.cfg"
-        or artifact.get("format") != "GTAVMAP,1"
-        or not isinstance(qualification, dict)
-        or qualification.get("strictManifestValidated") is not True
-        or qualification.get("hashesDerivedFromModelNames") is not True
-        or qualification.get("curatedModelMembershipVerified") is not True
-        or not cfg.startswith(b"GTAVMAP,1,")
+        type(source_record) is not dict
+        or set(source_record) != {"path", "bytes", "sha256"}
+        or type(source_record["path"]) is not str
+        or not 1 <= len(source_record["path"]) <= 512
+        or not source_record["path"].isprintable()
+        or type(source_record["bytes"]) is not int
+        or not 1 <= source_record["bytes"] <= MAX_SOURCE_BYTES
+        or type(source_record["sha256"]) is not str
+        or not re.fullmatch(r"[0-9a-f]{64}", source_record["sha256"])
+        or type(recorded) is not dict
+        or set(recorded) != {"name", "description", "placement", "entries", "entryCount", "kindCounts"}
+        or type(recorded["entries"]) is not list
+        or not 1 <= len(recorded["entries"]) <= MAX_ENTRIES
     ):
-        raise MapError("map package manifest, qualification, or artifact identity is inconsistent")
+        raise MapError("map source identity or prepared scene fields are invalid")
+    entries = []
+    for row in recorded["entries"]:
+        if type(row) is not dict or set(row) != ENTRY_KEYS | {"kindCode", "modelHash", "flags", "catalogue"}:
+            raise MapError("prepared map entry has missing or unknown fields")
+        entries.append({key: row[key] for key in ENTRY_KEYS})
+    scene = {
+        "schemaVersion": 1,
+        **{key: recorded[key] for key in ("name", "description", "placement")},
+        "entries": entries,
+    }
+    info, expected_cfg = validate(scene, {kind: catalogue(path) for kind, path in CATALOGS.items()})
+    if version == 2 and (
+        info["placement"] != "absolute"
+        or any(row["kind"] != "object" or not row["frozen"] or row["placeOnGround"] for row in info["entries"])
+    ):
+        raise MapError("YMAP snapshot must contain only absolute frozen object placements without grounding")
+    expected = _report(source_record, info, expected_cfg, imported=version == 2)
+    if cfg != expected_cfg or report_blob != package_io.canonical_json(expected):
+        raise MapError("map package differs from independently rederived fields, policy or map.cfg")
     return report
 
 
@@ -258,18 +320,37 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("source", type=Path, nargs="?")
     parser.add_argument("--output-dir", type=Path)
     parser.add_argument("--verify-package", type=Path)
+    parser.add_argument("--input-format", choices=("json", "ymap-xml"), default="json")
+    parser.add_argument(
+        "--acknowledge-placement-only",
+        action="store_true",
+        help="explicitly discard native YMAP behavior for a stock-object static snapshot",
+    )
     args = parser.parse_args(argv)
     try:
         if args.verify_package:
-            if args.source or args.output_dir:
+            if args.source or args.output_dir or args.input_format != "json" or args.acknowledge_placement_only:
                 raise MapError("--verify-package cannot be combined with source/output options")
             report = verify_package(args.verify_package)
         else:
             if not args.source or not args.output_dir:
                 raise MapError("source and --output-dir are required when preparing a map")
-            report = prepare(args.source, args.output_dir)
-    except (MapError, OSError, KeyError, TypeError) as exc:
-        parser.exit(1, f"custom map preparation failed: {exc}\n")
+            report = prepare(
+                args.source,
+                args.output_dir,
+                input_format=args.input_format,
+                acknowledge_placement_only=args.acknowledge_placement_only,
+            )
+    except KeyboardInterrupt as exc:
+        print("custom map preparation interrupted", file=sys.stderr)
+        for note in getattr(exc, "__notes__", ()):
+            print(note, file=sys.stderr)
+        return 130
+    except (AssetError, package_io.CustomPackSchemaError, OSError) as exc:
+        print(f"custom map preparation failed: {exc}", file=sys.stderr)
+        for note in getattr(exc, "__notes__", ()):
+            print(note, file=sys.stderr)
+        return 1
     print(
         json.dumps(
             {

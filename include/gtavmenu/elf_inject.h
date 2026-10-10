@@ -14,7 +14,7 @@
 // gtav_proc_start_thread. The ELF parsing + relocation math is pure, so the whole
 // path is host-tested with a stub backend over a real ELF (test_elf_inject_static.py).
 //
-// Mirrors the host-side plan tool research/tools/offline/elf_map_plan.py. Supports little-endian
+// Mirrors the host-side ELF map plan tool used during development. Supports little-endian
 // ELF64 x86-64 with relocation types RELATIVE / GLOB_DAT / JUMP_SLOT / 64 and a
 // 0x4000 page size. Returns 0 on success and -1 on failure (details in *out).
 

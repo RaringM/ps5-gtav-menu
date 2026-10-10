@@ -254,6 +254,13 @@ static void suppress_menu_input_controls(void) {
       {0, 201}, {2, 201}, {2, 176}, {0, 22},
       // Circle -> cancel / change view / cover / reload / duck
       {0, 202}, {2, 202}, {2, 177}, {0, 0}, {0, 44}, {0, 45}, {0, 36},
+      // Circle also punches: melee light/heavy/alternate attack and the combat melee pair
+      // (user request: "O should not punch with the menu open").
+      {0, 140}, {0, 141}, {0, 142}, {0, 263}, {0, 264},
+      // L1 / R1 jump the menu cursor to the top / bottom row (pad_input.c): frontend LB/RB, weapon
+      // wheel, vehicle aim/attack/handbrake and aircraft yaw (cover 44 is already listed above)
+      {0, 205}, {2, 205}, {0, 206}, {2, 206}, {0, 37}, {0, 68}, {0, 69}, {0, 70}, {0, 76},
+      {0, 89}, {0, 90},
   };
   for (unsigned i = 0; i < sizeof(kSuppress) / sizeof(kSuppress[0]); ++i) {
     invoke_void(g_n.disable_control_action, kSuppress[i].group, kSuppress[i].control, 1);
@@ -265,7 +272,11 @@ static void suppress_menu_input_controls(void) {
 // point after the shot lands -- without the move check we would spawn ~60 overlapping
 // explosions/sec at one spot. Only acts when the impact moved (>0.5 m). Entity-creating,
 // so this is correct only because the frame hook runs it on the game/script thread.
+static void pack_interior_diag_tick();  // custom_pack_world.inc (a no-op outside the pack lane)
+
 extern "C" void gtav_features_game_thread_tick(void) {
+  crowd_game_thread_tick();
+  pack_interior_diag_tick();
   // Record that the frame-hook side fired this frame (updates hookSideTicks and runs the
   // native-bridge game-thread canary). Kept at the top so it happens even if a later
   // feature branch returns early.

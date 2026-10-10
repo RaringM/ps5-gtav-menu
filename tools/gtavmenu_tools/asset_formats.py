@@ -187,11 +187,14 @@ def rpf_members(
     *,
     file_size: int | None = None,
     read_at: Callable[[int, int], bytes] | None = None,
+    name_check: Callable[[str], str] = safe_name,
 ) -> list[RpfMember]:
     """Parse a complete table; optionally use bounded reads for a large archive.
 
     The header must still use the supported PC table encodings. Callers with a
     separately decoded research table must identify that provenance themselves.
+    `name_check` is the per-name policy (default `safe_name`); a caller that only
+    uses names as labels may pass a looser one, never one that admits '/'.
     """
     total_size = len(data) if file_size is None else file_size
     header = rpf_header(data, total_size)
@@ -215,7 +218,7 @@ def rpf_members(
             raise AssetError("non-ASCII RPF name") from exc
         if root and not name:
             return ""
-        safe_name(name)
+        name_check(name)
         if "/" in name:
             raise AssetError("RPF entry name contains a directory separator")
         return name

@@ -39,8 +39,8 @@
 // segment the `mov rax, fs:[0]` sites resolve to exactly 451 `[rax - 0x130]` loads on
 // 01.005.000 and exactly 451 `[rax - 0x140]` loads on 01.010.002, and those loads are
 // followed by 280 vs 282 `+0x188` / `+0x198` field reads respectively -- a 1:1
-// correspondence across the two builds. research/tools/offline/classify_worker_safe_natives.py
-// rebuilds this evidence and tests/test_tls_layout_offsets.py gates it.
+// correspondence across the two builds. A developer classifier rebuilds this evidence and a
+// host test gates it.
 //
 // tools/feature_menu_target_cflags.py emits per-target
 // -DGTAV_TLS_GAME_CTX_OFFSET=... / -DGTAV_TLS_CTX_NATIVE_THREAD_OFFSET=... when

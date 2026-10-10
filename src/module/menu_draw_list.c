@@ -4,18 +4,31 @@
 #include <stddef.h>
 #include <string.h>
 
-_Static_assert(__atomic_always_lock_free(8, 0), "draw-list publication requires lock-free qwords");
-_Static_assert(sizeof(GtavMenuDrawCommand) == 164u, "draw command ABI changed");
-_Static_assert(sizeof(GtavMenuDrawList) == 31504u, "draw list ABI changed");
-_Static_assert(offsetof(GtavMenuDrawListState, slots) == 128u, "draw-list header ABI changed");
-_Static_assert(sizeof(GtavMenuDrawListState) == 63136u, "draw-list state ABI changed");
+#ifdef __cplusplus
+#define GTAV_DRAW_LIST_STATIC_ASSERT static_assert
+#else
+#define GTAV_DRAW_LIST_STATIC_ASSERT _Static_assert
+#endif
+
+GTAV_DRAW_LIST_STATIC_ASSERT(__atomic_always_lock_free(8, 0),
+                             "draw-list publication requires lock-free qwords");
+GTAV_DRAW_LIST_STATIC_ASSERT(sizeof(GtavMenuDrawCommand) == 164u, "draw command ABI changed");
+GTAV_DRAW_LIST_STATIC_ASSERT(sizeof(GtavMenuDrawList) == 31504u, "draw list ABI changed");
+GTAV_DRAW_LIST_STATIC_ASSERT(offsetof(GtavMenuDrawListState, slots) == 128u,
+                             "draw-list header ABI changed");
+GTAV_DRAW_LIST_STATIC_ASSERT(sizeof(GtavMenuDrawListState) == 63136u,
+                             "draw-list state ABI changed");
 
 #ifdef __cplusplus
-#define GTAV_DRAW_LIST_ZERO_INIT \
-  {                              \
+#define GTAV_DRAW_LIST_READERS_ZERO_INIT \
+  {                                      \
+  }
+#define GTAV_DRAW_LIST_SLOTS_ZERO_INIT \
+  {                                    \
   }
 #else
-#define GTAV_DRAW_LIST_ZERO_INIT {0}
+#define GTAV_DRAW_LIST_READERS_ZERO_INIT {0}
+#define GTAV_DRAW_LIST_SLOTS_ZERO_INIT {{0}}
 #endif
 
 GtavMenuDrawListState gtav_menu_draw_lists __attribute__((used, retain, visibility("default"))) = {
@@ -23,7 +36,7 @@ GtavMenuDrawListState gtav_menu_draw_lists __attribute__((used, retain, visibili
     .abi = 1,
     .size = sizeof(GtavMenuDrawListState),
     .published_token = 0,
-    .readers = GTAV_DRAW_LIST_ZERO_INIT,
+    .readers = GTAV_DRAW_LIST_READERS_ZERO_INIT,
     .publications = 0,
     .acquisitions = 0,
     .releases = 0,
@@ -34,10 +47,11 @@ GtavMenuDrawListState gtav_menu_draw_lists __attribute__((used, retain, visibili
     .rejected_commands = 0,
     .last_published_generation = 0,
     .last_acquired_generation = 0,
-    .slots = GTAV_DRAW_LIST_ZERO_INIT,
+    .slots = GTAV_DRAW_LIST_SLOTS_ZERO_INIT,
 };
 
-#undef GTAV_DRAW_LIST_ZERO_INIT
+#undef GTAV_DRAW_LIST_READERS_ZERO_INIT
+#undef GTAV_DRAW_LIST_SLOTS_ZERO_INIT
 
 static uint32_t g_building_slot = UINT32_MAX;
 

@@ -138,6 +138,7 @@ COMMAND_NAMES = {
     36: "render_bank_control",
     37: "render_phase_slot",
     38: "render_phase_control",
+    39: "activate_action_param",
 }
 COMMAND_IDS = {
     "toggle": 1,
@@ -189,6 +190,8 @@ COMMAND_IDS = {
     "load-module": 18,
     "activate_action": 19,
     "activate-action": 19,
+    "activate_action_param": 39,
+    "activate-action-param": 39,
     "toast_ticks": 20,
     "set_toast_ticks": 20,
     "toast-ticks": 20,
@@ -380,8 +383,29 @@ class Ps5DebugNg:
         return matches
 
 
+def supported_foreground_target(fg: dict[str, object]) -> str:
+    """Identify a supported title/version for controls; injection verifies memory pins separately."""
+    from gtavmenu_tools.universal_package import TARGETS
+
+    title = str(fg.get("titleId", ""))
+    version = str(fg.get("appVersion", ""))
+    matches = [
+        target
+        for target in TARGETS
+        if target.split("-", 1) == [title.lower(), version] and target.split("-", 1)[0].upper() == title
+    ]
+    if len(matches) != 1 or int(fg.get("pid") or 0) <= 0:
+        raise RuntimeError(f"foreground is not one supported GTA title/version: {fg}")
+    return matches[0]
+
+
 def require_expected_foreground(client: Ps5DebugNg, args: argparse.Namespace) -> dict[str, object]:
     fg = client.foreground()
+    if getattr(args, "auto_target", False):
+        if getattr(args, "allow_non_gtav", False):
+            raise RuntimeError("--auto-target cannot be combined with --allow-non-gtav")
+        supported_foreground_target(fg)
+        return fg
     if getattr(args, "allow_non_gtav", False):
         return fg
     expected_title = getattr(args, "expect_title_id", EXPECTED_TITLE_ID)
@@ -514,6 +538,42 @@ def decode_status(raw: bytes, address: int | None = None) -> dict[str, object]:
         "eventCount": event_count,
         "events": events,
     }
+
+
+def status_events_since(
+    previous_write_index: int, status: dict[str, object], *, allow_overflow: bool = False
+) -> tuple[int, list[dict[str, object]]]:
+    """Return newly published ring entries or fail if the bounded ring overran.
+
+    With allow_overflow the retained (newest) entries are returned instead; a feature-action wait
+    only needs the terminal result, which is always the newest entry of its action.
+    """
+
+    current_write_index = int(status.get("eventWriteIndex") or 0)
+    if current_write_index < previous_write_index:
+        raise RuntimeError(f"status event index moved backwards: {previous_write_index}->{current_write_index}")
+    delta = current_write_index - previous_write_index
+    events = list(status.get("events") or [])
+    if delta > len(events) and not allow_overflow:
+        raise RuntimeError(f"status event ring overflow: need {delta} entries but snapshot retains {len(events)}")
+    return current_write_index, events[max(0, len(events) - delta) :] if delta else []
+
+
+def feature_action_terminal_event(events: list[dict[str, object]], action_name: str) -> dict[str, object] | None:
+    queued = f"feature ok action={action_name} message=queued for main thread"
+    prefixes = tuple(f"feature {result} action={action_name} " for result in ("ok", "unavailable", "failed"))
+    for event in events:
+        message = str(event.get("message") or "")
+        if message != queued and message.startswith(prefixes):
+            return event
+    return None
+
+
+def feature_action_event_succeeded(event: dict[str, object] | None, action_name: str) -> bool:
+    message = str((event or {}).get("message") or "")
+    return message.startswith(f"feature ok action={action_name} ") and not message.endswith(
+        "message=queued for main thread"
+    )
 
 
 def decode_command_mailbox(raw: bytes, address: int | None = None) -> dict[str, object]:
@@ -941,11 +1001,47 @@ def command_foreground(client: Ps5DebugNg, args: argparse.Namespace) -> None:
     fg["matchesExpected"] = (not expected_title or fg.get("titleId") == expected_title) and (
         not expected_version or fg.get("appVersion") == expected_version
     )
+    if getattr(args, "auto_target", False):
+        try:
+            fg["detectedTarget"] = supported_foreground_target(fg)
+            fg["matchesExpected"] = True
+        except RuntimeError:
+            fg["matchesExpected"] = False
     if getattr(args, "output", None):
         output = Path(args.output)
         output.parent.mkdir(parents=True, exist_ok=True)
         output.write_text(json.dumps(fg, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(fg, indent=2))
+
+
+def command_processes(client: Ps5DebugNg, args: argparse.Namespace) -> None:
+    """List process identities and optionally prove that one title is absent."""
+
+    rows = []
+    failures = []
+    for process in client.processes():
+        pid = int(process.get("pid") or 0)
+        if pid <= 0:
+            rows.append(process)
+            continue
+        try:
+            row = client.proc_info(pid)
+        except (OSError, RuntimeError, ValueError) as exc:
+            row = {**process, "infoError": str(exc)}
+            failures.append(pid)
+        rows.append(row)
+    required_absent = getattr(args, "require_title_absent", None)
+    if required_absent:
+        if failures:
+            raise RuntimeError(f"cannot prove {required_absent} is closed; process identity failed for pids {failures}")
+        matches = [int(row.get("pid") or 0) for row in rows if row.get("titleId") == required_absent]
+        if matches:
+            raise RuntimeError(f"title {required_absent} is still running in pids {matches}")
+    if getattr(args, "output", None):
+        output = Path(args.output)
+        output.parent.mkdir(parents=True, exist_ok=True)
+        output.write_text(json.dumps(rows, indent=2) + "\n", encoding="utf-8")
+    print(json.dumps(rows, indent=2))
 
 
 def command_status(client: Ps5DebugNg, args: argparse.Namespace) -> None:
@@ -1275,6 +1371,45 @@ def run_menu_command_result(
             raise RuntimeError(
                 f"menu-command timed out after {args.wait_timeout:.1f}s waiting for ack sequence {sequence}; lastMailbox={after}"
             )
+    selected_status_after = selected_status
+    if selected_status is not None:
+        status_address = int(selected_status.get("address") or 0)
+        if status_address:
+            selected_status_after = decode_status(client.read(pid, status_address, GTAV_STATUS_SIZE), status_address)
+    followed_events: list[dict[str, object]] = []
+    event_poll_count = 0
+    feature_action_result = None
+    feature_action_succeeded = None
+    events_dropped = 0
+    wait_feature_action = getattr(args, "wait_feature_action", None)
+    if wait_feature_action:
+        if args.feature_wait_timeout <= 0 or args.event_interval <= 0:
+            raise RuntimeError("feature-action wait timeout and interval must be positive")
+        if selected_status is None or selected_status_after is None:
+            raise RuntimeError("feature-action result wait requires a selected status block")
+        status_address = int(selected_status.get("address") or 0)
+        if not status_address:
+            raise RuntimeError("feature-action result wait requires an addressed status block")
+        event_cursor = int(selected_status.get("eventWriteIndex") or 0)
+        deadline = time.monotonic() + float(args.feature_wait_timeout)
+        current_status = selected_status_after
+        while True:
+            event_poll_count += 1
+            previous_cursor = event_cursor
+            event_cursor, new_events = status_events_since(event_cursor, current_status, allow_overflow=True)
+            events_dropped += event_cursor - previous_cursor - len(new_events)
+            followed_events.extend(new_events)
+            feature_action_result = feature_action_terminal_event(new_events, wait_feature_action)
+            if feature_action_result is not None:
+                feature_action_succeeded = feature_action_event_succeeded(feature_action_result, wait_feature_action)
+                selected_status_after = current_status
+                break
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                messages = [str(event.get("message") or "") for event in followed_events[-8:]]
+                raise RuntimeError(f"feature-action result timed out for {wait_feature_action}; recent={messages}")
+            time.sleep(min(float(args.event_interval), remaining))
+            current_status = decode_status(client.read(pid, status_address, GTAV_STATUS_SIZE), status_address)
     return {
         "foreground": fg,
         "pid": pid,
@@ -1282,10 +1417,16 @@ def run_menu_command_result(
         "commandName": command_name,
         "sequence": sequence,
         "selectedStatus": selected_status,
+        "selectedStatusAfter": selected_status_after,
         "selectedMailboxBefore": selected_mailbox,
         "selectedMailboxAfter": after,
         "acknowledged": int(after["ackSequence"]) >= sequence,
         "waitPollCount": wait_poll_count,
+        "eventPollCount": event_poll_count,
+        "followedEvents": followed_events,
+        "eventsDropped": events_dropped,
+        "featureActionResult": feature_action_result,
+        "featureActionSucceeded": feature_action_succeeded,
         "matchedStatus": matched_status,
         "rejectedStatus": rejected_status,
         "skippedStatus": skipped_status,
@@ -1306,6 +1447,8 @@ def command_menu_command(client: Ps5DebugNg, args: argparse.Namespace) -> None:
         output.parent.mkdir(parents=True, exist_ok=True)
         output.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(result, indent=2))
+    if args.wait_feature_action and result["featureActionSucceeded"] is not True:
+        raise RuntimeError(f"feature action {args.wait_feature_action} refused: {result['featureActionResult']}")
 
 
 def command_klog(_client: Ps5DebugNg | None, args: argparse.Namespace) -> None:
@@ -1406,11 +1549,19 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--timeout", type=float, default=10.0, help="socket timeout")
     parser.add_argument("--expect-title-id", default=EXPECTED_TITLE_ID)
     parser.add_argument("--expect-app-version", default=EXPECTED_APP_VERSION)
+    parser.add_argument(
+        "--auto-target", action="store_true", help="accept any reviewed title/version for live worker controls"
+    )
     sub = parser.add_subparsers(dest="command", required=True)
 
     foreground = sub.add_parser("foreground", help="show the foreground process identity")
     foreground.add_argument("--output")
     foreground.set_defaults(func=command_foreground)
+
+    processes = sub.add_parser("processes", help="show process identities")
+    processes.add_argument("--require-title-absent")
+    processes.add_argument("--output")
+    processes.set_defaults(func=command_processes)
 
     status = sub.add_parser("status", help="read the menu worker status block")
     _add_status_location_args(status)
@@ -1450,6 +1601,9 @@ def build_parser() -> argparse.ArgumentParser:
     menu_command.add_argument("--no-wait", dest="wait", action="store_false")
     menu_command.add_argument("--wait-timeout", type=float, default=5.0)
     menu_command.add_argument("--interval", type=float, default=0.1)
+    menu_command.add_argument("--wait-feature-action")
+    menu_command.add_argument("--feature-wait-timeout", type=float, default=3.0)
+    menu_command.add_argument("--event-interval", type=float, default=0.005)
     menu_command.add_argument("--yes-command", action="store_true")
     menu_command.add_argument("--output")
     menu_command.add_argument("--allow-non-gtav", action="store_true")

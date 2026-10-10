@@ -131,9 +131,8 @@ def target_cflags(stem: str, *, include_preview: bool = False, include_glyphs: b
     ]
     # Build-specific game-thread TLS layout (see include/gtavmenu/tls_layout.h). Both
     # offsets move together between builds (01.005.000: -0x130/+0x188, 01.010.002:
-    # -0x140/+0x198) and are derived offline from the decrypted eboot by
-    # research/tools/offline/classify_worker_safe_natives.py. When the manifest pins a row, bake it in;
-    # otherwise the header default applies.
+    # -0x140/+0x198) and are derived offline from the decrypted eboot, then pinned in the target
+    # manifest. When the manifest pins a row, bake it in; otherwise the header default applies.
     tls_offset = loader.get("tlsGameCtxOffset")
     if tls_offset is not None:
         flags.append(f"-DGTAV_TLS_GAME_CTX_OFFSET={_int(tls_offset)}u")

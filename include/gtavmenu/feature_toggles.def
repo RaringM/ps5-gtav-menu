@@ -70,6 +70,7 @@ GTAV_TOGGLE(RAINBOW_PAINT, g_rainbow_paint_enabled, 1, 0)
 /* Spawner defaults: pure display flags consumed at vehicle create-time (no native at toggle). */
 GTAV_TOGGLE(SPAWN_MAXED, g_spawn_maxed_enabled, 1, 0)
 GTAV_TOGGLE(SPAWN_INVINCIBLE, g_spawn_invincible_enabled, 1, 0)
+GTAV_TOGGLE(SPAWN_UPGRADED, g_spawn_upgraded_enabled, 1, 0)
 
 /* World */
 GTAV_TOGGLE(LOW_GRAVITY, g_low_gravity_enabled, 1, 0)

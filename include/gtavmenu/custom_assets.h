@@ -1,35 +1,37 @@
 #pragma once
 
-// Stable console-side namespace for user-authored content. Converted resource packs are staged
-// below PACK_ROOT and remain inactive until the target's mount/lifetime contract is qualified.
+// Stable console-side namespace for user-authored content; maps are written below MAP_ROOT.
 #define GTAV_CUSTOM_ASSET_ROOT "/data/GTAVMenu/custom"
-#define GTAV_CUSTOM_PACK_ROOT GTAV_CUSTOM_ASSET_ROOT "/packs"
-#define GTAV_CUSTOM_CATALOG_PATH GTAV_CUSTOM_ASSET_ROOT "/catalog.json"
-#define GTAV_CUSTOM_CATALOG_TEMP_PATH GTAV_CUSTOM_ASSET_ROOT "/catalog.json.tmp"
-#define GTAV_CUSTOM_AUTHORED_BC1_PACK_ID "gtavmenu-authored-bc1-v1"
-#define GTAV_CUSTOM_AUTHORED_BC1_PACK_ROOT \
-  GTAV_CUSTOM_PACK_ROOT "/" GTAV_CUSTOM_AUTHORED_BC1_PACK_ID
-#define GTAV_CUSTOM_AUTHORED_BC1_MANIFEST_PATH GTAV_CUSTOM_AUTHORED_BC1_PACK_ROOT "/manifest.json"
-#define GTAV_CUSTOM_AUTHORED_BC1_RESOURCE_PATH \
-  GTAV_CUSTOM_AUTHORED_BC1_PACK_ROOT "/resources/gtavmenu_authored_bc1.ptd"
-#define GTAV_CUSTOM_AUTHORED_BC1_DICTIONARY "gtavmenu_authored_bc1"
-#define GTAV_CUSTOM_AUTHORED_BC1_TEXTURE "gtavmenu_authored_bc1"
 #define GTAV_CUSTOM_MAP_ROOT GTAV_CUSTOM_ASSET_ROOT "/maps"
 #define GTAV_CUSTOM_MAP_PATH GTAV_CUSTOM_MAP_ROOT "/active.map.cfg"
-#define GTAV_CUSTOM_MAP_TEMP_PATH GTAV_CUSTOM_MAP_ROOT "/active.map.cfg.tmp"
 
-// GTA runs chrooted to /mnt/sandbox/<TITLE>_<NNN> and cannot see /data. When built with
-// GTAV_PAYLOAD_CUSTOM_MOUNT, the loader nullfs-mounts GTAV_CUSTOM_ASSET_ROOT read-only at
-// <sandbox>GTAV_CUSTOM_GAME_ROOT, so the game sees the custom root at the console's own path. It
-// must stay under /data/: the engine's local device passes /data/ paths through unchanged but
-// rewrites unknown absolute roots to /host/.
-#define GTAV_CUSTOM_GAME_ROOT GTAV_CUSTOM_ASSET_ROOT
-// Mountpoint name used by earlier builds (<sandbox>/gtavmenu); the loader removes it when found.
-#define GTAV_CUSTOM_LEGACY_MOUNT_NAME "gtavmenu"
-
-// Small text file that reports whether the custom root is visible from inside GTA.
-#define GTAV_CUSTOM_PROBE_NAME "probe.txt"
-#define GTAV_CUSTOM_PROBE_PATH GTAV_CUSTOM_ASSET_ROOT "/" GTAV_CUSTOM_PROBE_NAME
+// Custom content uses the console /data exposed by ShadowMountPlus or the HEN.
+// The loader never mounts or copies packs into the game sandbox. If /data is
+// unavailable, custom content is disabled while the ordinary menu remains usable.
+#define GTAV_CUSTOM_GAME_ROOT "/data/gtavmenu/custom"
+#define GTAV_CUSTOM_GAME_PACK_ROOT GTAV_CUSTOM_GAME_ROOT "/packs"
+#define GTAV_PACK_NOTES_NAME "pack-notes.log"
+#define GTAV_CUSTOM_DATA_UNAVAILABLE \
+  "Custom packs unavailable: enable SMP/HEN shared /data, then restart GTA"
+#define GTAV_CUSTOM_GAME_MAP_ROOT GTAV_CUSTOM_GAME_ROOT "/maps"
+#define GTAV_CUSTOM_GAME_MAP_PATH GTAV_CUSTOM_GAME_MAP_ROOT "/active.map.cfg"
 
 // Read-only compatibility path for maps uploaded by older builds.
 #define GTAV_LEGACY_MAP_PATH "/data/GTAVMenu/map.cfg"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+// Sole custom-content root. Reading it performs no I/O.
+const char* gtav_custom_game_root(void);
+// Worker-thread initialization only: probe /data accessibility once per process.
+// Readable control files count even when the HEN's directory listing is empty.
+void gtav_custom_game_root_init(void);
+// Cached predicate, safe for game-thread callers. Unknown/unavailable returns 0.
+// An empty but accessible /data is available; a missing pack list is a separate state.
+int gtav_custom_game_root_available(void);
+
+#ifdef __cplusplus
+}
+#endif

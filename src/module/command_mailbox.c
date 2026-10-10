@@ -90,6 +90,8 @@ const char* gtav_command_mailbox_command_name(uint32_t command) {
       return "render_phase_slot";
     case GTAV_MENU_COMMAND_RENDER_PHASE_CONTROL:
       return "render_phase_control";
+    case GTAV_MENU_COMMAND_ACTIVATE_ACTION_PARAM:
+      return "activate_action_param";
     case GTAV_MENU_COMMAND_NONE:
     default:
       return "none";

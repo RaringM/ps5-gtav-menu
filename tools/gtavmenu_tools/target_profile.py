@@ -142,6 +142,7 @@ def validate_manifest(
         "scriptGlobals",
         "phaseIntercept",
         "phaseDrawList",
+        "customPacks",
     )
     feature_values = {key: boolean(features.get(key), f"build.features.{key}") for key in feature_keys}
     injection_keys = (
@@ -221,6 +222,10 @@ def validate_manifest(
         "phaseDrawList"
     ]:
         raise TargetProfileError("preview and instructional Scaleform require phaseDrawList")
+    # The runtime pack lane (CUSTOM_PACKS) streams through the preview natives and draws its card
+    # through the phase draw list; make/flags.mk also pins it to the 01.010.002 executables.
+    if feature_values["customPacks"] and not (feature_values["vehiclePreview"] and feature_values["phaseDrawList"]):
+        raise TargetProfileError("customPacks requires vehiclePreview and phaseDrawList")
 
     return {
         "stem": stem,
@@ -271,6 +276,7 @@ def expected_build_config(manifest: dict[str, object], delivery: str) -> dict[st
         "script_globals": int(features["scriptGlobals"]),
         "phase_intercept": int(features["phaseIntercept"]),
         "phase_draw_list": int(features["phaseDrawList"]),
+        "custom_packs": int(features["customPacks"]),
         "self_start": int(injection["selfStartWorker"]),
         "embedded_worker": 1,
         "loader_wait": 1,

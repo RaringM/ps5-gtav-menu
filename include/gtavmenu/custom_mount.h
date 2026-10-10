@@ -1,7 +1,6 @@
 #pragma once
 
-// Make the custom-asset root visible inside GTA's sandbox (see custom_assets.h). The same
-// approach BOx-GSC-Injector's maps runtime uses for Black Ops III.
+// Sandbox discovery helpers retained by the quarantined profile storage mount.
 
 #include <stddef.h>
 
@@ -20,12 +19,6 @@ int gtav_custom_sandbox_index(const char* name, const char* title, long* index_o
 // none matches or it does not fit. Pure.
 int gtav_custom_pick_sandbox(const char* const* names, const int* live, int count,
                              const char* title, char* out, size_t out_size);
-
-// PS5 loader only. Unmounts our mounts left in other sandboxes of `title` (and the legacy
-// mountpoint everywhere), then mounts GTAV_CUSTOM_ASSET_ROOT read-only at
-// <live sandbox>GTAV_CUSTOM_GAME_ROOT. Idempotent. Returns 0 when the game can open files under
-// GTAV_CUSTOM_GAME_ROOT, -1 otherwise.
-int gtav_custom_mount(const char* title);
 
 #ifdef __cplusplus
 }

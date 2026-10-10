@@ -91,7 +91,10 @@ static uint32_t cycle_saved_vehicle_slot(uint32_t param) {
 static char g_saved_vehicle_slot_label[24];
 static const char* saved_vehicle_slot_value_label(void) {
   const uint32_t slot = g_saved_vehicle_slot % GTAV_SAVED_VEHICLE_SLOTS;
-  snprintf(g_saved_vehicle_slot_label, sizeof(g_saved_vehicle_slot_label), "Slot %u%s",
-           (unsigned)(slot + 1u), g_saved_vehicle_model[slot] ? " [set]" : " [empty]");
+  const char* format = locale_text_or(
+      g_saved_vehicle_model[slot] ? "value.slot_set" : "value.slot_empty",
+      g_saved_vehicle_model[slot] ? "Slot %u [set]" : "Slot %u [empty]");
+  snprintf(g_saved_vehicle_slot_label, sizeof(g_saved_vehicle_slot_label), format,
+           (unsigned)(slot + 1u));
   return g_saved_vehicle_slot_label;
 }

@@ -30,6 +30,9 @@ Toolbox-managed plugin for stock **etaHEN 2.5B or newer**, GTA V Enhanced
 
 Use D-pad Up/Down to move, Left/Right to change values, Cross to select, and Circle to go back.
 
+Custom assets require 01.010.002 and the console `/data` shared with GTA through ShadowMountPlus
+or the HEN setup. Without it the regular menu remains usable, with custom assets unavailable.
+
 To stop or update the plugin, disable **Auto-start** and **Running** in Toolbox. Toolbox stops its
 visible process immediately; the embedded runtime then detects that shutdown, asks the menu worker
 to stop, verifies the render callback and frame hook were restored, and exits. Wait until

@@ -1,0 +1,155 @@
+/* list_kinds.def -- single source of truth for how each list (cycler) row behaves.
+ *
+ * X-macro table (see feature_actions.def for the pattern):
+ *
+ *   GTAV_LIST_KIND(ENUM_SUFFIX, KIND)   one list action -> one behaviour
+ *
+ * The name maps to GTAV_NATIVE_SHELL_ACTION_<ENUM_SUFFIX> in include/gtavmenu/native_bridge.h;
+ * KIND maps to GTAV_LIST_KIND_<KIND>:
+ *
+ *   CHOICE         pick then apply. Left/Right only stage a value, Cross applies it. The row shows
+ *                  a "*" pending mark while the staged value differs from the applied one, and the
+ *                  hint bar reads Adjust / Apply / Back. Leaving the row (another row or menu,
+ *                  Back, menu closed) without Cross reverts the pick to the applied value. For
+ *                  rows that change the game world, or that would engage something on every
+ *                  intermediate value (Fly Off -> On -> Fast).
+ *   SETTING        live. Left/Right take effect at once and Cross does nothing; the hint bar reads
+ *                  Adjust / Back. Menu state, browser filters and parameters that another action
+ *                  reads. Quiet: the screen or the value itself is the feedback.
+ *   SETTING_TOAST  live like SETTING, but each step also shows the feature's toast, because the
+ *                  effect happens off the menu (Wind, Camera Shake, autopilot tuning, ...).
+ *   SETTING_APPLY  live like SETTING, and Cross applies the shown value (with its toast); the hint
+ *                  bar reads Adjust / Apply / Back, no pending mark, nothing reverts. For live rows
+ *                  whose shown value is the menu's own editor state and can differ from the game's
+ *                  (Wardrobe Style/Texture: the editor shows style 0 on a ped that wears no hat, so
+ *                  the first Cross must put it on without a Left/Right step first).
+ *
+ * The bridge reads this table for the hint bar, the Cross no-op, the pending mark and the
+ * toast-on-step decision (gtav_native_bridge_list_kind). Every SHELL_ROW_LIST row's action must be
+ * listed; tests/test_list_kinds.py enforces that.
+ */
+
+/* World / environment: change the world -> pick then apply. */
+GTAV_LIST_KIND(CYCLE_WEATHER, CHOICE)
+GTAV_LIST_KIND(CYCLE_TIME, CHOICE)
+GTAV_LIST_KIND(CYCLE_CLOCK_HOUR, CHOICE)
+GTAV_LIST_KIND(CYCLE_GRAVITY, CHOICE)
+GTAV_LIST_KIND(CYCLE_TIME_SCALE, CHOICE)
+GTAV_LIST_KIND(CYCLE_TIMECYCLE, CHOICE)
+GTAV_LIST_KIND(CYCLE_ANIMPOSTFX, CHOICE)
+GTAV_LIST_KIND(CYCLE_POPULATION_DENSITY, CHOICE)
+GTAV_LIST_KIND(CYCLE_WIND, SETTING_TOAST)
+GTAV_LIST_KIND(CYCLE_CAM_SHAKE, SETTING_TOAST)
+
+/* Self. */
+GTAV_LIST_KIND(CYCLE_MOVE_RATE, CHOICE)
+GTAV_LIST_KIND(CYCLE_WANTED, CHOICE)
+GTAV_LIST_KIND(CYCLE_CASH, CHOICE)
+GTAV_LIST_KIND(CYCLE_FLY_MODE, CHOICE)
+GTAV_LIST_KIND(CYCLE_FREE_CAM_SPEED, SETTING_TOAST)
+GTAV_LIST_KIND(CYCLE_WARDROBE_SLOT, SETTING)
+GTAV_LIST_KIND(CYCLE_WARDROBE_STYLE, SETTING_APPLY)
+GTAV_LIST_KIND(CYCLE_WARDROBE_TEXTURE, SETTING_APPLY)
+GTAV_LIST_KIND(CYCLE_OUTFIT_SLOT, SETTING)
+GTAV_LIST_KIND(CYCLE_KEYBIND_0, SETTING)
+GTAV_LIST_KIND(CYCLE_KEYBIND_1, SETTING)
+GTAV_LIST_KIND(CYCLE_KEYBIND_2, SETTING)
+GTAV_LIST_KIND(CYCLE_KEYBIND_3, SETTING)
+
+/* Vehicles. Nitro Power and Cruise Speed are parameters the Nitro / Cruise Control toggles read
+   live; Garage Slot and Door pick the target of a separate action. */
+GTAV_LIST_KIND(CYCLE_VEHICLE_FLY, CHOICE)
+GTAV_LIST_KIND(CYCLE_AUTOPILOT_MODE, CHOICE)
+GTAV_LIST_KIND(CYCLE_AUTOPILOT_AGGRESSION, SETTING_TOAST)
+GTAV_LIST_KIND(CYCLE_AUTOPILOT_SPEED, SETTING_TOAST)
+GTAV_LIST_KIND(CYCLE_CRUISE_SPEED, SETTING)
+GTAV_LIST_KIND(CYCLE_NITRO_POWER, SETTING)
+GTAV_LIST_KIND(CYCLE_SAVED_VEHICLE_SLOT, SETTING)
+GTAV_LIST_KIND(CYCLE_VEHICLE_DOOR, SETTING)
+GTAV_LIST_KIND(CYCLE_VEHICLE_HEADLIGHTS, CHOICE)
+GTAV_LIST_KIND(CYCLE_VEHICLE_LOCK, CHOICE)
+
+/* Los Santos Customs: every paint / mod row is pick then apply. */
+GTAV_LIST_KIND(CYCLE_PAINT_PRIMARY, CHOICE)
+GTAV_LIST_KIND(CYCLE_PAINT_SECONDARY, CHOICE)
+GTAV_LIST_KIND(CYCLE_PEARLESCENT, CHOICE)
+GTAV_LIST_KIND(CYCLE_WHEEL_COLOR, CHOICE)
+GTAV_LIST_KIND(CYCLE_CUSTOM_PRIMARY, CHOICE)
+GTAV_LIST_KIND(CYCLE_CUSTOM_SECONDARY, CHOICE)
+GTAV_LIST_KIND(CYCLE_WINDOW_TINT, CHOICE)
+GTAV_LIST_KIND(CYCLE_NEON, CHOICE)
+GTAV_LIST_KIND(CYCLE_TYRE_SMOKE, CHOICE)
+GTAV_LIST_KIND(CYCLE_WHEEL_TYPE, CHOICE)
+GTAV_LIST_KIND(CYCLE_PLATE_STYLE, CHOICE)
+GTAV_LIST_KIND(CYCLE_PLATE_TEXT, CHOICE)
+GTAV_LIST_KIND(CYCLE_LIVERY, CHOICE)
+GTAV_LIST_KIND(MOD_SPOILER, CHOICE)
+GTAV_LIST_KIND(MOD_FRONT_BUMPER, CHOICE)
+GTAV_LIST_KIND(MOD_REAR_BUMPER, CHOICE)
+GTAV_LIST_KIND(MOD_SIDE_SKIRT, CHOICE)
+GTAV_LIST_KIND(MOD_EXHAUST, CHOICE)
+GTAV_LIST_KIND(MOD_FRAME, CHOICE)
+GTAV_LIST_KIND(MOD_GRILLE, CHOICE)
+GTAV_LIST_KIND(MOD_HOOD, CHOICE)
+GTAV_LIST_KIND(MOD_FENDERS, CHOICE)
+GTAV_LIST_KIND(MOD_ROOF, CHOICE)
+GTAV_LIST_KIND(MOD_ENGINE, CHOICE)
+GTAV_LIST_KIND(MOD_BRAKES, CHOICE)
+GTAV_LIST_KIND(MOD_TRANSMISSION, CHOICE)
+GTAV_LIST_KIND(MOD_HORN, CHOICE)
+GTAV_LIST_KIND(MOD_SUSPENSION, CHOICE)
+GTAV_LIST_KIND(MOD_ARMOR, CHOICE)
+GTAV_LIST_KIND(MOD_WHEELS, CHOICE)
+/* Part Type picks the slot the Part row below it fits (a parameter); Part is pick then apply. */
+GTAV_LIST_KIND(CYCLE_KIT_SLOT, SETTING)
+GTAV_LIST_KIND(CYCLE_KIT_PART, CHOICE)
+
+/* Weapons. The attachment rows stage what Apply Attachments installs. */
+GTAV_LIST_KIND(CYCLE_ACTIVE_GUN, CHOICE)
+GTAV_LIST_KIND(CYCLE_WEAPON_TINT, CHOICE)
+GTAV_LIST_KIND(CYCLE_WEAPON_DAMAGE, CHOICE)
+GTAV_LIST_KIND(CYCLE_ATTACH_SCOPE, SETTING)
+GTAV_LIST_KIND(CYCLE_ATTACH_SUPP, SETTING)
+GTAV_LIST_KIND(CYCLE_ATTACH_GRIP, SETTING)
+GTAV_LIST_KIND(CYCLE_ATTACH_FLASH, SETTING)
+GTAV_LIST_KIND(CYCLE_ATTACH_CLIP, SETTING)
+/* Component picks one of the equipped weapon's components; Cross fits or removes it. */
+GTAV_LIST_KIND(CYCLE_WEAPON_COMPONENT, CHOICE)
+
+/* Spawning parameters: read by the spawn rows below them. */
+GTAV_LIST_KIND(CYCLE_OBJECT_SPAWN_AT, SETTING)
+GTAV_LIST_KIND(CYCLE_OBJECT_DISTANCE, SETTING)
+GTAV_LIST_KIND(CYCLE_OBJECT_HEADING, SETTING)
+GTAV_LIST_KIND(CYCLE_OBJECT_ON_GROUND, SETTING)
+GTAV_LIST_KIND(CYCLE_ENTITY_ALPHA, SETTING_TOAST)
+GTAV_LIST_KIND(CYCLE_BODYGUARD_HEALTH, SETTING)
+GTAV_LIST_KIND(CYCLE_BODYGUARD_ARMOR, SETTING)
+GTAV_LIST_KIND(CYCLE_BODYGUARD_WEAPON, SETTING)
+GTAV_LIST_KIND(CYCLE_BODYGUARD_ACCURACY, SETTING)
+GTAV_LIST_KIND(CYCLE_BODYGUARD_FORMATION, SETTING)
+GTAV_LIST_KIND(CYCLE_BODYGUARD_AGGRESSION, SETTING)
+
+/* Browser filters: re-filter the rows below at once. */
+GTAV_LIST_KIND(CYCLE_VEHICLE_CLASS, SETTING)
+GTAV_LIST_KIND(CYCLE_WEAPON_CATEGORY, SETTING)
+GTAV_LIST_KIND(CYCLE_PED_CATEGORY, SETTING)
+GTAV_LIST_KIND(CYCLE_OBJECT_CATEGORY, SETTING)
+GTAV_LIST_KIND(CYCLE_SCENARIO_CATEGORY, SETTING)
+
+/* Menu settings: the screen is the feedback. */
+GTAV_LIST_KIND(CYCLE_THEME, SETTING)
+GTAV_LIST_KIND(CYCLE_CUSTOM_COLOR, SETTING)
+GTAV_LIST_KIND(CYCLE_REGION, SETTING)
+GTAV_LIST_KIND(CYCLE_PANEL_WIDTH, SETTING)
+GTAV_LIST_KIND(CYCLE_SPEEDOMETER_LAYOUT, SETTING)
+GTAV_LIST_KIND(CYCLE_LANGUAGE, SETTING)
+GTAV_LIST_KIND(CYCLE_MOTION, SETTING)
+GTAV_LIST_KIND(CYCLE_TOUCHPAD, SETTING)
+GTAV_LIST_KIND(CYCLE_NAV_DELAY, SETTING)
+GTAV_LIST_KIND(CYCLE_NAV_SPEED, SETTING)
+GTAV_LIST_KIND(CYCLE_WORKER_HZ, SETTING)
+GTAV_LIST_KIND(CYCLE_TOAST_TIME, SETTING_TOAST)
+
+/* Custom Packs: "Uninstall < id >" picks an installed pack; Cross uninstalls it behind the
+   two-press confirm (menu.c action_needs_confirm). */
+GTAV_LIST_KIND(UNINSTALL_PACK, CHOICE)

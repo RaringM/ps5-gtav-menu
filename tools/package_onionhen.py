@@ -28,6 +28,9 @@ The plugin watches for GTA V launches and injects the menu after Story Mode load
 4. When the “GTAVMenu injected” notification appears, press **R1 + D-pad Left** to open the menu.
 
 Use D-pad Up/Down to move, Left/Right to change values, Cross to select, and Circle to go back.
+
+Custom assets require 01.010.002 and the console `/data` shared with GTA through ShadowMountPlus
+or the HEN setup. Without it the regular menu remains usable, with custom assets unavailable.
 To stop or remove the plugin, disable `GTAV00001` in OnionHEN Toolbox before deleting its ELF.
 """
 

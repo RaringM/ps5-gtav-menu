@@ -90,8 +90,13 @@ static uint32_t cycle_wardrobe_slot(uint32_t param) {
   return ok(action, kPedSlots[g_wardrobe_slot_index % GTAV_WARDROBE_SLOTS].name);
 }
 
-// Step + apply the selected slot's drawable (live on every Left/Right; Cross re-applies). Changing
-// the drawable resets the texture to 0 (a texture index is only valid within its drawable).
+// Step + apply the selected slot's drawable (live on every Left/Right; list_kinds.def
+// SETTING_APPLY). Changing the drawable resets the texture to 0 (a texture index is only valid
+// within its drawable). Cross (param 0) applies the shown style and texture as they are: the
+// editor's value is not read back from the ped (no GET_PED_PROP_INDEX / GET_PED_DRAWABLE_VARIATION
+// in the reviewed native table), so it can differ from what the ped wears -- a prop slot shows
+// style 0 while no prop is on (fresh editor, Clear Prop, another ped). Writing the value the ped
+// already wears changes nothing, so Cross applies unconditionally.
 static uint32_t cycle_wardrobe_style(uint32_t param) {
   const uint32_t action = GTAV_NATIVE_SHELL_ACTION_CYCLE_WARDROBE_STYLE;
   if (!g_n.set_ped_component_variation && !g_n.set_ped_prop_index) {
@@ -109,14 +114,18 @@ static uint32_t cycle_wardrobe_style(uint32_t param) {
     d = (d + 1) % count;
   else
     d %= count;
+  if (param == 1u || param == 2u || d != (int)g_wardrobe_drawable[slot] ||
+      (int)g_wardrobe_texture[slot] >= wardrobe_texture_count(ped, slot, d)) {
+    g_wardrobe_texture[slot] = 0;
+  }
   g_wardrobe_drawable[slot] = (uint32_t)d;
-  g_wardrobe_texture[slot] = 0;
   wardrobe_apply_slot(ped, slot);
   char msg[GTAV_FEATURE_MESSAGE_LEN];
   snprintf(msg, sizeof(msg), "%s style %d/%d", kPedSlots[slot].name, d + 1, count);
   return ok(action, msg);
 }
 
+// Step + apply the selected slot's texture (live; Cross applies the shown one, see the Style row).
 static uint32_t cycle_wardrobe_texture(uint32_t param) {
   const uint32_t action = GTAV_NATIVE_SHELL_ACTION_CYCLE_WARDROBE_TEXTURE;
   if (!g_n.set_ped_component_variation && !g_n.set_ped_prop_index) {
@@ -196,9 +205,11 @@ static uint32_t cycle_outfit_slot(uint32_t param) {
 // Persistent "< value >" render for the Outfit Slot row (copied immediately by push_list_values).
 static char g_outfit_slot_label[24];
 static const char* outfit_slot_value_label(void) {
-  snprintf(g_outfit_slot_label, sizeof(g_outfit_slot_label), "Slot %u%s",
-           (unsigned)((g_outfit_slot % GTAV_SAVED_OUTFIT_SLOTS) + 1u),
-           saved_outfit_slot_occupied() ? " [set]" : " [empty]");
+  const int occupied = saved_outfit_slot_occupied();
+  const char* format = locale_text_or(occupied ? "value.slot_set" : "value.slot_empty",
+                                      occupied ? "Slot %u [set]" : "Slot %u [empty]");
+  snprintf(g_outfit_slot_label, sizeof(g_outfit_slot_label), format,
+           (unsigned)((g_outfit_slot % GTAV_SAVED_OUTFIT_SLOTS) + 1u));
   return g_outfit_slot_label;
 }
 

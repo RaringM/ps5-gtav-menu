@@ -30,11 +30,7 @@
 #ifndef GTAV_MENU_PAD_REPEAT_ACCEL_TICKS
 #define GTAV_MENU_PAD_REPEAT_ACCEL_TICKS 30u
 #endif
-// L1/R1 double-tap window (polls) for the HOME/END jump, and the Circle hold (polls) for the
-// BACK_ROOT collapse. At ~60 Hz polling, 18 ~= 300 ms (double-tap) and 24 ~= 400 ms (hold).
-#ifndef GTAV_MENU_PAD_DOUBLE_TAP_POLLS
-#define GTAV_MENU_PAD_DOUBLE_TAP_POLLS 18u
-#endif
+// Circle hold (polls) for the BACK_ROOT collapse. At ~60 Hz polling, 24 ~= 400 ms.
 #ifndef GTAV_MENU_PAD_CIRCLE_HOLD_POLLS
 #define GTAV_MENU_PAD_CIRCLE_HOLD_POLLS 24u
 #endif
@@ -155,8 +151,43 @@ uint32_t gtav_pad_input_map_touch(GtavPadTouchMapState* state, int x, int y, int
   return GTAV_MENU_COMMAND_NONE;
 }
 
+// Menu buttons that cancel a pending L1/R1 jump while the shoulder is held: the D-pad (this
+// covers the R1 + DpadLeft close chord in either order), Cross, Circle and the other shoulder.
+#define GTAV_PAD_SHOULDER_SPOILERS                                                \
+  (GTAV_PAD_BTN_UP | GTAV_PAD_BTN_DOWN | GTAV_PAD_BTN_LEFT | GTAV_PAD_BTN_RIGHT | \
+   GTAV_PAD_BTN_CROSS | GTAV_PAD_BTN_CIRCLE | GTAV_PAD_BTN_L1 | GTAV_PAD_BTN_R1)
+
+static void shoulder_reset(GtavPadMapState* state) {
+  state->shoulder_bit = 0u;
+  state->shoulder_spoiled = 0u;
+}
+
+// L1/R1 top/bottom jump while the menu is open, on every row. Fires HOME (L1) / END (R1) on the
+// RELEASE of a clean press, so R1 held for the R1 + DpadLeft close chord never also jumps. Any
+// other menu button during the hold spoils it. The jump is absolute, so a hold never repeats.
+static uint32_t map_shoulder_jump(GtavPadMapState* state, uint32_t buttons, uint32_t just) {
+  const uint32_t shoulders = GTAV_PAD_BTN_L1 | GTAV_PAD_BTN_R1;
+  if (!state->shoulder_bit) {
+    // Track a fresh press only, of exactly one shoulder, with no other menu button down.
+    const uint32_t edge = just & shoulders;
+    if ((edge == GTAV_PAD_BTN_L1 || edge == GTAV_PAD_BTN_R1) &&
+        !(buttons & GTAV_PAD_SHOULDER_SPOILERS & ~edge)) {
+      state->shoulder_bit = edge;
+      state->shoulder_spoiled = 0u;
+    }
+    return GTAV_MENU_COMMAND_NONE;
+  }
+  if (buttons & GTAV_PAD_SHOULDER_SPOILERS & ~state->shoulder_bit) state->shoulder_spoiled = 1u;
+  if (buttons & state->shoulder_bit) return GTAV_MENU_COMMAND_NONE;  // still held
+  const uint32_t cmd =
+      state->shoulder_bit == GTAV_PAD_BTN_L1 ? GTAV_MENU_COMMAND_HOME : GTAV_MENU_COMMAND_END;
+  const int fire = !state->shoulder_spoiled;
+  shoulder_reset(state);
+  return fire ? cmd : (uint32_t)GTAV_MENU_COMMAND_NONE;
+}
+
 uint32_t gtav_pad_input_map(GtavPadMapState* state, uint32_t buttons, int visible,
-                            uint32_t repeat_delay, uint32_t repeat_rate, int lr_repeat_ok) {
+                            uint32_t repeat_delay, uint32_t repeat_rate, int row_caps) {
   if (!state) {
     return GTAV_MENU_COMMAND_NONE;
   }
@@ -164,9 +195,8 @@ uint32_t gtav_pad_input_map(GtavPadMapState* state, uint32_t buttons, int visibl
   const uint32_t prev = state->prev_buttons;
   const uint32_t just = buttons & ~prev;
   state->prev_buttons = buttons;
-  // Monotonic poll clock for the L1/R1 double-tap timing. Incremented once per call on every path
-  // (it is only a clock); stored timestamps are therefore always >= 1, so 0 reliably means "none".
   ++state->poll_seq;
+  const int lr_repeat_ok = (row_caps & GTAV_PAD_ROW_CYCLER) != 0;
 
   // Open/close chord: R1 + DpadLeft, in either press order. Latch it so holding
   // the chord emits a single TOGGLE instead of one per poll, and suppress
@@ -180,20 +210,14 @@ uint32_t gtav_pad_input_map(GtavPadMapState* state, uint32_t buttons, int visibl
       state->repeat_poll = 0;
       return GTAV_MENU_COMMAND_NONE;
     }
-    state->chord_latch = 1;  // decide once per chord-hold, either way
-    // While the menu is OPEN, distinguish a deliberate close from "R1 still held from paging + a
-    // Left tap on a value cycler": if R1 was already held last poll and Left is the bit that just
-    // arrived, route it to the value-adjust path (fall through to COMMAND_LEFT below) instead of
-    // closing the menu mid-interaction. A deliberate close is R1+Left pressed together, or Left
-    // held then R1 completing the chord -- both still TOGGLE. While closed (visible == 0) there is
-    // no paging to protect, so the chord always opens, in either press order, exactly as before.
-    const int accidental_cycle = visible && (prev & GTAV_PAD_BTN_R1) && (just & GTAV_PAD_BTN_LEFT);
-    if (!accidental_cycle) {
-      state->repeat_bit = 0;
-      state->repeat_poll = 0;
-      return GTAV_MENU_COMMAND_TOGGLE;
-    }
-    // accidental_cycle: fall through; the bare DpadLeft becomes COMMAND_LEFT in the nav section.
+    state->chord_latch = 1;  // decide once per chord-hold
+    // The chord toggles in either press order, open or closed. R1 is the menu's own top/bottom
+    // button while open (never the game's handbrake then), so R1 held and then Left is a
+    // deliberate close too. A chord press is never also a jump: spoil a tracked R1 hold.
+    shoulder_reset(state);
+    state->repeat_bit = 0;
+    state->repeat_poll = 0;
+    return GTAV_MENU_COMMAND_TOGGLE;
   } else {
     state->chord_latch = 0;
   }
@@ -201,6 +225,7 @@ uint32_t gtav_pad_input_map(GtavPadMapState* state, uint32_t buttons, int visibl
   if (!visible) {
     state->repeat_bit = 0;
     state->repeat_poll = 0;
+    shoulder_reset(state);
     // Keybinds: a bound combo held in full fires its action once per press while the menu is
     // closed. The open chord was already handled above, so it can never also fire a hotkey;
     // matching only here (closed) means a bound combo never steals navigation. First match
@@ -225,6 +250,11 @@ uint32_t gtav_pad_input_map(GtavPadMapState* state, uint32_t buttons, int visibl
     }
     state->hotkey_latch = 0u;
     return GTAV_MENU_COMMAND_NONE;
+  }
+
+  {
+    const uint32_t jump = map_shoulder_jump(state, buttons, just);
+    if (jump != GTAV_MENU_COMMAND_NONE) return jump;
   }
 
   // Dpad up/down/left/right auto-repeat while held. The initial press still fires
@@ -255,8 +285,8 @@ uint32_t gtav_pad_input_map(GtavPadMapState* state, uint32_t buttons, int visibl
       if (eff == 0u || (since % eff) == 0u) {
         if (state->repeat_bit & GTAV_PAD_BTN_UP) return GTAV_MENU_COMMAND_PREV;
         if (state->repeat_bit & GTAV_PAD_BTN_DOWN) return GTAV_MENU_COMMAND_NEXT;
-        // Left/Right repeat only on value cyclers; elsewhere Left is a one-shot Back
-        // (the initial press still fires through the edge checks below).
+        // Left/Right repeat only on value cyclers; elsewhere they are one-shots (Back, or a
+        // toggle's Off/On; the initial press still fires through the edge checks below).
         if (lr_repeat_ok && (state->repeat_bit & GTAV_PAD_BTN_LEFT)) return GTAV_MENU_COMMAND_LEFT;
         if (lr_repeat_ok && (state->repeat_bit & GTAV_PAD_BTN_RIGHT))
           return GTAV_MENU_COMMAND_RIGHT;
@@ -272,12 +302,9 @@ uint32_t gtav_pad_input_map(GtavPadMapState* state, uint32_t buttons, int visibl
   if (just & GTAV_PAD_BTN_LEFT) return GTAV_MENU_COMMAND_LEFT;
   if (just & GTAV_PAD_BTN_RIGHT) return GTAV_MENU_COMMAND_RIGHT;
   // R3 (right-stick click) pins/unpins the selected row to the Quick menu (or toggles a browser
-  // favorite). It is the ONLY shoulder/stick button the menu still claims: L1/R1 (formerly page +
-  // double-tap HOME/END) and L3 (formerly letter-jump) are deliberately left UNbound here so they
-  // pass straight through to gameplay while the menu is open -- the player keeps the handbrake,
-  // weapon wheel, and sprint/duck with the panel up. R3 is hidden from the game (SUPPRESS_MASK) so
-  // the click never also melees. Bare R1 reaches here only without DpadLeft (the R1+Left open chord
-  // was handled above and returned early); with no R1 handler it now falls through to NONE.
+  // favorite); it is hidden from the game (SUPPRESS_MASK) so the click never also melees. L1/R1
+  // jump to the top / bottom row (map_shoulder_jump above) and are hidden from the game too. L3
+  // stays UNbound and passes straight through to gameplay (sprint/duck) with the panel up.
   if (just & GTAV_PAD_BTN_R3) return GTAV_MENU_COMMAND_PIN;
   if (just & GTAV_PAD_BTN_CROSS) return GTAV_MENU_COMMAND_SELECT;
   // Circle: a tap is an immediate single-level BACK; holding it past the threshold also emits one
@@ -353,16 +380,14 @@ extern int sceUserServiceGetInitialUser(int* userId);
 #define GTAV_PAD_PORT_TYPE_STANDARD 0
 
 // The buttons the menu itself uses are hidden from the game while the menu is open: the d-pad
-// (navigation), Cross (select), Circle (back), plus R3 (pin to Quick / favorite). Everything else
-// stays with the player so they can keep playing with the panel up: L1/R1 (handbrake / weapon
-// wheel), L3 (sprint/duck), Triangle (Enter/Exit Vehicle), Square (handbrake/reload), the sticks,
-// the L2/R2 triggers, and Options all reach the game. L1/R1/L3 used to be menu nav (paging /
-// HOME-END / letter-jump) but were unbound so gameplay keeps them; only R3 is claimed (it pins the
-// selected row, so it must not also melee). While CLOSED nothing here is suppressed (see
-// gtav_pad_game_clear_mask), so even these buttons keep their normal in-game function.
+// (navigation), Cross (select), Circle (back), L1/R1 (top / bottom) and R3 (pin to Quick /
+// favorite). Everything else stays with the player so they can keep playing with the panel up:
+// L3 (sprint/duck), Triangle (Enter/Exit Vehicle), Square (handbrake/reload), the sticks, the
+// L2/R2 triggers, and Options all reach the game. While CLOSED nothing here is suppressed (see
+// gtav_pad_game_clear_mask), so even these buttons keep their normal function.
 #define GTAV_PAD_SUPPRESS_MASK                                                    \
   (GTAV_PAD_BTN_UP | GTAV_PAD_BTN_DOWN | GTAV_PAD_BTN_LEFT | GTAV_PAD_BTN_RIGHT | \
-   GTAV_PAD_BTN_CROSS | GTAV_PAD_BTN_CIRCLE | GTAV_PAD_BTN_R3)
+   GTAV_PAD_BTN_CROSS | GTAV_PAD_BTN_CIRCLE | GTAV_PAD_BTN_L1 | GTAV_PAD_BTN_R1 | GTAV_PAD_BTN_R3)
 
 static int g_pad_handle = -1;
 static int g_pad_ready = 0;
@@ -396,12 +421,12 @@ static volatile uint32_t g_pad_hook_touch_fingers;
 static GtavPadTouchMapState g_pad_touch_state;
 
 // Bits to strip from what the game sees for one controller frame. While the menu
-// is visible we hide the menu's own buttons (d-pad / Cross / Circle / R3). Independently --
-// even while the menu is closed -- we hide DpadLeft whenever the open/close chord
-// (R1+DpadLeft) is held, so opening the menu in a vehicle does not also skip the
-// radio station. Computed from the live pre-mask buttons so the bit is removed
-// from the very frame the game is about to consume (no one-frame leak). R1 itself is never
-// suppressed now (it is not a menu button), so the handbrake works with the menu open or closed.
+// is visible we hide the menu's own buttons (d-pad / Cross / Circle / L1 / R1 / R3). Independently
+// -- even while the menu is closed -- we hide DpadLeft whenever the open/close chord (R1+DpadLeft)
+// is held, so opening the menu in a vehicle does not also skip the radio station. Computed from the
+// live pre-mask buttons so the bit is removed from the very frame the game is about to consume (no
+// one-frame leak). While closed R1 itself is never suppressed, so the handbrake works whenever the
+// menu is down.
 static inline uint32_t gtav_pad_game_clear_mask(uint32_t buttons) {
   uint32_t cleared = g_pad_hook_suppress ? (uint32_t)GTAV_PAD_SUPPRESS_MASK : 0u;
   if ((buttons & GTAV_PAD_OPEN_CHORD_MASK) == GTAV_PAD_OPEN_CHORD_MASK) {
@@ -422,9 +447,8 @@ static inline uint32_t gtav_pad_game_clear_mask(uint32_t buttons) {
     if (m && (buttons & m) == m) cleared |= m;
   }
   // Always restore the L2/R2 triggers (never menu buttons) in case a keybind combo above cleared
-  // them, so a combo built on a shoulder trigger doesn't disable driving. L1/R1/L3 are no longer
-  // menu buttons (only R3 is, and it stays suppressed while open), so they are not in
-  // SUPPRESS_MASK and reach the game on their own -- nothing to restore for them here.
+  // them, so a combo built on a shoulder trigger doesn't disable driving. L3 is never a menu
+  // button.
   uint32_t restore = (uint32_t)GTAV_PAD_BTN_R2 | (uint32_t)GTAV_PAD_BTN_L2;
   cleared &= ~restore;
   return cleared;
@@ -862,11 +886,13 @@ uint32_t gtav_pad_input_poll_command(int visible) {
     }
   }
 
-  // Allow Left/Right auto-repeat only on a value-cycler row (Left is a one-shot Back
-  // elsewhere, so repeating it would walk the user out of the menu).
-  const int lr_repeat_ok = visible ? gtav_native_bridge_selected_is_cycler() : 0;
-  uint32_t cmd = gtav_pad_input_map(&g_pad_state, buttons, visible, g_repeat_delay, g_repeat_rate,
-                                    lr_repeat_ok);
+  // Selected-row capabilities: Left/Right auto-repeat only on a value cycler (elsewhere they are
+  // one-shots -- a toggle's Off/On, or Back, where a repeated Left would walk the user out of the
+  // menu). L1/R1 jump to the top / bottom row on every row while open (no row capability).
+  int row_caps = 0;
+  if (visible && gtav_native_bridge_selected_is_cycler()) row_caps |= GTAV_PAD_ROW_CYCLER;
+  uint32_t cmd =
+      gtav_pad_input_map(&g_pad_state, buttons, visible, g_repeat_delay, g_repeat_rate, row_caps);
   // Optional touchpad gesture lane (default off; the Menu Settings "Touchpad" toggle), layered on
   // top of the d-pad: only consulted when the button mapper produced nothing this poll, so the
   // d-pad always wins. fingers>0 = a finger is on the pad; the TOUCH_PAD bit is a physical click.

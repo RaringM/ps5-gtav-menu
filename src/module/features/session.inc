@@ -5,7 +5,7 @@
 // SAVED SCRIPT GLOBAL -- the per-mission completion array Global.f_9092.f_330[53]
 // (flow mission 53 = "prologue1"): `if (f_330[53]) { node done; return; } else
 // START_NEW_SCRIPT("prologue1")`. So setting f_330[53]=1 makes the flow skip it.
-// (Verified against the decompiled GTA V flow scripts; memory/prologue-skip-investigation.md.)
+// (Verified against the decompiled GTA V flow scripts.)
 //
 // We do this with a plain in-process script-global write (the despawn-global path),
 // which touches NO profile setting -> no failing cloud sync -> cannot trigger the
@@ -32,7 +32,7 @@
 // hence the diff-derived set. Needs GTAV_MENU_ENABLE_SCRIPT_GLOBALS + the GTAV_GLOBALS_BASE_-
 // ADDR anchor (same as the despawn fix); a wrong index is a benign no-op (gtav_global_ptr
 // null-guards). Winning the load race may take a reload or two; if it never wins even with the
-// right index, the durable fallback is a post-prologue savegame (memory/prologue-skip-investigation.md).
+// right index, the durable fallback is a post-prologue savegame.
 
 static uint32_t skip_prologue() {
   const uint32_t action = GTAV_NATIVE_SHELL_ACTION_SKIP_PROLOGUE;

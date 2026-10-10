@@ -6,13 +6,13 @@
 // Addresses are absolute live virtual addresses: the eboot maps at its
 // fixed link base (0x400000, no ASLR slide), so the ELF vaddr equals the
 // live VA. Use directly as a function pointer -- do NOT add a base.
-// Contains 269 accepted handler addresses. Drift against this
+// Contains 273 accepted handler addresses. Drift against this
 // source table is guarded by tests/test_production_native_addresses.py.
 // These are data only and enable nothing without
 // GTAV_MENU_ENABLE_NATIVE_FEATURES and the menu's per-row gating.
 #pragma once
 
-#define GTAV_NATIVE_ADDR_COUNT 269
+#define GTAV_NATIVE_ADDR_COUNT 273
 
 // --- autopilot ---
 #define GTAV_NATIVE_ADDR_CLEAR_PED_TASKS 0x1c1f010ull
@@ -113,6 +113,9 @@
 #define GTAV_NATIVE_ADDR_IS_DISABLED_CONTROL_JUST_RELEASED 0x1b86c70ull
 #define GTAV_NATIVE_ADDR_IS_DISABLED_CONTROL_PRESSED 0x1b86580ull
 #define GTAV_NATIVE_ADDR_SET_INPUT_EXCLUSIVE 0x1b880c0ull
+// --- map_hide ---
+#define GTAV_NATIVE_ADDR_CREATE_MODEL_HIDE 0x1a98370ull
+#define GTAV_NATIVE_ADDR_REMOVE_MODEL_HIDE 0x1a984f0ull
 // --- model ---
 #define GTAV_NATIVE_ADDR_GET_HASH_KEY 0x1ae37b0ull
 #define GTAV_NATIVE_ADDR_HAS_MODEL_LOADED 0x1c09580ull
@@ -233,6 +236,7 @@
 #define GTAV_NATIVE_ADDR_ADD_TEXT_COMPONENT_SUBSTRING_PLAYER_NAME 0x1ac7390ull
 #define GTAV_NATIVE_ADDR_BEGIN_TEXT_COMMAND_DISPLAY_TEXT 0x1ac5d60ull
 #define GTAV_NATIVE_ADDR_END_TEXT_COMMAND_DISPLAY_TEXT 0x1ac5dc0ull
+#define GTAV_NATIVE_ADDR_GET_FILENAME_FOR_AUDIO_CONVERSATION 0x1ac7ea0ull
 #define GTAV_NATIVE_ADDR_SET_TEXT_CENTRE 0x1ac9570ull
 #define GTAV_NATIVE_ADDR_SET_TEXT_COLOUR 0x1ac9540ull
 #define GTAV_NATIVE_ADDR_SET_TEXT_DROP_SHADOW 0x1ac9620ull
@@ -245,6 +249,7 @@
 #define GTAV_NATIVE_ADDR_CREATE_VEHICLE 0x1c3fcc0ull
 #define GTAV_NATIVE_ADDR_DELETE_ENTITY 0x1a92560ull
 #define GTAV_NATIVE_ADDR_GET_DOES_VEHICLE_HAVE_DAMAGE_DECALS 0x1c51570ull
+#define GTAV_NATIVE_ADDR_GET_MOD_TEXT_LABEL 0x1c5fcf0ull
 #define GTAV_NATIVE_ADDR_GET_NUM_VEHICLE_MODS 0x1c5f990ull
 #define GTAV_NATIVE_ADDR_GET_VEHICLE_CLASS_FROM_NAME 0x1c68900ull
 #define GTAV_NATIVE_ADDR_GET_VEHICLE_LIVERY_COUNT 0x1c56380ull

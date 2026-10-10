@@ -146,6 +146,11 @@
       "address": "0x1ac9640"
     },
     {
+      "name": "GET_FILENAME_FOR_AUDIO_CONVERSATION",
+      "role": "text",
+      "address": "0x1ac7ea0"
+    },
+    {
       "name": "IS_CONTROL_PRESSED",
       "role": "input",
       "address": "0x1b85080"
@@ -589,6 +594,11 @@
       "name": "GET_VEHICLE_MOD",
       "role": "vehicle",
       "address": "0x1c5f790"
+    },
+    {
+      "name": "GET_MOD_TEXT_LABEL",
+      "role": "vehicle",
+      "address": "0x1c5fcf0"
     },
     {
       "name": "TOGGLE_VEHICLE_MOD",
@@ -1349,6 +1359,16 @@
       "name": "HAS_PED_GOT_WEAPON_COMPONENT",
       "role": "weapon_components",
       "address": "0x1c789e0"
+    },
+    {
+      "name": "CREATE_MODEL_HIDE",
+      "role": "map_hide",
+      "address": "0x1a98370"
+    },
+    {
+      "name": "REMOVE_MODEL_HIDE",
+      "role": "map_hide",
+      "address": "0x1a984f0"
     }
   ]
 }

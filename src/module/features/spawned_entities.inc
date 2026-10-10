@@ -127,6 +127,7 @@ static uint32_t clear_spawned_peds() {
   const uint32_t action = GTAV_NATIVE_SHELL_ACTION_CLEAR_SPAWNED_PEDS;
   int deleted = delete_spawned_roster(g_spawned_ped_roster, &g_spawned_ped_count, 1);
   if (deleted < 0) return unavailable(action, "missing delete ped native");
+  deleted += crowd_clear(0);
   char msg[GTAV_FEATURE_MESSAGE_LEN];
   snprintf(msg, sizeof(msg), "deleted %d spawned peds", deleted);
   return ok(action, msg);
@@ -149,6 +150,7 @@ static uint32_t clear_spawned_objects() {
   int objects = delete_spawned_roster(g_spawned_object_roster, &g_spawned_object_count, 0);
   if (vehicles < 0 || objects < 0) return unavailable(action, "missing delete native");
   if (peds < 0) return unavailable(action, "missing delete ped native");
+  peds += crowd_clear(0);
   g_last_spawned_vehicle = 0;
   g_last_spawned_object = 0;
   char msg[GTAV_FEATURE_MESSAGE_LEN];

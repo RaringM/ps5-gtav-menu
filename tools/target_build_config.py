@@ -41,6 +41,7 @@ def make_tokens(profile: dict[str, object]) -> list[str]:
         "script_globals": features["scriptGlobals"],
         "phase_intercept": features["phaseIntercept"],
         "phase_draw_list": features["phaseDrawList"],
+        "custom_packs": features["customPacks"],
         "injection_lane": injection["lane"],
         "probe_nostop": injection["probeNoStop"],
         "nostop_io": injection["noStopIo"],

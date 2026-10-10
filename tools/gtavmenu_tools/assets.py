@@ -1,9 +1,10 @@
 """Read-only custom-asset intake and qualification reports (stdlib only).
 
-Inspection is not conversion or approval to load into GTA. This initial tool
-has no qualified PS5 writer or runtime registration backend. convert/package
-therefore emit a rejection report and create no asset bundle. There is no force
-switch and a pack cannot grant itself compatibility through a manifest.
+Inspection is not conversion or approval to load into GTA. This generic intake
+command does not dispatch the separately bounded texture candidate and loose
+package tools. Its convert/package verbs therefore remain closed until complete
+model/map conversion and runtime registration exist. There is no force switch
+and a pack cannot grant itself compatibility through a manifest.
 """
 
 from __future__ import annotations
@@ -37,15 +38,15 @@ from .asset_metadata import dependency_report, summarize_metadata
 from .asset_textures import inspect_legacy_dictionary
 from .hashes import joaat
 
-TOOL_VERSION = 2
+TOOL_VERSION = 6
 PC_RESOURCES = {".ydr", ".ydd", ".yft", ".ytd", ".ytyp", ".ybn"}
 ANCILLARY = {".txt", ".md", ".png", ".jpg", ".jpeg", ".pdf"}
 EXECUTABLE = {".asi", ".dll", ".exe", ".so", ".ysc", ".lua", ".js", ".cs", ".py", ".sh"}
 BLOCKERS = (
-    "PS5 resource layouts and writers have not passed independent round-trip qualification",
-    "No reviewed PS5 metadata/dependency registration contract",
-    "Engine-thread visibility and safe post-readiness registration are unqualified",
-    "Process-lifetime ownership, menu shutdown, and hardware qualification are pending",
+    "PS5 texture metadata semantics and GPU interpretation are not qualified",
+    "Complete PS5 model, material, collision, vehicle and native-map writers are missing",
+    "The normal DLC pack registration and streamed-resource lifetime contract are not qualified",
+    "Representative custom texture/model/map loading and rendering have not passed hardware",
 )
 DEFAULT_LIMITS = Limits()
 
@@ -69,7 +70,7 @@ def source_name(name: str) -> str:
 def capabilities() -> dict:
     return {
         "kind": "gtavmenu-asset-capabilities",
-        "schemaVersion": 1,
+        "schemaVersion": 2,
         "toolVersion": TOOL_VERSION,
         "policy": "additive-only; reject unsupported dependencies; restart required",
         "inspection": [
@@ -85,6 +86,70 @@ def capabilities() -> dict:
         "conversionAvailable": False,
         "packagingAvailable": False,
         "runtimeEnabled": False,
+        "restrictedCapabilities": {
+            "pcRpfSourceFixtureImport": {
+                "available": True,
+                "scope": "exact-selected-members-and-pack-metadata",
+                "boundedStreamingTables": True,
+                "atomicPublication": True,
+                "sourceArchiveReplayVerification": True,
+                "conversionPerformed": False,
+                "runtimeQualified": False,
+            },
+            "textureCandidateConversion": {
+                "available": True,
+                "formats": ["BC1", "BC3", "BC5", "BGRA8"],
+                "scope": "ordinary-static-complete-dictionaries",
+                "independentReadback": True,
+                "metadataSemanticsQualified": False,
+                "gpuQualified": False,
+            },
+            "stockEnvelopeTextureCandidate": {
+                "available": True,
+                "scope": "one-exact-shape-format-mip-match",
+                "stockMetadataPreserved": True,
+                "pcMipReadback": True,
+                "sourceBoundPackage": True,
+                "visualOracle": "BC3-red-green-blue-white",
+                "stagePlanCompatible": True,
+                "gpuQualified": False,
+                "runtimeQualified": False,
+            },
+            "looseResourcePackaging": {
+                "available": True,
+                "maxResourcesPerStagedPlan": 32,
+                "atomicPublication": True,
+                "activationEnabled": False,
+            },
+            "inactiveDlcTree": {
+                "available": True,
+                "descriptorSemanticsPinned": False,
+                "registrationQualified": False,
+                "runtimeEnabled": False,
+            },
+            "assetNamespacePreflight": {
+                "available": True,
+                "scope": "selected-observed-pack-local-definitions-and-references",
+                "joaatCollisionDetection": True,
+                "completeDependencyClosure": False,
+                "stockNamespaceChecked": False,
+                "ps5RegistrationQualified": False,
+            },
+            "manifestPackageCopyIn": {
+                "available": True,
+                "hardwareQualified": True,
+                "mountRequired": False,
+                "streamingQualified": False,
+            },
+            "stockModelMapPlacement": {
+                "available": True,
+                "hardwareQualified": True,
+                "nativeMapResource": False,
+            },
+            "completeVehicleConversion": {"available": False},
+            "nativeCustomMapConversion": {"available": False},
+            "customAssetRendering": {"available": False, "hardwareQualified": False},
+        },
         "blockers": list(BLOCKERS),
     }
 

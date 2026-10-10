@@ -35,6 +35,7 @@ enum {
   GTAV_VEH_MOD_TYRE_SMOKE = 20,    // toggle mod; colour set by SET_VEHICLE_TYRE_SMOKE_COLOR
   GTAV_VEH_MOD_XENON = 22,         // toggle mod (TOGGLE_VEHICLE_MOD): xenon headlights
   GTAV_VEH_MOD_WHEELS = 23,        // indexed wheel design slot
+  GTAV_VEH_MOD_LIVERY = 48,        // VMT_LIVERY_MOD: kit liveries (Plates & Livery > Livery)
   GTAV_VEH_MOD_LAST_INDEXED = 16,  // SET_VEHICLE_MOD indexed slots span 0..16
 };
 
@@ -138,10 +139,70 @@ static uint32_t ls_max_performance() {
 // spawner defaults below are skipped -- the saved build wins).
 static int apply_saved_vehicle_build(int worker, int vehicle);
 
+// Every indexed kit slot the engine has: SET_VEHICLE_MOD types 0..49 except the toggle mods 17..22
+// (nitrous, turbo, subwoofer, tyre smoke, hydraulics, xenon). The LS Customs "Part Type" / "Part"
+// rows walk the slots the current car has parts for, so every part of a car's mod kit is reachable,
+// also where no per-slot row exists (right fender, plate holder, interior, engine bay, livery mods).
+// `visual`: a kit body part Spawn Upgraded fits (not the performance tiers, horn or wheel designs).
+struct VehicleKitSlot {
+  char label[14];  // inline (no relocation; see feature_catalog.h)
+  uint8_t slot;    // GET_NUM_VEHICLE_MODS / SET_VEHICLE_MOD slot id
+  uint8_t visual;
+};
+static const VehicleKitSlot kVehicleKitSlots[] = {
+    {"Spoiler", 0, 1},        {"Front Bumper", 1, 1}, {"Rear Bumper", 2, 1},   {"Side Skirt", 3, 1},
+    {"Exhaust", 4, 1},        {"Frame", 5, 1},        {"Grille", 6, 1},        {"Hood", 7, 1},
+    {"Fender", 8, 1},         {"Right Fender", 9, 1}, {"Roof", 10, 1},         {"Engine", 11, 0},
+    {"Brakes", 12, 0},        {"Transmission", 13, 0}, {"Horn", 14, 0},        {"Suspension", 15, 0},
+    {"Armor", 16, 0},         {"Wheels", 23, 0},      {"Rear Wheels", 24, 0},  {"Plate Holder", 25, 1},
+    {"Vanity Plate", 26, 1},  {"Trim Design", 27, 1}, {"Ornaments", 28, 1},    {"Dashboard", 29, 1},
+    {"Dial Design", 30, 1},   {"Door Speaker", 31, 1}, {"Seats", 32, 1},       {"Steering", 33, 1},
+    {"Shifter", 34, 1},       {"Plaque", 35, 1},      {"Speakers", 36, 1},     {"Trunk", 37, 1},
+    {"Hydraulics", 38, 1},    {"Engine Block", 39, 1}, {"Air Filter", 40, 1},  {"Struts", 41, 1},
+    {"Arch Cover", 42, 1},    {"Aerials", 43, 1},     {"Trim", 44, 1},         {"Tank", 45, 1},
+    {"Windows", 46, 1},       {"Right Door", 47, 1},  {"Livery", 48, 1},       {"Lightbar", 49, 1},
+};
+#define GTAV_NUM_KIT_SLOTS ((uint32_t)(sizeof(kVehicleKitSlots) / sizeof(kVehicleKitSlots[0])))
+
+// Spawn Upgraded's body parts: the top part of every visual kit slot the new car's kit has, then a
+// pack-notes line naming the slots fitted (`slot:parts`), so a hardware run can check the kit from
+// the host. Same spawn-job context as apply_spawn_vehicle_defaults (invoke_*_ctx).
+static void install_kit_visuals_ctx(int worker, int vehicle) {
+  char slots[112];
+  size_t used = 0;
+  int fitted = 0;
+  slots[0] = '\0';
+  for (uint32_t i = 0; i < GTAV_NUM_KIT_SLOTS; ++i) {
+    if (!kVehicleKitSlots[i].visual) continue;
+    const int slot = kVehicleKitSlots[i].slot;
+    const int count = invoke_return_ctx<int>(worker, g_n.get_num_vehicle_mods, vehicle, slot);
+    if (count <= 0) continue;
+    invoke_void_ctx(worker, g_n.set_vehicle_mod, vehicle, slot, count - 1, 0);
+    ++fitted;
+    if (used < sizeof(slots)) {
+      const int n = snprintf(slots + used, sizeof(slots) - used, "%s%d:%d", used ? "," : "", slot,
+                             count);
+      used = n > 0 ? used + (size_t)n : used;
+    }
+  }
+#if GTAV_MENU_ENABLE_CUSTOM_PACKS  // the worker klog (pack-notes) is linked with the pack lane
+  const uint32_t model =
+      g_n.get_entity_model ? invoke_return_ctx<uint32_t>(worker, g_n.get_entity_model, vehicle) : 0u;
+  char line[192];
+  snprintf(line, sizeof(line), "GTAVMenu pack spawn upgraded model=0x%08x parts=%d slots=%s",
+           (unsigned)model, fitted, fitted ? slots : "none");
+  gtav_worker_klog(line);
+#else
+  (void)fitted;
+#endif
+}
+
 static void apply_spawn_vehicle_defaults(int worker, int vehicle) {
   if (!vehicle) return;
   if (apply_saved_vehicle_build(worker, vehicle)) return;
-  if (g_spawn_maxed_enabled && g_n.set_vehicle_mod && g_n.get_num_vehicle_mods &&
+  // Spawn Upgraded = Spawn Maxed's performance recipe + every visual part of the car's kit.
+  const int upgraded = g_spawn_upgraded_enabled;
+  if ((g_spawn_maxed_enabled || upgraded) && g_n.set_vehicle_mod && g_n.get_num_vehicle_mods &&
       g_n.set_vehicle_mod_kit) {
     invoke_void_ctx(worker, g_n.set_vehicle_mod_kit, vehicle, 0);
     static const int kPerfMods[] = {GTAV_VEH_MOD_ENGINE, GTAV_VEH_MOD_BRAKES,
@@ -154,6 +215,7 @@ static void apply_spawn_vehicle_defaults(int worker, int vehicle) {
     }
     if (g_n.toggle_vehicle_mod)
       invoke_void_ctx(worker, g_n.toggle_vehicle_mod, vehicle, GTAV_VEH_MOD_TURBO, 1);
+    if (upgraded) install_kit_visuals_ctx(worker, vehicle);
   }
   if (g_spawn_invincible_enabled && g_n.set_entity_invincible) {
     invoke_void_ctx(worker, g_n.set_entity_invincible, vehicle, 1);
@@ -395,8 +457,32 @@ static const char* mod_level_label(int slot, int lvl, int count) {
   // Scratch wide enough that the formatter can't truncate (-Wformat-truncation); the
   // short "Noun N/M" result is re-copied into ShellListValue.value[24] by set_list_value.
   static char buf[32];
-  const char* noun = (slot == GTAV_VEH_MOD_WHEELS) ? "Design" : "Level";
-  snprintf(buf, sizeof(buf), "%s %d/%d", noun, lvl + 1, count);
+  // The part's own name when the car's mod kit labels it (retail kits, and pack kits through the
+  // pack's shop labels): GET_MOD_TEXT_LABEL gives the text key, GET_FILENAME_FOR_AUDIO_CONVERSATION
+  // its text in a shared game buffer, copied at once. Both are worker-safe getters. Unlabelled
+  // parts (and kits whose key has no text) keep the generic "Noun N/M".
+  const int v = (g_n.get_mod_text_label && g_n.get_filename_for_audio_conversation)
+                    ? current_vehicle()
+                    : 0;
+  const char* key = v ? invoke_return<const char*>(g_n.get_mod_text_label, v, slot, lvl) : nullptr;
+  if (key && key[0] && strcmp(key, "NULL") != 0) {
+    const char* text = invoke_return<const char*>(g_n.get_filename_for_audio_conversation, key);
+    if (text && text[0] && strcmp(text, "NULL") != 0) {
+      // Wheels: a wheel type lists 50+ designs (retail Sport alone has 50, the shop shows 25) and
+      // pack wheels are appended at the end, so keep the position next to the name.
+      if (slot == GTAV_VEH_MOD_WHEELS) {
+        snprintf(buf, sizeof(buf), "%d/%d %s", lvl + 1, count, text);
+      } else {
+        snprintf(buf, sizeof(buf), "%s", text);
+      }
+      return buf;
+    }
+  }
+  const char* format =
+      slot == GTAV_VEH_MOD_WHEELS   ? locale_text_or("value.design_level", "Design %d/%d")
+      : slot == GTAV_VEH_MOD_LIVERY ? locale_text_or("value.kit_livery_level", "Kit Livery %d/%d")
+                                    : locale_text_or("value.upgrade_level", "Level %d/%d");
+  snprintf(buf, sizeof(buf), format, lvl + 1, count);
   return buf;
 }
 
@@ -531,51 +617,6 @@ static uint32_t cycle_wheel_type(uint32_t param) {
   invoke_void(g_n.set_vehicle_mod_kit, v, 0);
   invoke_void(g_n.set_vehicle_wheel_type, v, kWheelTypes[g_wheel_type_index % count].id);
   return ok(action, "wheel type applied");
-}
-
-// Installable livery count for the CURRENT vehicle (0 if none / native missing).
-static int live_livery_count() {
-  if (!g_n.get_vehicle_livery_count) return 0;
-  int v = current_vehicle();
-  if (!v) return 0;
-  int c = invoke_return<int>(g_n.get_vehicle_livery_count, v);
-  return c > 0 ? c : 0;
-}
-
-// Label for a staged livery: "None" (-1 / no liveries) or 1-based "Livery N/M".
-static const char* livery_label(int lvl, int count) {
-  if (lvl < 0 || count <= 0) return "None";
-  // Scratch wide enough that the formatter can't truncate (-Wformat-truncation); the
-  // short result is re-copied into ShellListValue.value[24] by set_list_value.
-  static char buf[40];
-  snprintf(buf, sizeof(buf), "Livery %d/%d", lvl + 1, count);
-  return buf;
-}
-
-// Livery cycler: same -1..count-1 domain as the per-slot mod pickers, bounded live by
-// GET_VEHICLE_LIVERY_COUNT. -1 removes the livery; only some vehicles expose any.
-static uint32_t cycle_livery(uint32_t param) {
-  const uint32_t action = GTAV_NATIVE_SHELL_ACTION_CYCLE_LIVERY;
-  if (param == 1u || param == 2u) {
-    const int count = live_livery_count();
-    const int span = count + 1;  // domain -1..count-1 => count+1 values
-    int cur = g_livery_stage;
-    if (cur < -1 || cur > count - 1) cur = -1;  // clamp a value carried over from another car
-    int u = cur + 1;
-    u = (u + (param == 2u ? -1 : 1) + span) % span;
-    g_livery_stage = u - 1;
-    return ok(action, livery_label(g_livery_stage, count));
-  }
-  if (!g_n.set_vehicle_livery) return unavailable(action, "missing livery native");
-  int v = current_vehicle();
-  if (!v) return failed(action, "not in a vehicle");
-  if (g_n.set_vehicle_mod_kit) invoke_void(g_n.set_vehicle_mod_kit, v, 0);
-  int count = live_livery_count();
-  int lvl = g_livery_stage;
-  if (lvl > count - 1) lvl = count - 1;  // re-clamp at apply against the live vehicle
-  if (lvl < -1) lvl = -1;
-  invoke_void(g_n.set_vehicle_livery, v, lvl);
-  return ok(action, lvl < 0 ? "livery removed" : "livery applied");
 }
 
 static uint32_t cycle_plate_style(uint32_t param) {
@@ -725,3 +766,218 @@ static void rainbow_paint_tick() {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Every kit slot: "Part Type" (list_kinds.def SETTING) picks one of the slots the current car has
+// parts for (kVehicleKitSlots, the slots without parts are skipped; "None" when the car has none),
+// and "Part" (CHOICE) stages one of that slot's parts, Cross fits it. Part names come from the kit
+// (GET_MOD_TEXT_LABEL, mod_level_label) like the per-slot rows. Worker-safe getters/setters.
+// ---------------------------------------------------------------------------
+
+static uint32_t g_kit_slot_index;     // kVehicleKitSlots row of the Part Type row
+static int32_t g_kit_part_stage = -1;  // Part row's staged part (-1 = stock)
+static int g_kit_part_vehicle;        // vehicle and slot the staged part was read from
+static int g_kit_part_slot = -1;
+static int g_kit_vehicle;             // vehicle whose mod kit was last unlocked for reading
+
+// Parts of mod slot `slot` on vehicle `v` (0 = none). The kit is unlocked once per vehicle
+// (SET_VEHICLE_MOD_KIT must precede the counts).
+static int kit_mod_count(int v, int slot) {
+  if (!v || !g_n.get_num_vehicle_mods) return 0;
+  if (v != g_kit_vehicle && g_n.set_vehicle_mod_kit) {
+    invoke_void(g_n.set_vehicle_mod_kit, v, 0);
+    g_kit_vehicle = v;
+  }
+  const int count = invoke_return<int>(g_n.get_num_vehicle_mods, v, slot);
+  return count > 0 ? count : 0;
+}
+
+// Parts of kit slot row `i` on vehicle `v` (0 = none).
+static int kit_slot_parts(int v, uint32_t i) {
+  return i < GTAV_NUM_KIT_SLOTS ? kit_mod_count(v, (int)kVehicleKitSlots[i].slot) : 0;
+}
+
+// The Part Type row on vehicle `v`: the selected slot when it has parts, else the next one that
+// has (stepping `dir` = +1 / -1 from the selected one), else -1 (the car's kit has no parts).
+static int kit_slot_pick(int v, int dir) {
+  for (uint32_t n = 0; n < GTAV_NUM_KIT_SLOTS; ++n) {
+    const uint32_t i = dir >= 0 ? (g_kit_slot_index + n) % GTAV_NUM_KIT_SLOTS
+                                : (g_kit_slot_index + GTAV_NUM_KIT_SLOTS - n) % GTAV_NUM_KIT_SLOTS;
+    if (kit_slot_parts(v, i) > 0) return (int)i;
+  }
+  return -1;
+}
+
+// The Part row's stage follows the car: re-read from GET_VEHICLE_MOD when the vehicle or slot moved.
+static void kit_part_sync(int v, int slot) {
+  if (v == g_kit_part_vehicle && slot == g_kit_part_slot) return;
+  const int lvl = g_n.get_vehicle_mod ? invoke_return<int>(g_n.get_vehicle_mod, v, slot) : -1;
+  g_kit_part_stage = lvl < 0 ? -1 : lvl;
+  g_kit_part_vehicle = v;
+  g_kit_part_slot = slot;
+}
+
+static const char* kit_slot_value_label() {
+  const int i = kit_slot_pick(current_vehicle(), 1);
+  return i < 0 ? "None" : kVehicleKitSlots[i].label;
+}
+
+static const char* kit_part_value_label() {
+  const int v = current_vehicle();
+  const int i = kit_slot_pick(v, 1);
+  if (i < 0) return "None";
+  const int slot = kVehicleKitSlots[i].slot;
+  const int count = kit_slot_parts(v, (uint32_t)i);
+  kit_part_sync(v, slot);
+  int lvl = g_kit_part_stage;
+  if (lvl > count - 1) lvl = count - 1;
+  return mod_level_label(slot, lvl < -1 ? -1 : lvl, count);
+}
+
+// Part Type: Left/Right (param 1 / 2) step to the next / previous slot with parts (a SETTING row:
+// Cross never reaches here).
+static uint32_t cycle_kit_slot(uint32_t param) {
+  const uint32_t action = GTAV_NATIVE_SHELL_ACTION_CYCLE_KIT_SLOT;
+  const int v = current_vehicle();
+  if (!v) return failed(action, "not in a vehicle");
+  if (!g_n.get_num_vehicle_mods) return unavailable(action, "missing vehicle mod natives");
+  const int dir = param == 2u ? -1 : 1;
+  if (kit_slot_pick(v, 1) < 0) return failed(action, "this car has no kit parts");
+  g_kit_slot_index = (g_kit_slot_index + GTAV_NUM_KIT_SLOTS + (uint32_t)dir) % GTAV_NUM_KIT_SLOTS;
+  const int i = kit_slot_pick(v, dir);
+  g_kit_slot_index = (uint32_t)i;
+  return ok(action, kVehicleKitSlots[i].label);
+}
+
+// Part: Left/Right stage a part of the selected slot (-1..parts-1, wrapping); Cross fits it.
+static uint32_t cycle_kit_part(uint32_t param) {
+  const uint32_t action = GTAV_NATIVE_SHELL_ACTION_CYCLE_KIT_PART;
+  const int v = current_vehicle();
+  if (!v) return failed(action, "not in a vehicle");
+  if (!g_n.get_num_vehicle_mods || !g_n.set_vehicle_mod || !g_n.set_vehicle_mod_kit)
+    return unavailable(action, "missing vehicle mod natives");
+  const int i = kit_slot_pick(v, 1);
+  if (i < 0) return failed(action, "this car has no kit parts");
+  g_kit_slot_index = (uint32_t)i;
+  const int slot = kVehicleKitSlots[i].slot;
+  const int count = kit_slot_parts(v, (uint32_t)i);
+  kit_part_sync(v, slot);
+  int lvl = g_kit_part_stage;
+  if (lvl > count - 1) lvl = count - 1;  // the value kit_part_value_label shows
+  if (lvl < -1) lvl = -1;
+  if (param == 1u || param == 2u) {
+    const int span = count + 1;  // -1..count-1
+    g_kit_part_stage = (lvl + 1 + (param == 2u ? -1 : 1) + span) % span - 1;
+    return ok(action, mod_level_label(slot, g_kit_part_stage, count));
+  }
+  invoke_void(g_n.set_vehicle_mod_kit, v, 0);
+  invoke_void(g_n.set_vehicle_mod, v, slot, lvl, 0);
+  g_kit_part_stage = lvl;
+  g_mod_stage_vehicle = 0;  // the per-slot rows re-read the car
+  g_livery_vehicle = 0;     // and the Livery row (a slot-48 part is a kit livery)
+  char msg[GTAV_FEATURE_MESSAGE_LEN];
+  snprintf(msg, sizeof(msg), "%s: %s", kVehicleKitSlots[i].label, lvl < 0 ? "stock" : "fitted");
+  return ok(action, msg);
+}
+
+// ---------------------------------------------------------------------------
+// Plates & Livery > Livery (2026-10-08 session 3): the car's texture liveries (SET_VEHICLE_LIVERY,
+// GET_VEHICLE_LIVERY_COUNT), then its kit liveries (VMT_LIVERY_MOD parts of mod slot 48, named by
+// the kit like LS Customs > Part Type: Livery and fitted with the same SET_VEHICLE_MOD). One CHOICE
+// domain -1..textures+kit-1: -1 None (removes both), then the textures, then the kit parts.
+// Converted cars often have only kit liveries (S3: the operator looked for them here first).
+// Worker-safe getters/setters, like the rest of LS Customs.
+// ---------------------------------------------------------------------------
+
+// Installable texture livery count for the CURRENT vehicle (0 if none / native missing).
+static int live_livery_count() {
+  if (!g_n.get_vehicle_livery_count) return 0;
+  int v = current_vehicle();
+  if (!v) return 0;
+  int c = invoke_return<int>(g_n.get_vehicle_livery_count, v);
+  return c > 0 ? c : 0;
+}
+
+// Label for livery pick `lvl`: "None", 1-based "Livery N/M" for a texture livery, else the kit
+// part's own name (mod_level_label: "Kit Livery N/M" when the kit has no name for it).
+static const char* livery_label(int lvl, int textures, int kit) {
+  if (lvl < 0 || textures + kit <= 0) return "None";
+  if (lvl >= textures) return mod_level_label(GTAV_VEH_MOD_LIVERY, lvl - textures, kit);
+  // Scratch wide enough that the formatter can't truncate (-Wformat-truncation); the
+  // short result is re-copied into ShellListValue.value[24] by set_list_value.
+  static char buf[40];
+  snprintf(buf, sizeof(buf), locale_text_or("value.livery_level", "Livery %d/%d"), lvl + 1,
+           textures);
+  return buf;
+}
+
+// The Livery row's domain on vehicle `v` (*textures, *kit) and its pick clamped to it. The pick
+// follows the car: on another vehicle it starts at the fitted kit livery (GET_VEHICLE_MOD 48), else
+// None (no reviewed getter reads the texture livery).
+static int livery_state(int v, int* textures, int* kit) {
+  *textures = live_livery_count();
+  *kit = kit_mod_count(v, GTAV_VEH_MOD_LIVERY);
+  if (v != g_livery_vehicle) {
+    const int fitted = *kit && g_n.get_vehicle_mod
+                           ? invoke_return<int>(g_n.get_vehicle_mod, v, GTAV_VEH_MOD_LIVERY)
+                           : -1;
+    g_livery_stage = fitted >= 0 ? *textures + fitted : -1;
+    g_livery_vehicle = v;
+  }
+  int lvl = g_livery_stage;
+  if (lvl > *textures + *kit - 1) lvl = *textures + *kit - 1;
+  return lvl < -1 ? -1 : lvl;
+}
+
+static const char* livery_value_label() {
+  int textures = 0, kit = 0;
+  const int lvl = livery_state(current_vehicle(), &textures, &kit);
+  return livery_label(lvl, textures, kit);
+}
+
+// Left/Right stage a pick (wrapping), Cross applies it: None clears the texture livery and the kit
+// livery; a texture livery is SET_VEHICLE_LIVERY; a kit livery is SET_VEHICLE_MOD(48). A pack-notes
+// line reads the slot back (pack lane builds: the worker klog is linked with it).
+static uint32_t cycle_livery(uint32_t param) {
+  const uint32_t action = GTAV_NATIVE_SHELL_ACTION_CYCLE_LIVERY;
+  const int v = current_vehicle();
+  int textures = 0, kit = 0;
+  const int lvl = livery_state(v, &textures, &kit);
+  if (param == 1u || param == 2u) {
+    const int span = textures + kit + 1;  // -1..textures+kit-1
+    g_livery_stage = (lvl + 1 + (param == 2u ? -1 : 1) + span) % span - 1;
+    return ok(action, livery_label(g_livery_stage, textures, kit));
+  }
+  if (!g_n.set_vehicle_livery || !g_n.set_vehicle_mod)
+    return unavailable(action, "missing livery native");
+  if (!v) return failed(action, "not in a vehicle");
+  if (g_n.set_vehicle_mod_kit) invoke_void(g_n.set_vehicle_mod_kit, v, 0);
+  if (lvl < textures) invoke_void(g_n.set_vehicle_livery, v, lvl);  // -1 removes it
+  if (kit && lvl < 0) invoke_void(g_n.set_vehicle_mod, v, GTAV_VEH_MOD_LIVERY, -1, 0);
+  if (lvl >= textures) invoke_void(g_n.set_vehicle_mod, v, GTAV_VEH_MOD_LIVERY, lvl - textures, 0);
+  g_livery_stage = lvl;
+  g_mod_stage_vehicle = 0;  // the per-slot rows and Part re-read the car
+  g_kit_part_vehicle = 0;
+#if GTAV_MENU_ENABLE_CUSTOM_PACKS  // the worker klog (pack-notes) is linked with the pack lane
+  const int fitted =
+      g_n.get_vehicle_mod ? invoke_return<int>(g_n.get_vehicle_mod, v, GTAV_VEH_MOD_LIVERY) : -2;
+  const uint32_t model =
+      g_n.get_entity_model ? invoke_return<uint32_t>(g_n.get_entity_model, v) : 0u;
+  char line[128];
+  snprintf(line, sizeof(line),
+           "GTAVMenu pack livery model=0x%08x pick=%d textures=%d kit=%d mod48=%d",
+           (unsigned)model, lvl, textures, kit, fitted);
+  gtav_worker_klog(line);
+#endif
+  return ok(action, lvl < 0          ? "livery removed"
+                    : lvl < textures ? "livery applied"
+                                     : "kit livery fitted");
+}
+
+// Spawn Upgraded (Vehicles > Spawn Options): a flag apply_spawn_vehicle_defaults reads at create
+// time, like Spawn Maxed; no native at toggle time.
+static uint32_t toggle_spawn_upgraded() {
+  const uint32_t action = GTAV_NATIVE_SHELL_ACTION_TOGGLE_SPAWN_UPGRADED;
+  g_spawn_upgraded_enabled = !g_spawn_upgraded_enabled;
+  return ok(action, g_spawn_upgraded_enabled ? "new vehicles spawn upgraded"
+                                             : "spawn upgraded disabled");
+}

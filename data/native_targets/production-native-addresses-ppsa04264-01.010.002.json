@@ -3,7 +3,7 @@
   "target": "ppsa04264-01.010.002",
   "normalizedElfSha256": "2a3419b404a5d10f2d36d8056916e65afad6352b78489365e5f1003f8e953c0d",
   "addressConvention": "absolute live virtual address; fixed image base 0x400000",
-  "sourceSnapshotSha256": "5964805be4de73221c6520dd086ad59687999c86d51a0154b57de6c8d6852b6a",
+  "sourceSnapshotSha256": "6bad15b3770213ee71864b8573d0f93a1cd38960e2aa73a654331f47be8ef248",
   "addresses": [
     {
       "name": "DRAW_RECT",
@@ -144,6 +144,11 @@
       "name": "SET_TEXT_OUTLINE",
       "role": "text",
       "address": "0x1ac9640"
+    },
+    {
+      "name": "GET_FILENAME_FOR_AUDIO_CONVERSATION",
+      "role": "text",
+      "address": "0x1ac7ea0"
     },
     {
       "name": "IS_CONTROL_PRESSED",
@@ -589,6 +594,11 @@
       "name": "GET_VEHICLE_MOD",
       "role": "vehicle",
       "address": "0x1c5f790"
+    },
+    {
+      "name": "GET_MOD_TEXT_LABEL",
+      "role": "vehicle",
+      "address": "0x1c5fcf0"
     },
     {
       "name": "TOGGLE_VEHICLE_MOD",
@@ -1349,6 +1359,16 @@
       "name": "HAS_PED_GOT_WEAPON_COMPONENT",
       "role": "weapon_components",
       "address": "0x1c789e0"
+    },
+    {
+      "name": "CREATE_MODEL_HIDE",
+      "role": "map_hide",
+      "address": "0x1a98370"
+    },
+    {
+      "name": "REMOVE_MODEL_HIDE",
+      "role": "map_hide",
+      "address": "0x1a984f0"
     }
   ]
 }

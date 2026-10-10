@@ -91,6 +91,14 @@ uint32_t gtav_features_preview_res_h(void);
  * game-thread streamer uses this to defer releasing a superseded dictionary until the phase
  * consumer can no longer be reading it. No-op outside the phase-preview build. */
 void gtav_features_preview_phase_published(uint64_t generation, const char* dict);
+/* CUSTOM_PACKS=1 stock-texture card (roadmap P1). `gtav_features_custom_card` returns 1 while
+ * the card should be drawn, with the resident dict/texture names and resolved size. The worker
+ * reports every published phase list with whether it contains the card; that drives the resident
+ * keep-alive and the deferred, drain-fenced release. Defined only in CUSTOM_PACKS=1 phase builds;
+ * callers are compiled under the same gate. */
+int gtav_features_custom_card(const char** dict, const char** texture, uint32_t* width,
+                              uint32_t* height);
+void gtav_features_custom_card_published(uint64_t generation, int drawn);
 /* Native instructional-button bar (behind GTAV_MENU_ENABLE_INSTRUCTIONAL_SCALEFORM). The menu's
  * bottom-right controls strip can be drawn as GTA's own "instructional_buttons" Scaleform -- the
  * exact widget the pause menu uses -- so it renders real DualSense glyphs in the native format.
@@ -136,6 +144,38 @@ void gtav_features_run_spawn_hash_job(uint32_t action, uint32_t model, void* ctx
  * so worker-tick effects that consume gameplay input (noclip) can stand down and not steal
  * it from menu navigation. */
 void gtav_features_worker_tick(int menu_visible);
+
+/* Custom Packs menu rows (worker): row 0 loads the active runtime packs or shows their progress;
+ * per loaded pack a header row (action NONE, label = the pack id), then its spawn rows
+ * (SPAWN_VEHICLE / SPAWN_OBJECT / SPAWN_PED / GIVE_WEAPON with the model hash, timecycle and ptfx
+ * rows) and map teleports, ready once loaded; then the installed-list row (TOGGLE_PACK_ACTIVE with
+ * param GTAV_PACK_MENU_PAGE_ROW; the menu shows it as the page selector), one TOGGLE_PACK_ACTIVE
+ * row per installed pack (param = installed index, label = the pack id, `toggle` = selected) and
+ * the uninstall row, then (packs with stock overrides loaded) the REVERT_PACK_OVERRIDES row. The
+ * menu sorts them into the Custom Packs folders. `reason` (static text or NULL) says why a row is
+ * not ready. Returns the row count. */
+#define GTAV_PACK_MENU_PAGE_ROW 0xffffffffu
+typedef struct GtavPackMenuRow {
+  uint32_t action;
+  uint32_t param;
+  uint32_t ready;
+  char label[48];
+  const char* reason;
+  int32_t toggle; /* -1: not a toggle; 0/1: an installed pack's selection state */
+} GtavPackMenuRow;
+int gtav_features_pack_menu(GtavPackMenuRow* rows, int max);
+/* Footer text for a Custom Packs row, from the worker: for an installed pack's toggle (param =
+ * installed index) its description, version, author, what it adds and, before a load, the clash
+ * selecting it causes; for the load row the selection's clash or the failed load's pack and reason;
+ * for a pack weapon's GIVE_WEAPON row (param = the weapon's joaat) its wheel slot, borrowed icon
+ * and component count. "" when the row has none (the menu then shows the row's static help). Worker
+ * thread. */
+const char* gtav_features_pack_footer(uint32_t action, uint32_t param);
+/* Menu name of a loaded pack vehicle (SPAWN_VEHICLE row param = the model's joaat): "<Make> <text>"
+ * from the vehicle's own pack's make label, or the row text when it already starts with the make.
+ * The Vehicle Browser's Custom rows and the Custom Packs Vehicles folder both show it. Returns 1
+ * and fills `out` (NUL-terminated) for a vehicle row of the parsed set, else 0. Worker thread. */
+int gtav_features_pack_vehicle_name(uint32_t model_hash, char* out, int size);
 /* Set the menu-open mirror immediately on a visibility transition (called from
  * gtav_menu_set_visible) so the game-thread input-suppression predicate flips on the same
  * frame, not a worker tick later. The per-tick worker pass keeps it in sync afterwards. */
@@ -146,12 +186,15 @@ void gtav_features_set_wardrobe_cam_active(int active);
 void gtav_features_snapshot(GtavFeatureState* out);
 /* Bitmask of feature toggle states for menu display (see GTAV_FEATURE_TOGGLE_*). */
 uint64_t gtav_features_toggle_mask(void);
+/* Scalar/session toggles that do not consume the persisted 64-bit mask. */
+int gtav_features_setting_enabled(uint32_t action);
 /* Current display value for a list-cycler action (e.g. weather/time), for the menu
  * to render "< VALUE >". Empty string for non-list actions. */
 const char* gtav_features_value_label(uint32_t action);
 /* GTA V vehicle class (0..21) for catalog entry `index`, or -1 if unknown/unavailable.
  * Cached after the first call. Lets the menu group/filter spawn rows by class. */
 int gtav_features_vehicle_class(uint32_t index);
+int gtav_features_vehicle_classes_ready(void);
 const char* gtav_feature_action_name(uint32_t action);
 const char* gtav_feature_result_name(uint32_t result);
 /* Non-zero if the action is gated off this build (needs the main-thread hook).
@@ -188,6 +231,11 @@ int gtav_features_object_move_readout(GtavObjectMoveReadout* out);
  * does worker-thread-only logging/status writes), so the worker applies the request from
  * gtav_menu_worker_tick. No-op (returns 0) in a build without native features. */
 int gtav_features_take_menu_visibility_request(void);
+/* Consume the refusal or failure of the last game-thread job (an action the worker queued with
+ * "queued for main thread"): copies its message into `out` (cap bytes), sets *result to
+ * GTAV_FEATURE_RESULT_UNAVAILABLE / _FAILED and returns 1; returns 0 when there is none. The worker
+ * toasts it from gtav_menu_worker_tick, since the queued toast never carries the job's outcome. */
+int gtav_features_take_job_refusal(char* out, uint32_t cap, uint32_t* result);
 
 /* Explosive/fire-ammo diagnostic counters for the Debug page (any out-param may be
  * NULL). They make the otherwise-silent failure observable: tick_fired counts game-thread
@@ -342,6 +390,8 @@ enum {
   (1ull << 60) /* spawn a small explosion at each melee impact (game-thread tick) */
 #define GTAV_FEATURE_TOGGLE_EMOTE_LOOP \
   (1ull << 61) /* loop the emote until Stop, vs play once (default off) */
+#define GTAV_FEATURE_TOGGLE_SPAWN_UPGRADED \
+  (1ull << 62) /* new vehicles spawn with max performance + every visual kit part */
 
 /* Live HUD readout, filled by gtav_features_hud_readout() from worker-safe getter
  * natives (GET_ENTITY_SPEED/COORDS/HEADING). The bridge render path consumes this to

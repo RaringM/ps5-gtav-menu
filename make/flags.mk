@@ -2,6 +2,8 @@
 BUILD_DIR ?= build/ps5
 BUILD_PROFILE_DIR := $(BUILD_DIR)/$(GTAV_TARGET)/$(GTAV_BUILD_PROFILE)/$(GTAV_DELIVERY)
 BUILD_CONFIG_STAMP := $(BUILD_PROFILE_DIR)/build-config.json
+BUILD_VERSION_HEADER := $(BUILD_DIR)/generated/gtavmenu_build_version.h
+LOADER_VERSION_CFLAGS := -include "$(BUILD_VERSION_HEADER)"
 # Standalone payload bundle (etaHEN-free): loader + worker + target metadata.
 PAYLOAD_PACKAGE_DIR ?= build/pkg/$(GTAV_TARGET)/standalone
 INCLUDES := -Iinclude
@@ -12,8 +14,8 @@ WARNINGS := -Wall -Wextra -Werror -Wno-unused-parameter
 REPRODUCIBLE_PATH_CFLAGS := -ffile-prefix-map=$(CURDIR)=. -fdebug-prefix-map=$(CURDIR)=. -fdebug-compilation-dir=.
 CFLAGS := $(WARNINGS) -g -O2 -ffunction-sections -fdata-sections $(REPRODUCIBLE_PATH_CFLAGS) $(INCLUDES)
 
-# Production build flags. Research-only render, TLS, and streaming experiments live under
-# research/legacy and are fixed off in current builds.
+# Production build flags. The retired render, TLS and streaming experiments are not built here
+# and are fixed off in current builds.
 
 # Complete production menu. Address values come from the exact 01.010.002 target
 # configuration and its generated native header; drift tests keep both in sync.
@@ -69,10 +71,35 @@ FEATURE_MENU_CFLAGS += -DGTAV_MENU_SCRIPT_GLOBALS_HEADER=\"$(subst ",,$(GTAV_MEN
 # these off fail-closed so the worker can't call feature-layer functions that
 # were compiled out.
 GTAV_MENU_ENABLE_VEHICLE_PREVIEW ?= 0
-# Experimental engine device mount of the custom root as gtavmenu:/ (features/custom_device.inc).
-# Hardware-unverified, so off by default; enable with CUSTOM_DEVICE=1 ./menu-ctl.sh cave-inject.
-GTAV_MENU_ENABLE_CUSTOM_DEVICE ?= 0
-FEATURE_MENU_CFLAGS += -DGTAV_MENU_ENABLE_CUSTOM_DEVICE=$(GTAV_MENU_ENABLE_CUSTOM_DEVICE)
+# Runtime custom pack lane: one release flag, CUSTOM_PACKS (custom-assets cleanup step 6). The
+# production profile turns it on where the target manifest sets features.customPacks; smoke and
+# every other target leave it off. It builds the worker's engine device + pack stream lane
+# (features/custom_engine.inc, custom_rpf.inc, custom_pack_*.inc), available only when the game
+# sees /data directly. The loader does not copy assets into the sandbox.
+CUSTOM_PACKS ?= 0
+# The per-part gates from before step 6 were removed at the release boundary. For one release any of
+# them given on the command line or in the environment refuses (whatever its value), so a stale
+# command fails loudly instead of building the default lane; drop this refusal after that release.
+CUSTOM_PACKS_REMOVED_VARS := GTAV_MENU_ENABLE_CUSTOM_DEVICE GTAV_MENU_ENABLE_CUSTOM_STREAM \
+	PAYLOAD_LOADER_CUSTOM_STAGE PAYLOAD_LOADER_CUSTOM_PACK_STAGE
+CUSTOM_PACKS_REMOVED_SET := $(strip $(foreach v,$(CUSTOM_PACKS_REMOVED_VARS),\
+	$(if $(filter command% environment%,$(origin $(v))),$(v))))
+ifneq ($(CUSTOM_PACKS_REMOVED_SET),)
+$(error $(CUSTOM_PACKS_REMOVED_SET) $(if $(word 2,$(CUSTOM_PACKS_REMOVED_SET)),were,was) removed; use CUSTOM_PACKS=0 or CUSTOM_PACKS=1; custom assets require game-visible /data)
+endif
+ifeq ($(filter 0 1,$(strip $(CUSTOM_PACKS))),)
+$(error CUSTOM_PACKS must be 0 or 1, not '$(CUSTOM_PACKS)')
+endif
+# Freeze the resolved value: the compile defines, loader defines and build stamp all read it.
+GTAV_MENU_ENABLE_CUSTOM_PACKS := $(strip $(CUSTOM_PACKS))
+# The worker sources gate the whole lane on the same single macro (cleanup step 7).
+FEATURE_MENU_CFLAGS += -DGTAV_MENU_ENABLE_CUSTOM_PACKS=$(GTAV_MENU_ENABLE_CUSTOM_PACKS)
+# Retired DLC-route lanes (manager census, startup dlclist overlay, effective dlclist capture),
+# removed in cleanup step 3. Refuse their old gates rather than silently building without them; the
+# build stamp keeps their keys as constant 0 for one release.
+ifneq ($(filter 1,$(GTAV_MENU_ENABLE_CUSTOM_DLC_SNAPSHOT) $(GTAV_MENU_ENABLE_CUSTOM_DLC_OVERLAY) $(GTAV_MENU_ENABLE_EFFECTIVE_DLCLIST_CAPTURE)),)
+$(error CUSTOM_DLC_SNAPSHOT, CUSTOM_DLC_OVERLAY and EFFECTIVE_DLCLIST_CAPTURE are retired; custom content uses the runtime pack lane (CUSTOM_PACKS))
+endif
 GTAV_MENU_ENABLE_BUTTON_GLYPHS ?= 0
 GTAV_MENU_ENABLE_INSTRUCTIONAL_SCALEFORM ?= 0
 
@@ -129,6 +156,19 @@ endif
 GTAV_MENU_ENABLE_WORKER_KLOG ?= 0
 ifeq ($(GTAV_MENU_ENABLE_WORKER_KLOG),1)
 FEATURE_MENU_CFLAGS += -DGTAV_MENU_ENABLE_WORKER_KLOG=1
+endif
+# The pack lane is only meaningful with the preview streaming natives, the phase draw list and
+# kernel breadcrumbs that survive a game crash. Checked here, after all those gates are final.
+ifeq ($(GTAV_MENU_ENABLE_CUSTOM_PACKS),1)
+# The pack lane's live addresses are those of the 01.010.002 executables. PPSA04263 (EU) shares
+# PPSA04264's code byte for byte apart from 40 bytes of in-code data, and every lane anchor and the
+# archive TOC key table match (checked 2026-10-06).
+ifeq ($(filter $(GTAV_TARGET),ppsa04264-01.010.002 ppsa04263-01.010.002),)
+$(error CUSTOM_PACKS is pinned to the 01.010.002 executables (ppsa04264, ppsa04263); build with CUSTOM_PACKS=0)
+endif
+ifneq ($(GTAV_MENU_ENABLE_VEHICLE_PREVIEW)$(GTAV_MENU_PHASE_DRAW_LIST)$(GTAV_MENU_ENABLE_WORKER_KLOG),111)
+$(error CUSTOM_PACKS requires vehicle preview, the phase draw list and worker klog on; build with CUSTOM_PACKS=0)
+endif
 endif
 
 # Teardown/suspend guard (src/module/quit_guard.c). The worker watches the frame-hook heartbeat
@@ -204,14 +244,20 @@ FRAME_HOOK_REQUIRE_CONTEXT ?= 1
 FRAME_HOOK_SELF_START_WORKER ?= 0
 
 COMMON_SRCS := \
+	src/common/aes256.c \
+	src/common/custom_pack_checks.c \
+	src/common/custom_pack_runtime.c \
 	src/common/detour.c \
 	src/common/feature_profile.c \
 	src/common/hex.c \
 	src/common/ini_parse.c \
+	src/common/localization.c \
 	src/common/log.c \
 	src/common/notify.c \
 	src/common/rootdir.c \
 	src/common/runtime_config.c \
+	src/common/scene_map.c \
+	src/common/sha256.c \
 	src/common/strutil.c
 
 # Standalone, etaHEN-free payload loader. Launched by a generic PS5 payload loader
@@ -301,10 +347,12 @@ PAYLOAD_LOADER_SP_READY_POLL_MAX_USEC ?= 5000000 # gentle backoff cap (usec)
 # stack workers or race stale-lock replacement. Production/menu-ctl requires 1. Value 0 exists only
 # for isolated host/research builds and is unsafe for deployment because remote unmap is unavailable.
 PAYLOAD_LOADER_INJECT_GUARD ?= 1
-# Read-only nullfs mount of /data/GTAVMenu/custom into GTA's sandbox, visible to the game as
-# /gtavmenu (include/gtavmenu/custom_mount.h). Hardware-unverified, so off by default; enable with
-# CUSTOM_MOUNT=1 ./menu-ctl.sh cave-inject (or watch).
-PAYLOAD_LOADER_CUSTOM_MOUNT ?= 0
+# Retired sandbox nullfs route (2026-10-04 teardown failure): removed in cleanup step 4. Refuse the
+# old gate rather than silently building without it; the build stamp keeps loader_custom_mount as
+# constant 0 for one release.
+ifeq ($(PAYLOAD_LOADER_CUSTOM_MOUNT),1)
+$(error PAYLOAD_LOADER_CUSTOM_MOUNT is retired; the sandbox nullfs route failed teardown. Custom assets require game-visible /data)
+endif
 # Target-version guard: before injecting, the loader reads a stable native handler's prologue
 # (GET_FRAME_COUNT -- real game code we never patch) and refuses to inject if it does not match
 # the bytes recorded for PPSA04264 01.010.002, so the pinned native/hook addresses can never be
@@ -342,4 +390,5 @@ PAYLOAD_LOADER_SRCS := \
 	src/common/strutil.c \
 	src/common/hex.c \
 	src/common/custom_mount_pick.c \
+	src/common/sha256.c \
 	src/payload_loader/custom_mount.c

@@ -8,17 +8,20 @@
 // readiness anchor, maps the menu worker ELF into GTA, and lets the first frame-hook
 // fire start its worker thread. The explicit smoke profile performs no injection.
 
+#ifndef GTAV_LOADER_UNIVERSAL
+#define GTAV_LOADER_UNIVERSAL 0
+#endif
+
 #include "gtavmenu/abi.h"
 #include "gtavmenu/build_pin.h"
 #include "gtavmenu/cave_bootstrap.h"
 #include "gtavmenu/command_mailbox.h"
-#include "gtavmenu/custom_mount.h"
 #include "gtavmenu/daemon_control.h"
 #include "gtavmenu/daemon_lifecycle.h"
 #include "gtavmenu/elf_inject.h"
 #include "gtavmenu/inject_lock.h"
 // Build pins are consumed only by injection-time version verification.
-#if GTAV_MENU_PAYLOAD_INJECT && GTAV_LOADER_VERIFY_VERSION
+#if GTAV_MENU_PAYLOAD_INJECT && GTAV_LOADER_VERIFY_VERSION && !GTAV_LOADER_UNIVERSAL
 #if GTAV_LOADER_TARGET_PIN_OVERRIDE
 #if !defined(GTAV_LOADER_TARGET_PIN_ID) || !defined(GTAV_LOADER_TARGET_SP_READY_ADDR) ||      \
     !defined(GTAV_LOADER_TARGET_SP_READY_OFFSET) || !defined(GTAV_LOADER_VERSION_ADDR) ||     \
@@ -55,6 +58,12 @@ static const GtavBuildPin gtav_build_pins[] = {{
 #include "gtavmenu/render_phase_discovery.h"
 #include "gtavmenu/runtime_config.h"
 #include "gtavmenu/supervisor_lifecycle.h"
+#if GTAV_LOADER_UNIVERSAL
+#include "gtavmenu/loader_target_profile.h"
+#include "gtavmenu/sha256.h"
+#include "loader_profiles.h"
+#include "universal_identity.h"
+#endif
 
 #include <errno.h>
 #include <fcntl.h>
@@ -71,6 +80,10 @@ static const GtavBuildPin gtav_build_pins[] = {{
 
 #ifndef GTAV_PAYLOAD_TARGET_TITLE_ID
 #define GTAV_PAYLOAD_TARGET_TITLE_ID "PPSA04264"
+#endif
+
+#ifndef GTAV_MENU_BUILD_VERSION
+#define GTAV_MENU_BUILD_VERSION "dev"
 #endif
 
 // Production 01.010 renderer bootstrap. The loader performs read-only exact task discovery, then
@@ -101,6 +114,13 @@ static const GtavBuildPin gtav_build_pins[] = {{
 // Poll cadence for the wait loop, in microseconds.
 #ifndef GTAV_PAYLOAD_WAIT_POLL_USEC
 #define GTAV_PAYLOAD_WAIT_POLL_USEC 1000000
+#endif
+
+// Once a resident loader owns sandbox mounts, match BOx's proven half-second game-liveness
+// cadence so an exited title's nullfs mount is released promptly. This is used only while idling
+// on an already-served instance; boot/readiness polling keeps its existing cadence.
+#ifndef GTAV_PAYLOAD_PERSISTENT_IDLE_POLL_USEC
+#define GTAV_PAYLOAD_PERSISTENT_IDLE_POLL_USEC 500000
 #endif
 
 // Persistent (dormant daemon) injection: instead of injecting once and exiting,
@@ -226,12 +246,6 @@ static const GtavBuildPin gtav_build_pins[] = {{
 #define GTAV_PAYLOAD_INJECT_GUARD 1
 #endif
 
-// Read-only nullfs mount of the custom-asset root into GTA's sandbox (custom_mount.h). A failed
-// mount is logged and never blocks injection.
-#ifndef GTAV_PAYLOAD_CUSTOM_MOUNT
-#define GTAV_PAYLOAD_CUSTOM_MOUNT 0
-#endif
-
 // Executable (.text) live-address window of the target, from the target manifest's
 // liveMapping. Every privileged .text protect/write (version check, frame-hook broker
 // install, drain-slot pre-protect) is bounds-checked against this range: a kernel R/W to a
@@ -264,7 +278,7 @@ static const GtavBuildPin gtav_build_pins[] = {{
 #ifndef GTAV_LOADER_CAVE_TIMEOUT_MS
 #define GTAV_LOADER_CAVE_TIMEOUT_MS 5000
 #endif
-#if GTAV_LOADER_CAVE_BOOTSTRAP && !GTAV_LOADER_CAVE_ADDR
+#if GTAV_LOADER_CAVE_BOOTSTRAP && !GTAV_LOADER_CAVE_ADDR && !GTAV_LOADER_UNIVERSAL
 #error "PAYLOAD_LOADER_CAVE_BOOTSTRAP needs PAYLOAD_LOADER_CAVE_ADDR (the code cave address)"
 #endif
 
@@ -328,7 +342,7 @@ static const GtavBuildPin gtav_build_pins[] = {{
 #define GTAV_MENU_EMBEDDED_WORKER 1
 #endif
 
-#if GTAV_MENU_EMBEDDED_WORKER
+#if GTAV_MENU_EMBEDDED_WORKER && !GTAV_LOADER_UNIVERSAL
 extern const uint8_t gtav_embedded_worker_start[];
 extern const uint8_t gtav_embedded_worker_end[];
 #endif
@@ -373,6 +387,51 @@ extern const uint8_t gtav_embedded_worker_end[];
 #define GTAV_LOADER_BROKER_EXPECTED_BYTES 0x00
 #endif
 
+#if GTAV_LOADER_UNIVERSAL
+#if !GTAV_MENU_PAYLOAD_INJECT || !GTAV_LOADER_VERIFY_VERSION || !GTAV_MENU_EMBEDDED_WORKER ||  \
+    !GTAV_LOADER_CAVE_INJECT || !GTAV_LOADER_INSTALL_RENDER_PHASE || !GTAV_PAYLOAD_SP_READY || \
+    !GTAV_PAYLOAD_SP_READY_DEREF || !GTAV_PAYLOAD_SP_READY_MODE
+#error "universal delivery requires the reviewed embedded, cave, render and player-world gates"
+#endif
+static const GtavLoaderTargetProfile* g_loader_profile;
+static int g_loader_profile_pid = -1;
+static uint64_t g_loader_profile_token;
+
+static const char* loader_selected_title(void) {
+  return g_loader_profile ? g_loader_profile->title_id : "supported GTA V";
+}
+
+static int loader_find_game(const char* ignored, int* pid_out) {
+  char title[128];
+  uint64_t token;
+  (void)ignored;
+  if (gtav_proc_foreground(title, sizeof(title), pid_out, &token) != 0) return -1;
+  for (size_t i = 0; i < GTAV_LOADER_PROFILE_COUNT; ++i)
+    if (strcmp(title, gtav_loader_profiles[i].title_id) == 0) return 0;
+  *pid_out = -1;
+  return -1;
+}
+
+// Runtime expressions are loader-only. Workers retain their manifest compiler values.
+#undef GTAV_LOADER_CAVE_ADDR
+#define GTAV_LOADER_CAVE_ADDR (g_loader_profile->cave_address)
+#undef GTAV_LOADER_CAVE_ALLOC
+#define GTAV_LOADER_CAVE_ALLOC (g_loader_profile->cave_allocation)
+#undef GTAV_RENDER_PHASE_DISCOVERY_ORIGINAL
+#define GTAV_RENDER_PHASE_DISCOVERY_ORIGINAL (g_loader_profile->render.original)
+#undef GTAV_RENDER_PHASE_DISCOVERY_LEAF_VTABLE
+#define GTAV_RENDER_PHASE_DISCOVERY_LEAF_VTABLE (g_loader_profile->render.leaf_vtable)
+#undef GTAV_RENDER_PHASE_DISCOVERY_TASK_ID
+#define GTAV_RENDER_PHASE_DISCOVERY_TASK_ID (g_loader_profile->render.task_id)
+#define loader_render_discover(read, context, result) \
+  gtav_render_phase_discover_profile(&g_loader_profile->render, read, context, result)
+#else
+#define loader_selected_title() GTAV_PAYLOAD_TARGET_TITLE_ID
+#define loader_find_game(title, pid) gtav_proc_find_game(title, pid)
+#define loader_render_discover(read, context, result) \
+  gtav_render_phase_discover(read, context, result)
+#endif
+
 #if GTAV_MENU_PAYLOAD_INJECT && GTAV_PAYLOAD_PERSISTENT
 // Defined with the daemon lifecycle helpers below. Forward declarations let long-running inject
 // handshakes use the same bounded, stop-aware wait as the outer persistent loop.
@@ -390,7 +449,7 @@ static int daemon_wait_interruptible(unsigned long wait_us);
 // process that is no longer our game.
 static int loader_target_is_live(int pid) {
   int cur = -1;
-  if (gtav_proc_find_game(GTAV_PAYLOAD_TARGET_TITLE_ID, &cur) != 0) {
+  if (gtav_proc_find_game(loader_selected_title(), &cur) != 0) {
     return 0;  // the title is not running at all -> the prior pid is gone
   }
   return cur == pid ? 1 : 0;  // same pid still the title -> live; different -> recycled
@@ -404,6 +463,14 @@ static int loader_target_is_live(int pid) {
 // whose instance cannot be proven.
 static int loader_instance_token_matches(int pid, uint64_t expected_token, const char* stage) {
   uint64_t current_token = gtav_proc_app_id(pid);
+#if GTAV_LOADER_UNIVERSAL
+  if (g_loader_profile &&
+      (g_loader_profile_pid != pid || g_loader_profile_token != expected_token ||
+       !loader_target_is_live(pid))) {
+    gtav_logf("inject: selected title/instance changed at %s", stage);
+    return 0;
+  }
+#endif
   if (expected_token == 0 || current_token == 0 || current_token != expected_token) {
     gtav_logf("inject: instance changed/unknown at %s pid=%d token=0x%llx->0x%llx", stage, pid,
               (unsigned long long)expected_token, (unsigned long long)current_token);
@@ -944,6 +1011,9 @@ typedef struct LoaderResidentInstall {
   int pid;
   uint64_t token;
   const GtavBuildPin* pin;
+#if GTAV_LOADER_UNIVERSAL
+  const GtavLoaderTargetProfile* profile;
+#endif
   uintptr_t base;
   size_t image_size;
   uintptr_t broker;
@@ -953,6 +1023,38 @@ typedef struct LoaderResidentInstall {
   uintptr_t render_phase_slot;
   uintptr_t render_phase_wrapper;
 } LoaderResidentInstall;
+
+#if GTAV_LOADER_CAVE_INJECT
+// This is a separate, one-way activation after the broker transaction has finished. Once the
+// authorization write is attempted, even a failed return can mean the worker started. Retain its
+// lifecycle handles first and never roll the broker back from this point. An
+// unreadable/non-starting worker stays quarantined with its owner until normal game exit; it is
+// never retried in-process.
+static int authorize_worker_self_start(int pid, uint64_t expected_token,
+                                       uintptr_t authorization_address,
+                                       LoaderResidentInstall* resident,
+                                       LoaderResidentInstall* resident_out) {
+  const uint32_t authorized = 1u;
+  uint32_t check = 0u;
+#if GTAV_PAYLOAD_PERSISTENT && GTAV_MENU_INSTALL_PATCH_BROKER
+  resident->valid = 1;
+  if (resident_out != NULL) *resident_out = *resident;
+#else
+  (void)resident;
+  (void)resident_out;
+#endif
+  if (!loader_instance_token_matches(pid, expected_token, "worker self-start authorization") ||
+      gtav_proc_write(pid, authorization_address, &authorized, sizeof(authorized)) != 0 ||
+      gtav_proc_read(pid, authorization_address, &check, sizeof(check)) != 0 ||
+      check != authorized) {
+    gtav_logf(
+        "inject: self-start authorization unverified; worker may have started; retaining "
+        "lifecycle ownership where available; close GTA before another injection");
+    return -1;
+  }
+  return 0;
+}
+#endif
 
 // Read the feature-menu ELF from disk and inject it into the target, starting its
 // worker thread. Returns 0 on success.
@@ -1292,6 +1394,7 @@ static int probe_version_signature(int pid, uint64_t expected_token, const GtavB
 // an unsupported build returns GTAV_BUILD_BIND_UNSUPPORTED *before* any worker map or
 // privileged write is attempted, so the game is left untouched and the caller can
 // notify the user.
+#if !GTAV_LOADER_UNIVERSAL
 static int bind_build(int pid, uint64_t expected_token, const GtavBuildPin** pin_out) {
   size_t i;
   if (pin_out != NULL) {
@@ -1331,6 +1434,115 @@ static int bind_build(int pid, uint64_t expected_token, const GtavBuildPin** pin
   return GTAV_BUILD_BIND_UNSUPPORTED;
 #endif
 }
+#else
+typedef struct LoaderProfileProbeContext {
+  int pid;
+  uint64_t token;
+  const char* title;
+} LoaderProfileProbeContext;
+
+static int loader_probe_identity(const LoaderProfileProbeContext* probe) {
+  char title[128];
+  int pid = -1;
+  uint64_t token = 0;
+#if GTAV_PAYLOAD_PERSISTENT
+  if (daemon_should_stop()) return 0;
+#endif
+  return gtav_proc_foreground(title, sizeof(title), &pid, &token) == 0 && pid == probe->pid &&
+         token != 0 && token == probe->token && strcmp(title, probe->title) == 0;
+}
+
+static int loader_profile_probe(void* context, const GtavLoaderTargetProfile* profile) {
+  const LoaderProfileProbeContext* probe = context;
+  const GtavBuildPin* pin = &profile->pin;
+  uint8_t broker[GTAV_BUILD_PIN_BROKER_EXPECTED_BYTES_N];
+  if (!loader_probe_identity(probe)) return -1;
+  int version = probe_version_signature(probe->pid, probe->token, pin);
+  if (version != 1) return version;
+  if (pin->broker_stolen_len != sizeof(broker) || pin->broker_patch_len != 14u ||
+      pin->broker_continuation != pin->broker_target + pin->broker_stolen_len ||
+      !loader_text_write_ok(pin, pin->broker_target, sizeof(broker)) ||
+      !loader_probe_identity(probe) ||
+      gtav_proc_read_nostop(probe->pid, pin->broker_target, broker, sizeof(broker)) != 0 ||
+      !loader_probe_identity(probe))
+    return -1;
+  if (memcmp(broker, pin->broker_expected, sizeof(broker)) != 0) {
+    gtav_logf("build detect: %s exact broker mismatch; refusing target", pin->target_id);
+    return 0;
+  }
+  return 1;
+}
+
+// Check the selected embedded bytes before cave allocation or any game-memory write.
+static int loader_profile_worker_valid(const GtavLoaderTargetProfile* profile) {
+  GtavSha256 sha;
+  uint8_t digest[32];
+  char hex[65];
+  static const char digits[] = "0123456789abcdef";
+  uintptr_t start = (uintptr_t)profile->worker_start, end = (uintptr_t)profile->worker_end;
+  if (!start || end <= start || end - start > LONG_MAX || !profile->worker_sha256 ||
+      strlen(profile->worker_sha256) != 64u || !profile->cave_address ||
+      !profile->cave_allocation || !profile->pin.sp_ready_addr ||
+      !profile->pin.sp_ready_deref_offset)
+    return 0;
+  gtav_sha256_init(&sha);
+  gtav_sha256_update(&sha, profile->worker_start, end - start);
+  gtav_sha256_final(&sha, digest);
+  for (size_t i = 0; i < sizeof(digest); ++i) {
+    hex[i * 2] = digits[digest[i] >> 4];
+    hex[i * 2 + 1] = digits[digest[i] & 15u];
+  }
+  hex[64] = 0;
+  return strcmp(hex, profile->worker_sha256) == 0;
+}
+
+static int bind_build(int pid, uint64_t expected_token, const GtavBuildPin** pin_out) {
+  char title[128];
+  int foreground_pid = -1;
+  uint64_t foreground_token = 0;
+  const GtavLoaderTargetProfile* selected = NULL;
+  if (!pin_out) return GTAV_BUILD_BIND_ERROR;
+  *pin_out = NULL;
+  if (gtav_proc_foreground(title, sizeof(title), &foreground_pid, &foreground_token) != 0 ||
+      pid != foreground_pid || expected_token == 0 || foreground_token != expected_token)
+    return GTAV_BUILD_BIND_ERROR;
+  LoaderProfileProbeContext probe = {pid, expected_token, title};
+  if (!loader_probe_identity(&probe)) return GTAV_BUILD_BIND_ERROR;
+  if (g_loader_profile && g_loader_profile_pid == pid && g_loader_profile_token == expected_token) {
+    // Readiness retries keep the same immutable contract; installed broker bytes
+    // cannot make a previously bound instance select a different worker.
+    if (strcmp(title, g_loader_profile->title_id) != 0) return GTAV_BUILD_BIND_ERROR;
+    *pin_out = &g_loader_profile->pin;
+    return GTAV_BUILD_BIND_OK;
+  }
+  // The persistent caller has already proved its previous resident gone before
+  // reaching a fresh instance. Never reset this selection from readiness/retirement.
+  g_loader_profile = NULL;
+  g_loader_profile_pid = -1;
+  g_loader_profile_token = 0;
+  int result = gtav_loader_select_profile(gtav_loader_profiles, GTAV_LOADER_PROFILE_COUNT, title,
+                                          loader_profile_probe, &probe, &selected);
+  if (result != GTAV_LOADER_SELECT_OK) {
+    gtav_logf("build detect: universal title=%s ballot=%d; no target writes", title, result);
+    return result == GTAV_LOADER_SELECT_ERROR ? GTAV_BUILD_BIND_ERROR : GTAV_BUILD_BIND_UNSUPPORTED;
+  }
+  if (!loader_profile_worker_valid(selected) || !loader_probe_identity(&probe)) {
+    gtav_logf("build detect: selected worker hash/instance invalid; no target writes");
+    return GTAV_BUILD_BIND_ERROR;
+  }
+  g_loader_profile = selected;
+  g_loader_profile_pid = pid;
+  g_loader_profile_token = expected_token;
+  *pin_out = &selected->pin;
+  gtav_logf(
+      "build detect: universal selected title=%s target=%s pid=%d token=0x%llx packs=%d "
+      "worker_sha256=%s",
+      title, selected->pin.target_id, pid, (unsigned long long)expected_token,
+      selected->custom_packs, selected->worker_sha256);
+  return GTAV_BUILD_BIND_OK;
+}
+
+#endif
 #endif  // GTAV_LOADER_TARGET_TRANSACTION && GTAV_LOADER_VERIFY_VERSION
 
 #if GTAV_MENU_PAYLOAD_INJECT
@@ -1338,7 +1550,14 @@ static int load_worker_elf(uint8_t** out, long* len_out) {
   uint8_t* buf = NULL;
   long len = 0;
 #if GTAV_MENU_EMBEDDED_WORKER
-  size_t embedded_len = (size_t)(gtav_embedded_worker_end - gtav_embedded_worker_start);
+#if GTAV_LOADER_UNIVERSAL
+  if (!g_loader_profile) return -1;
+  const uint8_t* embedded_start = g_loader_profile->worker_start;
+  size_t embedded_len = (size_t)(g_loader_profile->worker_end - embedded_start);
+#else
+  const uint8_t* embedded_start = gtav_embedded_worker_start;
+  size_t embedded_len = (size_t)(gtav_embedded_worker_end - embedded_start);
+#endif
   if (embedded_len == 0 || embedded_len > LONG_MAX) {
     gtav_logf("worker: embedded ELF has invalid size %llu", (unsigned long long)embedded_len);
     return -1;
@@ -1349,7 +1568,7 @@ static int load_worker_elf(uint8_t** out, long* len_out) {
     gtav_logf("worker: cannot allocate %ld bytes for embedded ELF", len);
     return -1;
   }
-  memcpy(buf, gtav_embedded_worker_start, embedded_len);
+  memcpy(buf, embedded_start, embedded_len);
 #else
   const char* path = GTAV_MENU_INJECT_ELF_PATH;
   FILE* file = fopen(path, "rb");
@@ -1419,10 +1638,11 @@ static int cave_region_make_rwx(int pid, uint64_t base, uint64_t size) {
 #define GTAV_PHASE_READY_TARGET_GONE (-2)
 #define GTAV_PHASE_READY_STOP_REQUESTED (-3)
 
-#if !defined(GTAV_CYCLE_EPOCH_ADDR) || !defined(GTAV_CYCLE_RESET_ADDR) ||       \
-    !defined(GTAV_CYCLE_PRODUCER_ADDR) || !defined(GTAV_CYCLE_CONSUMER_ADDR) || \
-    !defined(GTAV_CYCLE_COUNT0_ADDR) || !defined(GTAV_CYCLE_COUNT1_ADDR) ||     \
-    !defined(GTAV_CYCLE_TEXT_ADDR) || !defined(GTAV_CYCLE_COUNTER_ADDR)
+#if !GTAV_LOADER_UNIVERSAL &&                                                    \
+    (!defined(GTAV_CYCLE_EPOCH_ADDR) || !defined(GTAV_CYCLE_RESET_ADDR) ||       \
+     !defined(GTAV_CYCLE_PRODUCER_ADDR) || !defined(GTAV_CYCLE_CONSUMER_ADDR) || \
+     !defined(GTAV_CYCLE_COUNT0_ADDR) || !defined(GTAV_CYCLE_COUNT1_ADDR) ||     \
+     !defined(GTAV_CYCLE_TEXT_ADDR) || !defined(GTAV_CYCLE_COUNTER_ADDR))
 #error "render-phase loader requires complete target-manifest cycle addresses"
 #endif
 
@@ -1465,19 +1685,23 @@ static int loader_render_phase_read(void* context, uintptr_t address, void* outp
 // words block preflight; the callback still applies the complete per-invocation gate.
 static int loader_render_cycle_ready(int pid, LoaderRenderCycleSample* sample,
                                      uint32_t* flags_out) {
+#if GTAV_LOADER_UNIVERSAL
+  const uintptr_t* addresses = g_loader_profile->cycle_addresses;
+#else
   static const uintptr_t addresses[] = {
       (uintptr_t)GTAV_CYCLE_EPOCH_ADDR,    (uintptr_t)GTAV_CYCLE_RESET_ADDR,
       (uintptr_t)GTAV_CYCLE_PRODUCER_ADDR, (uintptr_t)GTAV_CYCLE_CONSUMER_ADDR,
       (uintptr_t)GTAV_CYCLE_COUNT0_ADDR,   (uintptr_t)GTAV_CYCLE_COUNT1_ADDR,
       (uintptr_t)GTAV_CYCLE_TEXT_ADDR,     (uintptr_t)GTAV_CYCLE_COUNTER_ADDR,
   };
+#endif
   LoaderRenderCycleSample before;
   uint32_t first[8] = {0};
   uint32_t second[8] = {0};
   uint32_t flags = 0;
   unsigned i;
 
-  for (i = 0; i < sizeof(addresses) / sizeof(addresses[0]); ++i) {
+  for (i = 0; i < 8u; ++i) {
     if (gtav_proc_read(pid, addresses[i], &first[i], sizeof(first[i])) != 0) {
       gtav_logf("render-phase-ready: unreadable cycle word[%u]=0x%lx; target profile rejected", i,
                 (unsigned long)addresses[i]);
@@ -1486,7 +1710,7 @@ static int loader_render_cycle_ready(int pid, LoaderRenderCycleSample* sample,
   }
   memcpy(&before, first, sizeof(before));
   __atomic_signal_fence(__ATOMIC_SEQ_CST);
-  for (i = 0; i < sizeof(addresses) / sizeof(addresses[0]); ++i) {
+  for (i = 0; i < 8u; ++i) {
     if (gtav_proc_read(pid, addresses[i], &second[i], sizeof(second[i])) != 0) {
       gtav_logf("render-phase-ready: unreadable cycle word[%u]=0x%lx; target profile rejected", i,
                 (unsigned long)addresses[i]);
@@ -1524,7 +1748,11 @@ static int wait_for_render_phase_ready(int pid, uint64_t expected_token) {
     uint64_t current_token = gtav_proc_app_id(pid);
     int discovered;
 
-    if ((current_token != 0 && current_token != expected_token) ||
+    if (
+#if GTAV_LOADER_UNIVERSAL
+        !loader_instance_token_matches(pid, expected_token, "render readiness") ||
+#endif
+        (current_token != 0 && current_token != expected_token) ||
         (current_token == 0 && !loader_target_is_live(pid))) {
       gtav_logf("render-phase-ready: target instance changed/gone after %lus token=0x%llx->0x%llx",
                 waited_us / 1000000ul, (unsigned long long)expected_token,
@@ -1533,7 +1761,7 @@ static int wait_for_render_phase_ready(int pid, uint64_t expected_token) {
     }
 
     memset(&found, 0, sizeof(found));
-    discovered = gtav_render_phase_discover(loader_render_phase_read, &pid, &found);
+    discovered = loader_render_discover(loader_render_phase_read, &pid, &found);
     last_error = found.error;
     if (discovered == 0 && found.matches == 1u && found.object && found.slot) {
       LoaderRenderCycleSample cycle;
@@ -1595,13 +1823,18 @@ static int prepare_render_phase(int pid, uint64_t expected_token, const GtavBuil
   uint64_t phase = LOADER_RENDER_PHASE_INSTALL_PENDING;
   uint8_t object[40];
   memset(install, 0, sizeof(*install));
-  if (!pin || strcmp(pin->target_id, GTAV_LOADER_EXPECT_TARGET_ID) != 0 ||
+  if (!pin ||
+#if GTAV_LOADER_UNIVERSAL
+      !g_loader_profile || pin != &g_loader_profile->pin ||
+#else
+      strcmp(pin->target_id, GTAV_LOADER_EXPECT_TARGET_ID) != 0 ||
+#endif
       !loader_instance_token_matches(pid, expected_token, "render phase discovery")) {
     gtav_logf("render-phase: build/instance prerequisite failed");
     return -1;
   }
-  if (gtav_render_phase_discover(loader_render_phase_read, &pid, &first) != 0 ||
-      gtav_render_phase_discover(loader_render_phase_read, &pid, &second) != 0 ||
+  if (loader_render_discover(loader_render_phase_read, &pid, &first) != 0 ||
+      loader_render_discover(loader_render_phase_read, &pid, &second) != 0 ||
       first.object != second.object || first.slot != second.slot || first.groups != second.groups ||
       first.nodes != second.nodes || first.matches != 1u || second.matches != 1u) {
     gtav_logf(
@@ -1640,7 +1873,8 @@ static int prepare_render_phase(int pid, uint64_t expected_token, const GtavBuil
     gtav_logf("render-phase: pristine worker/live object identity failed");
     return -1;
   }
-  if (gtav_proc_write(pid, install->state + offsetof(LoaderRenderPhaseState, slot), &install->slot,
+  if (!loader_instance_token_matches(pid, expected_token, "render phase configuration") ||
+      gtav_proc_write(pid, install->state + offsetof(LoaderRenderPhaseState, slot), &install->slot,
                       sizeof(install->slot)) != 0 ||
       gtav_proc_write(pid, install->state + offsetof(LoaderRenderPhaseState, object),
                       &install->object, sizeof(install->object)) != 0 ||
@@ -1727,6 +1961,14 @@ static int cave_acquire_region(int pid, const GtavBuildPin* pin, uint64_t* base_
   GtavCaveBootstrapResult cave;
   *base_out = 0;
   *reserved_out = 0;
+#if GTAV_LOADER_UNIVERSAL
+  if (!g_loader_profile || pin != &g_loader_profile->pin ||
+      !loader_instance_token_matches(pid, g_loader_profile_token, "cave acquisition"))
+    return -1;
+#if GTAV_PAYLOAD_PERSISTENT
+  if (daemon_should_stop()) return -1;
+#endif
+#endif
   if (gtav_cave_bootstrap_probe(pid, pin, (uint64_t)(GTAV_LOADER_CAVE_ADDR),
                                 (uint32_t)(GTAV_LOADER_CAVE_ALLOC),
                                 (uint32_t)(GTAV_LOADER_CAVE_TIMEOUT_MS), &cave) != 0) {
@@ -1750,6 +1992,9 @@ static int run_inject(int pid, uint64_t expected_token, const GtavBuildPin* pin,
   uint8_t* buf = NULL;
   long len = 0;
   int rc;
+#if GTAV_LOADER_CAVE_INJECT
+  uint64_t self_start_rc_off = 0, self_start_authorized_off = 0;
+#endif
 #if GTAV_LOADER_INSTALL_RENDER_PHASE
   LoaderRenderPhaseInstall render_phase_install;
 #endif
@@ -1786,6 +2031,31 @@ static int run_inject(int pid, uint64_t expected_token, const GtavBuildPin* pin,
   }
   gtav_logf("inject: loaded %s worker (%ld bytes); mapping into pid=%d",
             GTAV_MENU_EMBEDDED_WORKER ? "embedded" : "staged", len, pid);
+
+#if GTAV_LOADER_CAVE_INJECT
+  // A cave injection has no loader-side thread starter. Validate the exact worker bytes before the
+  // claim, remote mapping, render-phase preparation or broker commit, so a profile mismatch cannot
+  // leave even a pass-through partial install. The post-broker read below remains the outcome
+  // check.
+  {
+    if (gtav_elf_symbol_value(buf, (size_t)len, "gtav_frame_hook_self_start_rc",
+                              &self_start_rc_off) != 0) {
+      gtav_logf(
+          "inject: cave worker lacks gtav_frame_hook_self_start_rc; refusing before target "
+          "transaction");
+      free(buf);
+      return -1;
+    }
+    if (gtav_elf_symbol_value(buf, (size_t)len, "gtav_frame_hook_self_start_authorized",
+                              &self_start_authorized_off) != 0) {
+      gtav_logf(
+          "inject: cave worker lacks self-start authorization gate; refusing before target "
+          "transaction");
+      free(buf);
+      return -1;
+    }
+  }
+#endif
 
 #if GTAV_PAYLOAD_INJECT_GUARD
   {
@@ -1895,6 +2165,31 @@ static int run_inject(int pid, uint64_t expected_token, const GtavBuildPin* pin,
   gtav_logf("inject: mapped base=0x%lx relocs=%u imports=%u", (unsigned long)res.base,
             res.relocs_applied, res.imports_resolved);
 
+#if GTAV_LOADER_CAVE_INJECT
+  // Reject malformed/default-armed workers before any live hook write. Resolving the symbol alone
+  // is insufficient: both control words must be bounded by this exact mapped image and untouched.
+  {
+    uint32_t authorized = 1u, self_rc = 0u;
+    if (res.image_size < sizeof(uint32_t) ||
+        self_start_authorized_off > (uint64_t)(res.image_size - sizeof(uint32_t)) ||
+        self_start_rc_off > (uint64_t)(res.image_size - sizeof(uint32_t)) ||
+        gtav_proc_read(pid, res.base + (uintptr_t)self_start_authorized_off, &authorized,
+                       sizeof(authorized)) != 0 ||
+        gtav_proc_read(pid, res.base + (uintptr_t)self_start_rc_off, &self_rc, sizeof(self_rc)) !=
+            0 ||
+        authorized != 0u || self_rc != UINT32_MAX) {
+      gtav_logf(
+          "inject: cave worker self-start gate is not bounded and disarmed; retaining "
+          "partial map");
+#if GTAV_PAYLOAD_INJECT_GUARD
+      release_claim_guard_if_protected(pid, lock_token);
+#endif
+      free(buf);
+      return GTAV_INJECT_PARTIAL_MAP_FAILED;
+    }
+  }
+#endif
+
 #if GTAV_PAYLOAD_PERSISTENT && GTAV_MENU_INSTALL_PATCH_BROKER
   // A persistent production install is accepted only if the daemon can later address every block
   // needed for exact retirement. Resolve them from the exact ELF bytes that were just mapped, not
@@ -1920,6 +2215,9 @@ static int run_inject(int pid, uint64_t expected_token, const GtavBuildPin* pin,
     resident.pid = pid;
     resident.token = expected_token;
     resident.pin = pin;
+#if GTAV_LOADER_UNIVERSAL
+    resident.profile = g_loader_profile;
+#endif
     resident.base = res.base;
     resident.image_size = res.image_size;
     resident.broker = res.base + (uintptr_t)broker_off;
@@ -2000,23 +2298,24 @@ static int run_inject(int pid, uint64_t expected_token, const GtavBuildPin* pin,
 #endif
 
 #if GTAV_LOADER_CAVE_INJECT
-  // The last ptrace site. On this lane the worker starts its own thread from the first frame-hook
-  // fire (GTAV_FRAME_HOOK_SELF_START_WORKER), which the broker install above has just made live, so
-  // there is nothing for the loader to do here.
+  // The broker is fully verified while self-start remains disarmed. Retain the lifecycle handles
+  // before authorizing the first hook fire to start a worker; no failure below may roll back a
+  // potentially running worker's hook or discard its owner.
   rc = -1;
-  gtav_logf("inject: worker self-starts from the frame hook (no ptrace thread start)");
-  // pthread_create mid-frame, on the game thread, inside a chained native is the one step of this
-  // route that has never run on hardware, so read its result rather than inferring it from ticks:
+  // Read the actual pthread_create outcome rather than inferring it from ticks:
   // 0xffffffff means the hook never reached the self-start at all, which is a different failure
   // from pthread_create refusing.
-  {
-    uint64_t rcval = 0;
-    if (gtav_elf_symbol_value(buf, (size_t)len, "gtav_frame_hook_self_start_rc", &rcval) == 0) {
+  if (authorize_worker_self_start(pid, expected_token,
+                                  res.base + (uintptr_t)self_start_authorized_off, &resident,
+                                  resident_out) == 0) {
+    gtav_logf("inject: worker self-start authorized from the frame hook (no ptrace thread start)");
+    {
       uint32_t self_rc = 0xFFFFFFFFu;
       uint32_t waited_ms;
       for (waited_ms = 0; waited_ms < 3000u; waited_ms += 100u) {
         usleep(100000);
-        if (gtav_proc_read(pid, (uintptr_t)(res.base + rcval), &self_rc, sizeof(self_rc)) != 0) {
+        if (gtav_proc_read(pid, res.base + (uintptr_t)self_start_rc_off, &self_rc,
+                           sizeof(self_rc)) != 0) {
           break;
         }
         if (self_rc != 0xFFFFFFFFu) {
@@ -2033,10 +2332,6 @@ static int run_inject(int pid, uint64_t expected_token, const GtavBuildPin* pin,
       } else {
         gtav_logf("inject: self-start FAILED rc=%u after %ums", self_rc, waited_ms);
       }
-    } else {
-      gtav_logf(
-          "inject: worker has no gtav_frame_hook_self_start_rc symbol; build it with "
-          "FRAME_HOOK_SELF_START_WORKER=1");
     }
   }
 #else
@@ -2069,8 +2364,9 @@ static int run_inject(int pid, uint64_t expected_token, const GtavBuildPin* pin,
   }
   if (rc != 0) {
     gtav_logf("inject: start worker thread FAILED (stage %d): %s", res.status, res.error);
-    // The broker jump is already committed, but the gateway continuation was pre-loaded
-    // to chain to the original handler, so the target native remains safe. Quarantine.
+    // The broker jump is committed and the worker may already have started. Its gateway was
+    // pre-loaded and persistent lifecycle ownership was retained before authorization. Quarantine
+    // this instance; if no readable worker ever appears, cleanup requires normal game exit.
     if (quarantine_token_out != NULL) {
       *quarantine_token_out = gtav_proc_app_id(pid);
     }
@@ -2415,7 +2711,11 @@ static int resident_verify_phase_restored(const LoaderResidentInstall* resident)
       phase.phase != LOADER_RENDER_PHASE_RESTORED || phase.error ||
       phase.slot != resident->render_phase_slot ||
       phase.wrapper != resident->render_phase_wrapper || slot != phase.original ||
+#if GTAV_LOADER_UNIVERSAL
+      !resident->profile || phase.original != resident->profile->render.original) {
+#else
       phase.original != GTAV_RENDER_PHASE_DISCOVERY_ORIGINAL) {
+#endif
     gtav_logf(
         "retire: render phase is not exactly restored (phase=%llu error=%llu slot=0x%llx "
         "original=0x%llx)",
@@ -2570,20 +2870,25 @@ static void daemon_release(void) {
 // it never ptraces the target while waiting. In the persistent daemon build it also
 // heartbeats the single-instance lock and honours a stop request during the wait, so
 // a daemon-stop lands even while GTA is closed (the relaunch-wait window).
-static void loader_custom_mount(int pid) {
-#if GTAV_PAYLOAD_CUSTOM_MOUNT
-  if (gtav_custom_mount(GTAV_PAYLOAD_TARGET_TITLE_ID) != 0) {
-    gtav_logf("custom mount: unavailable for pid=%d; continuing without custom assets", pid);
-  }
-#else
-  (void)pid;
-#endif
-}
-
+#if GTAV_MENU_PAYLOAD_INJECT
 static void loader_profile_storage_mount(int pid) {
-  if (gtav_profile_storage_mount(GTAV_PAYLOAD_TARGET_TITLE_ID) != 0) {
+#if GTAV_LOADER_UNIVERSAL
+  if (!g_loader_profile ||
+      !loader_instance_token_matches(pid, g_loader_profile_token, "profile storage mount"))
+    return;
+#endif
+  if (gtav_profile_storage_mount(loader_selected_title()) != 0) {
     gtav_logf("profile mount: unavailable for pid=%d; profile save/load will be unavailable", pid);
   }
+}
+#endif
+
+static void notify_startup(int game_running) {
+  static int notified = 0;
+  if (notified) return;
+  gtav_notify(game_running ? "GTAV Menu " GTAV_MENU_BUILD_VERSION
+                           : "GTAV Menu " GTAV_MENU_BUILD_VERSION " - Load GTA");
+  notified = 1;
 }
 
 static int find_game_wait(const char* title_id, int* pid_out) {
@@ -2593,7 +2898,8 @@ static int find_game_wait(const char* title_id, int* pid_out) {
   unsigned long next_log_us = 0;  // log a heartbeat on the first miss, then every 30s
 
   for (;;) {
-    if (gtav_proc_find_game(title_id, pid_out) == 0) {
+    if (loader_find_game(title_id, pid_out) == 0) {
+      notify_startup(1);
       if (waited_us > 0) {
         gtav_logf("game appeared after %lus of waiting", waited_us / 1000000UL);
       }
@@ -2603,7 +2909,7 @@ static int find_game_wait(const char* title_id, int* pid_out) {
       gtav_logf("waiting for %s (foreground); waited %lus: %s", title_id, waited_us / 1000000UL,
                 gtav_proc_last_error());
       if (next_log_us == 0) {
-        gtav_notify("GTAVMenu payload: waiting for GTA V");
+        notify_startup(0);
       }
       next_log_us = waited_us + 30000000UL;
     }
@@ -2624,7 +2930,9 @@ static int find_game_wait(const char* title_id, int* pid_out) {
     waited_us += GTAV_PAYLOAD_WAIT_POLL_USEC;
   }
 #else
-  return gtav_proc_find_game(title_id, pid_out);
+  int result = loader_find_game(title_id, pid_out);
+  notify_startup(result == 0);
+  return result;
 #endif
 }
 
@@ -2689,6 +2997,11 @@ static int wait_for_sp_ready(int pid, const GtavBuildPin* pin) {
 #endif
 
   for (;;) {
+#if GTAV_LOADER_UNIVERSAL
+    if (!g_loader_profile || pin != &g_loader_profile->pin ||
+        !loader_instance_token_matches(pid, g_loader_profile_token, "player-world readiness"))
+      return GTAV_SP_READY_TARGET_GONE;
+#endif
     uint64_t raw = 0;
     uintptr_t value_addr = ready_addr;
     int reachable;       // the anchor/base read reached the target (vs. a ptrace failure)
@@ -2768,6 +3081,10 @@ static int wait_for_sp_ready(int pid, const GtavBuildPin* pin) {
             usleep(GTAV_PAYLOAD_SP_READY_SETTLE_USEC);
 #endif
           }
+#if GTAV_LOADER_UNIVERSAL
+          if (!loader_instance_token_matches(pid, g_loader_profile_token, "readiness settle"))
+            return GTAV_SP_READY_TARGET_GONE;
+#endif
           return GTAV_SP_READY_OK;
         }
       } else {
@@ -2842,8 +3159,13 @@ int main(void) {
   mkdir("/data", 0777);
   mkdir(GTAV_MENU_DEFAULT_DIR, 0777);
   gtav_log_open(GTAV_MENU_DEFAULT_LOG);
-  gtav_notify("GTAVMenu payload loader started");
   gtav_logf("payload loader starting (sdk-native process backend)");
+  gtav_logf("GTAV Menu %s", GTAV_MENU_BUILD_VERSION);
+#if GTAV_LOADER_UNIVERSAL
+  gtav_logf("%s", gtav_universal_registry_identity);
+  gtav_logf("%s", gtav_universal_build_identity);
+  gtav_logf("%s", gtav_universal_inventory_identity);
+#endif
 
 #if GTAV_MANAGED_RUNTIME
   if (gtav_supervisor_runtime_attach(&g_managed_runtime, GTAV_MENU_DEFAULT_DIR) != 0) {
@@ -2891,7 +3213,7 @@ int main(void) {
 #endif
 #endif
 
-  if (find_game_wait(GTAV_PAYLOAD_TARGET_TITLE_ID, &pid) != 0) {
+  if (find_game_wait(loader_selected_title(), &pid) != 0) {
     gtav_logf("game not found: %s", gtav_proc_last_error());
     gtav_notify("GTAVMenu payload: game not running");
 #if GTAV_MENU_PAYLOAD_INJECT && GTAV_PAYLOAD_PERSISTENT
@@ -2901,7 +3223,7 @@ int main(void) {
     gtav_log_close();
     return 0;
   }
-  gtav_logf("found game %s pid=%d", GTAV_PAYLOAD_TARGET_TITLE_ID, pid);
+  gtav_logf("found game %s pid=%d", loader_selected_title(), pid);
 
 #if GTAV_LOADER_TARGET_TRANSACTION
 #if GTAV_PAYLOAD_PERSISTENT
@@ -2982,7 +3304,6 @@ int main(void) {
           goto persistent_wait_instance;
         }
         loader_profile_storage_mount(pid);
-        loader_custom_mount(pid);
         sp = wait_for_sp_ready(pid, pin);
         if (sp == GTAV_SP_READY_OK) {
           uint64_t inject_token = gtav_proc_app_id(pid);
@@ -3132,7 +3453,7 @@ int main(void) {
         }
 #endif
         // Still the instance we served: idle, but let daemon-stop break the poll immediately.
-        if (daemon_wait_interruptible(GTAV_PAYLOAD_WAIT_POLL_USEC) != 0) {
+        if (daemon_wait_interruptible(GTAV_PAYLOAD_PERSISTENT_IDLE_POLL_USEC) != 0) {
           gtav_logf("persistent: stop requested while idling; entering exact retirement");
           continue;
         }
@@ -3142,7 +3463,7 @@ int main(void) {
       // also heartbeats the lock and honours a stop request internally, so a quit/relaunch or a
       // daemon-stop both resolve here; it returns non-zero only on stop or the (default-off) wait
       // timeout -> leave the daemon.
-      if (find_game_wait(GTAV_PAYLOAD_TARGET_TITLE_ID, &pid) != 0) {
+      if (find_game_wait(loader_selected_title(), &pid) != 0) {
 #if GTAV_MENU_INSTALL_PATCH_BROKER
         if (daemon_should_stop() && resident.valid) {
           int retire_rc = resident_retire(&resident, 1);
@@ -3193,7 +3514,6 @@ int main(void) {
 
 #if GTAV_MENU_PAYLOAD_INJECT
     loader_profile_storage_mount(pid);
-    loader_custom_mount(pid);
     if (wait_for_sp_ready(pid, pin) != GTAV_SP_READY_OK) {
       gtav_logf("sp-ready gave up; not injecting");
       gtav_notify("GTAVMenu payload: player world not ready");
@@ -3231,7 +3551,7 @@ int main(void) {
       ir = run_inject(pid, inject_token, pin, cave_base, cave_reserved, &quarantine_token, NULL);
       if (ir == 0) {
         gtav_notify("GTAVMenu injected");
-        gtav_logf("inject: overall OK");
+        gtav_logf("inject: overall OK (pid=%d)", pid);
       } else if (ir == GTAV_INJECT_ALREADY_LOADED) {
         gtav_notify("GTAVMenu worker present; health unknown");
         gtav_logf("inject: overall ALREADY_UNRECONCILED");
