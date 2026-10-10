@@ -2,16 +2,29 @@
 
 #include "gtavmenu/abi.h"
 #include "gtavmenu/custom_assets.h"
+#include "gtavmenu/custom_pack_checks.h"
 #include "gtavmenu/feature_catalog.h"
 #include "gtavmenu/feature_profile.h"
+#include "gtavmenu/localization.h"
 #include "gtavmenu/log.h"
 #include "gtavmenu/menu_draw_list.h"
 #include "gtavmenu/pad_input.h"
 #include "gtavmenu/rootdir.h"
+#include "gtavmenu/scene_map.h"
 #include "gtavmenu/script_globals.h"
+#include "gtavmenu/sha256.h"
 #include "gtavmenu/status.h"
 #include "gtavmenu/strutil.h"
 #include "gtavmenu/tls_layout.h"
+
+#if defined(__PROSPERO__) || defined(__ORBIS__)
+#include <dirent.h>
+#include <pthread.h>
+
+// The target SDK's libkernel stubs export this platform spelling, while its declared
+// pthread_get_name_np wrapper is absent from the link stubs.
+extern "C" int scePthreadGetname(pthread_t thread, char* name);
+#endif
 
 #ifndef GTAV_MENU_ENABLE_FRAME_HOOK
 #define GTAV_MENU_ENABLE_FRAME_HOOK 0
@@ -151,15 +164,24 @@ extern "C" void gtav_menu_frame_tick(void);
 #define GTAV_MENU_ENABLE_VEHICLE_PREVIEW 0
 #endif
 
-// Experimental engine device mount of the custom root as gtavmenu:/ (features/custom_device.inc).
-#ifndef GTAV_MENU_ENABLE_CUSTOM_DEVICE
-#define GTAV_MENU_ENABLE_CUSTOM_DEVICE 0
+// Runtime pack lane, one release flag (make CUSTOM_PACKS): the custom-asset engine layer
+// (features/custom_engine.inc), features/custom_rpf.inc and its custom_pack_*.inc fragments. Its
+// engine steps run on the game thread from the frame hook; the streaming natives come with vehicle
+// preview, the pack card draws through the phase draw list, and klog breadcrumbs survive a crash.
+#ifndef GTAV_MENU_ENABLE_CUSTOM_PACKS
+#define GTAV_MENU_ENABLE_CUSTOM_PACKS 0
+#endif
+#if GTAV_MENU_ENABLE_CUSTOM_PACKS &&                                     \
+    !(GTAV_MENU_ENABLE_VEHICLE_PREVIEW && GTAV_MENU_ENABLE_FRAME_HOOK && \
+      GTAV_MENU_PHASE_DRAW_LIST && GTAV_MENU_ENABLE_WORKER_KLOG)
+#error "CUSTOM_PACKS requires vehicle preview, the frame hook, the phase draw list and worker klog"
 #endif
 
 #include "gtavmenu/native_invoke.hpp"
 
 #include <errno.h>
 #include <math.h>
+#include <stdarg.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
@@ -180,6 +202,21 @@ extern "C" void gtav_menu_frame_tick(void);
   "gtavmenu/native_addresses_ppsa04264-01.010.002_generated.h"
 #endif
 #include GTAV_MENU_NATIVE_ADDRESSES_HEADER
+// These optional bindings are reviewed for 01.010.002, but not for 01.005.000. Keep
+// missing bindings empty: LSC uses generic tier labels, and pack hides refuse them.
+// Existing target pins always take precedence; never substitute another build's address.
+#ifndef GTAV_NATIVE_ADDR_GET_MOD_TEXT_LABEL
+#define GTAV_NATIVE_ADDR_GET_MOD_TEXT_LABEL 0ull
+#endif
+#ifndef GTAV_NATIVE_ADDR_GET_FILENAME_FOR_AUDIO_CONVERSATION
+#define GTAV_NATIVE_ADDR_GET_FILENAME_FOR_AUDIO_CONVERSATION 0ull
+#endif
+#ifndef GTAV_NATIVE_ADDR_CREATE_MODEL_HIDE
+#define GTAV_NATIVE_ADDR_CREATE_MODEL_HIDE 0ull
+#endif
+#ifndef GTAV_NATIVE_ADDR_REMOVE_MODEL_HIDE
+#define GTAV_NATIVE_ADDR_REMOVE_MODEL_HIDE 0ull
+#endif
 #endif
 
 #if GTAV_MENU_ENABLE_FRAME_HOOK
@@ -193,6 +230,18 @@ static void reassert_toggles_game_thread(void);
 #endif
 
 namespace {
+
+// Host unit tests link the feature layer without the render bridge. Keep these new v17 view-setting
+// hooks optional at that boundary; production links their strong native_bridge.cpp definitions.
+extern "C" uint32_t gtav_native_bridge_speedometer_layout(void) __attribute__((weak));
+extern "C" void gtav_native_bridge_set_speedometer_layout(uint32_t) __attribute__((weak));
+extern "C" void gtav_native_bridge_set_language(uint32_t) __attribute__((weak));
+extern "C" uint32_t gtav_locale_id(void) __attribute__((weak));
+extern "C" const char* gtav_locale_text(const char*) __attribute__((weak));
+
+static const char* locale_text_or(const char* key, const char* fallback) {
+  return gtav_locale_text ? gtav_locale_text(key) : fallback;
+}
 
 // Self-contained feature native table. Independent of the loader's core
 // GtavNativeAddressTable (render/input) so adding gameplay natives does not
@@ -321,7 +370,25 @@ static int g_seethrough_enabled = 0;
 static int g_inf_parachute_enabled = 0;
 static int g_spawn_maxed_enabled = 0;
 static int g_spawn_invincible_enabled = 0;
+// Spawn Upgraded: Spawn Maxed's performance + every visual part of the new car's kit (lsc.inc).
+static int g_spawn_upgraded_enabled = 0;
 static int g_thin_population_enabled = 0;
+static uint32_t g_population_density_index = 1;
+// Population is pick then apply (list_kinds.def CHOICE): Left/Right stage g_population_pick and
+// Cross makes it the live g_population_density_index the game-thread tick enforces. The pick
+// follows any other change to the live index (profile load, Disable All). Worker-only.
+static uint32_t g_population_pick = 1;
+static uint32_t g_population_seen = 1;
+static uint32_t population_pick(void) {
+  if (g_population_seen != g_population_density_index) {
+    g_population_seen = g_population_density_index;
+    g_population_pick = g_population_density_index;
+  }
+  return g_population_pick;
+}
+static int g_spawn_preserve_speed = 1;
+static int g_spawn_replace_previous = 1;
+static int g_spawn_aircraft_in_flight = 1;
 // Menyoo-gap wave 2: police + peds + gangs ignore the player (game-thread re-assert).
 static int g_ignored_by_all_enabled = 0;
 static int g_bodyguard_invincible_enabled = 0;
@@ -358,7 +425,8 @@ static uint32_t g_neon_index = 0;             // index into kColorPresets (0 = O
 static uint32_t g_tyre_smoke_index = 0;       // index into kColorPresets (0 = Off)
 // LSC expansion 2 cycler state.
 static uint32_t g_wheel_type_index = 0;        // index into kWheelTypes
-static int32_t g_livery_stage = -1;            // -1 = none, else livery index (live count)
+static int32_t g_livery_stage = -1;            // -1 = none, else texture then kit livery (lsc.inc)
+static int g_livery_vehicle = 0;               // vehicle g_livery_stage was read from
 static uint32_t g_plate_style_index = 0;       // number-plate style id (0..5)
 static uint32_t g_plate_text_index = 0;        // index into kPlatePresets
 static uint32_t g_pearl_color_index = 0;       // index into kPaintColors (pearlescent)
@@ -510,11 +578,14 @@ static int g_tp_ticks_left;
 // saved location keep their stored Z but get a FLOOR safety net: raised onto the ground only
 // when they would otherwise sit below it, which can never lower an intentional rooftop /
 // mountain height. NONE keeps the exact Z (legacy escape hatch). Resolved in the poll once
-// collision has streamed in -- GET_GROUND_Z reads false on an unloaded cell.
+// collision has streamed in -- GET_GROUND_Z reads false on an unloaded cell. INTERIOR (a pack
+// interior's place) is exact too, without the 2 m lift (it put the player inside a 4 m room's
+// ceiling on hardware), and holds the freeze until the interior's own collision is resident.
 enum GtavTeleportClamp {
   GTAV_TP_CLAMP_NONE = 0,
   GTAV_TP_CLAMP_FLOOR = 1,
   GTAV_TP_CLAMP_SNAP = 2,
+  GTAV_TP_CLAMP_INTERIOR = 3,
 };
 static int g_tp_clamp;       // GtavTeleportClamp for the in-flight teleport
 static int g_tp_is_vehicle;  // destination entity is a vehicle (seat it ON_GROUND_PROPERLY)
@@ -728,7 +799,49 @@ static int has_core_player_natives() {
   return g_n.player_id && g_n.player_ped_id;
 }
 
+// Last refusal of a pack-lane step (REGISTER_PACK..ADD_PACK_LABELS), so the one-press pack load can
+// say why it stopped. Written only by the thread that runs the steps (the game thread); the worker
+// reads it through a sequence counter (odd while a write is in progress) and clears it by moving
+// the floor to the current sequence.
+static char g_pack_step_refusal_text[GTAV_FEATURE_MESSAGE_LEN];
+static uint32_t g_pack_step_refusal_seq;
+static uint32_t g_pack_step_refusal_floor;
+
+static void note_pack_step_refusal(uint32_t action, const char* message) {
+  if (action < GTAV_NATIVE_SHELL_ACTION_REGISTER_PACK ||
+      action > GTAV_NATIVE_SHELL_ACTION_ADD_PACK_LABELS)
+    return;
+  __atomic_add_fetch(&g_pack_step_refusal_seq, 1u, __ATOMIC_SEQ_CST);
+  snprintf(g_pack_step_refusal_text, sizeof(g_pack_step_refusal_text), "%s",
+           message ? message : "");
+  __atomic_add_fetch(&g_pack_step_refusal_seq, 1u, __ATOMIC_RELEASE);
+}
+
+[[maybe_unused]] static void pack_step_refusal(char* out, size_t size) {
+  out[0] = '\0';
+  for (int attempt = 0; attempt < 8; ++attempt) {
+    const uint32_t before = __atomic_load_n(&g_pack_step_refusal_seq, __ATOMIC_ACQUIRE);
+    if (before & 1u) continue;
+    if (before == __atomic_load_n(&g_pack_step_refusal_floor, __ATOMIC_ACQUIRE)) return;
+    char copy[sizeof(g_pack_step_refusal_text)];
+    memcpy(copy, g_pack_step_refusal_text, sizeof(copy));
+    copy[sizeof(copy) - 1u] = '\0';
+    __atomic_thread_fence(__ATOMIC_ACQUIRE);
+    if (__atomic_load_n(&g_pack_step_refusal_seq, __ATOMIC_RELAXED) == before) {
+      snprintf(out, size, "%s", copy);
+      return;
+    }
+  }
+}
+
+[[maybe_unused]] static void pack_step_refusal_clear() {
+  __atomic_store_n(&g_pack_step_refusal_floor,
+                   __atomic_load_n(&g_pack_step_refusal_seq, __ATOMIC_ACQUIRE) & ~1u,
+                   __ATOMIC_RELEASE);
+}
+
 static uint32_t unavailable(uint32_t action, const char* message) {
+  note_pack_step_refusal(action, message);
   g_state.last_action = action;
   g_state.last_result = GTAV_FEATURE_RESULT_UNAVAILABLE;
   set_message(message);
@@ -747,6 +860,7 @@ static uint32_t ok(uint32_t action, const char* message) {
 }
 
 static uint32_t failed(uint32_t action, const char* message) {
+  note_pack_step_refusal(action, message);
   g_state.last_action = action;
   g_state.last_result = GTAV_FEATURE_RESULT_FAILED;
   set_message(message);
@@ -807,6 +921,14 @@ static float feat_cosf(float x) {
   return feat_sinf(x + 0.5f * GTAV_FEAT_PI);
 }
 
+// weapon_components.inc (included after the pack lane, below): the pack-weapon notes the earlier
+// weapon rows (Weapon Tint, Give Max Ammo, the browser give) call.
+static int weapon_tint_note(uint32_t weapon, uint32_t index);
+static void give_max_ammo_extra(int ped);
+#if GTAV_MENU_ENABLE_CUSTOM_PACKS
+static const char* weapon_given_note(uint32_t weapon);
+#endif
+
 // Feature implementations, split into per-group fragments for readability. These
 // are textually composed (not separate translation units), so every symbol stays
 // a file-local static sharing the state and helpers above. The order matters
@@ -814,6 +936,7 @@ static float feat_cosf(float x) {
 // sorting these includes.
 // clang-format off
 #include "features/self_actions.inc"
+#include "features/population.inc"
 #include "features/spawned_entities.inc"
 #include "features/spawn_skin.inc"
 #include "features/vehicle_preview.inc"
@@ -845,7 +968,11 @@ static float feat_cosf(float x) {
 #include "features/keybinds.inc"
 #include "features/session.inc"
 #include "features/spooner.inc"
-#include "features/custom_device.inc"
+#include "features/custom_engine.inc"
+#include "features/custom_rpf.inc"
+#include "features/weapon_components.inc"
+#include "features/custom_pack_card.inc"
+#include "features/custom_retail_export.inc"
 #include "features/spooner_tweaks.inc"
 #include "features/instructional_buttons.inc"
 // clang-format on
@@ -859,6 +986,10 @@ static float feat_cosf(float x) {
 // so it can render "< VALUE >". Empty string for non-list actions.
 extern "C" const char* gtav_features_value_label(uint32_t action) {
   switch (action) {
+    case GTAV_NATIVE_SHELL_ACTION_CYCLE_POPULATION_DENSITY:
+      return kPopulationLabels[population_pick() % 4u];
+    case GTAV_NATIVE_SHELL_ACTION_UNINSTALL_PACK:
+      return pack_uninstall_value_label();
     case GTAV_NATIVE_SHELL_ACTION_CYCLE_WEATHER:
       return LABEL_OF(kWeatherTypes, g_weather_index);
     case GTAV_NATIVE_SHELL_ACTION_CYCLE_TIME:
@@ -877,6 +1008,8 @@ extern "C" const char* gtav_features_value_label(uint32_t action) {
       return LABEL_OF(kVehicleLockNames, g_vehicle_lock_index);
     case GTAV_NATIVE_SHELL_ACTION_CYCLE_WEAPON_TINT:
       return LABEL_OF(kWeaponTintNames, g_weapon_tint_index);
+    case GTAV_NATIVE_SHELL_ACTION_CYCLE_WEAPON_COMPONENT:
+      return weapon_component_value_label();
     case GTAV_NATIVE_SHELL_ACTION_CYCLE_ATTACH_SUPP:
       return g_wattach_on[GTAV_WATTACH_SUPP] ? "On" : "Off";
     case GTAV_NATIVE_SHELL_ACTION_CYCLE_ATTACH_SCOPE:
@@ -902,17 +1035,17 @@ extern "C" const char* gtav_features_value_label(uint32_t action) {
     case GTAV_NATIVE_SHELL_ACTION_CYCLE_OUTFIT_SLOT:
       return outfit_slot_value_label();
     case GTAV_NATIVE_SHELL_ACTION_CYCLE_AUTOPILOT_MODE:
-      return LABEL_OF(kApModes, (uint32_t)g_autopilot_mode).label;
+      return LABEL_OF(kApModes, mode_pick_sync(&g_autopilot_pick, g_autopilot_mode)).label;
     case GTAV_NATIVE_SHELL_ACTION_CYCLE_AUTOPILOT_AGGRESSION:
       return LABEL_OF(kAp, g_autopilot_aggression_index).label;
     case GTAV_NATIVE_SHELL_ACTION_CYCLE_AUTOPILOT_SPEED:
       return LABEL_OF(kApSpd, g_autopilot_speed_index).label;
     case GTAV_NATIVE_SHELL_ACTION_CYCLE_FLY_MODE:
-      return LABEL_OF(kFlyModes, (uint32_t)g_fly_mode).label;
+      return LABEL_OF(kFlyModes, mode_pick_sync(&g_fly_pick, g_fly_mode)).label;
     case GTAV_NATIVE_SHELL_ACTION_CYCLE_VEHICLE_FLY:
-      return LABEL_OF(kFlyModes, (uint32_t)g_vehicle_fly_mode).label;
+      return LABEL_OF(kFlyModes, mode_pick_sync(&g_vehicle_fly_pick, g_vehicle_fly_mode)).label;
     case GTAV_NATIVE_SHELL_ACTION_CYCLE_ACTIVE_GUN:
-      return LABEL_OF(kGunModes, (uint32_t)g_active_gun).label;
+      return LABEL_OF(kGunModes, mode_pick_sync(&g_gun_pick, g_active_gun)).label;
     case GTAV_NATIVE_SHELL_ACTION_CYCLE_WIND:
       return LABEL_OF(kWindLevels, g_wind_index).label;
     case GTAV_NATIVE_SHELL_ACTION_CYCLE_CAM_SHAKE:
@@ -956,13 +1089,12 @@ extern "C" const char* gtav_features_value_label(uint32_t action) {
       return LABEL_OF(kColorPresets, g_tyre_smoke_index).label;
     case GTAV_NATIVE_SHELL_ACTION_CYCLE_WHEEL_TYPE:
       return LABEL_OF(kWheelTypes, g_wheel_type_index).label;
-    case GTAV_NATIVE_SHELL_ACTION_CYCLE_LIVERY: {
-      const int count = live_livery_count();
-      int lvl = g_livery_stage;
-      if (lvl > count - 1) lvl = count - 1;
-      if (lvl < -1) lvl = -1;
-      return livery_label(lvl, count);
-    }
+    case GTAV_NATIVE_SHELL_ACTION_CYCLE_KIT_SLOT:
+      return kit_slot_value_label();
+    case GTAV_NATIVE_SHELL_ACTION_CYCLE_KIT_PART:
+      return kit_part_value_label();
+    case GTAV_NATIVE_SHELL_ACTION_CYCLE_LIVERY:
+      return livery_value_label();
     case GTAV_NATIVE_SHELL_ACTION_CYCLE_PLATE_STYLE:
       return LABEL_OF(kPlateStyles, g_plate_style_index).label;
     case GTAV_NATIVE_SHELL_ACTION_CYCLE_PLATE_TEXT:
@@ -1006,6 +1138,7 @@ extern "C" const char* gtav_features_value_label(uint32_t action) {
     sync_mod_stage_to_vehicle();  // reflect the car's actual installed tiers
     const uint32_t idx = action - GTAV_NATIVE_SHELL_ACTION_MOD_SLOT_FIRST;
     const int count = live_mod_count(kVehicleModSlots[idx].slot);
+    if (count == 0 && current_vehicle()) return "None";  // the car's kit has no parts here
     int lvl = g_mod_stage[idx];
     if (lvl > count - 1) lvl = count - 1;
     if (lvl < -1) lvl = -1;
@@ -1127,6 +1260,21 @@ extern "C" int gtav_features_object_move_readout(GtavObjectMoveReadout* out) {
   return 1;
 }
 
+// A game-thread job's refusal/failure, handed to the worker (gtav_features_take_job_refusal).
+static char g_job_refusal[GTAV_FEATURE_MESSAGE_LEN];
+static uint32_t g_job_refusal_result;
+static uint32_t g_job_refusal_ready;
+// The last action the menu queued for the game thread (enqueue_game_thread_action); NONE once run.
+[[maybe_unused]] static uint32_t g_job_menu_action;
+
+extern "C" int gtav_features_take_job_refusal(char* out, uint32_t cap, uint32_t* result) {
+  if (!out || !cap || !__atomic_load_n(&g_job_refusal_ready, __ATOMIC_ACQUIRE)) return 0;
+  snprintf(out, cap, "%s", g_job_refusal);
+  if (result) *result = g_job_refusal_result;
+  __atomic_store_n(&g_job_refusal_ready, 0u, __ATOMIC_RELEASE);
+  return 1;
+}
+
 // Consume the game-thread move driver's pending menu-visibility request (0 none / 1 hide /
 // 2 show), clearing it. Applied by the worker (gtav_menu_worker_tick) because the driver
 // cannot safely call gtav_menu_set_visible from the game thread.
@@ -1239,6 +1387,13 @@ extern "C" void gtav_features_export_profile(GtavFeatureProfile* out) {
   out->nav_speed_index = gtav_native_bridge_nav_speed_index();
   out->touchpad_enabled = (uint32_t)gtav_native_bridge_touchpad_enabled();
   out->panel_width_index = gtav_native_bridge_panel_width_index();
+  out->spawn_preserve_speed = g_spawn_preserve_speed;
+  out->spawn_replace_previous = g_spawn_replace_previous;
+  out->spawn_aircraft_in_flight = g_spawn_aircraft_in_flight;
+  out->population_density_index = g_population_density_index;
+  out->speedometer_layout =
+      gtav_native_bridge_speedometer_layout ? gtav_native_bridge_speedometer_layout() : 0u;
+  out->language_id = gtav_locale_id ? gtav_locale_id() : 0u;
   // Browser favorites/recents also live in the bridge; copy them out for persistence.
   gtav_native_bridge_get_favorites(out->favorite_vehicles, out->favorite_peds);
   gtav_native_bridge_get_recents(out->recent_vehicles, out->recent_peds);
@@ -1347,8 +1502,12 @@ extern "C" void gtav_features_import_profile(const GtavFeatureProfile* in) {
   gtav_native_bridge_set_nav_speed_index((in->version >= 13u) ? in->nav_speed_index : 1u);
   // v14: optional touchpad input. Pre-v14 (memset-0) loads as off, matching the default-off policy.
   gtav_native_bridge_set_touchpad_enabled((in->version >= 14u) ? (int)in->touchpad_enabled : 0);
-  // v16: menu panel width. Pre-v16 version-gates to Normal (index 1), not the memset-0 Narrow.
-  gtav_native_bridge_set_panel_width_index((in->version >= 16u) ? in->panel_width_index : 1u);
+  // v16: menu panel width. v18 made Wide (index 2) the default: pre-v16 files and pre-v18 files
+  // holding the old Normal default (index 1) load as Wide; an explicit Narrow/Wide is kept.
+  uint32_t panel_width = 2u;
+  if (in->version >= 18u || (in->version >= 16u && in->panel_width_index != 1u))
+    panel_width = in->panel_width_index;
+  gtav_native_bridge_set_panel_width_index(panel_width);
   // Browser favorites/recents: restore into the bridge (it rebuilds the browsers so the markers
   // and synthetic filter views reflect the loaded lists). Pre-v7 files have these zeroed by the
   // memset-0 loader, so older profiles simply load with empty favorites/recents.
@@ -1406,6 +1565,17 @@ extern "C" void gtav_features_import_profile(const GtavFeatureProfile* in) {
       gtav_features_activate(kRestoreToggles[i].action);
     }
   }
+  g_spawn_preserve_speed = in->version < 17u || in->spawn_preserve_speed != 0;
+  g_spawn_replace_previous = in->version < 17u || in->spawn_replace_previous != 0;
+  g_spawn_aircraft_in_flight = in->version < 17u || in->spawn_aircraft_in_flight != 0;
+  g_population_density_index =
+      in->version < 17u ? ((in->toggle_mask & GTAV_FEATURE_TOGGLE_THIN_POPULATION) ? 0u : 1u)
+                        : (in->population_density_index < 4u ? in->population_density_index : 1u);
+  g_thin_population_enabled = g_population_density_index == 0u;
+  if (gtav_native_bridge_set_speedometer_layout)
+    gtav_native_bridge_set_speedometer_layout(in->version < 17u ? 0u : in->speedometer_layout);
+  if (gtav_native_bridge_set_language)
+    gtav_native_bridge_set_language(in->version < 17u ? 0u : in->language_id);
 }
 
 extern "C" int gtav_features_profile_save_default(void) {
@@ -1450,7 +1620,7 @@ static void build_vehicle_class_cache() {
     int c = invoke_return<int>(g_n.get_vehicle_class_from_name, h);
     g_vehicle_class_cache[i] = (int8_t)((c >= 0 && c <= 31) ? c : -1);
   }
-  g_vehicle_class_cached = 1;
+  __atomic_store_n(&g_vehicle_class_cached, 1, __ATOMIC_RELEASE);
 }
 
 // Game-thread warmer: reached from the frame-hook tick's first valid-context frame.
@@ -1458,7 +1628,7 @@ static void build_vehicle_class_cache() {
 // (a worker GET_VEHICLE_CLASS_FROM_NAME dereferences a null script context on 01.010.002).
 #if GTAV_MENU_ENABLE_FRAME_HOOK
 static void warm_vehicle_class_cache_game_thread() {
-  if (g_vehicle_class_cached) return;
+  if (__atomic_load_n(&g_vehicle_class_cached, __ATOMIC_ACQUIRE)) return;
   if (!g_n.get_hash_key || !g_n.get_vehicle_class_from_name) return;
   build_vehicle_class_cache();
 }
@@ -1470,7 +1640,7 @@ extern "C" int gtav_features_vehicle_class(uint32_t index) {
   // Frame-hook build: ONLY the game-thread warmer may build the cache. A worker-direct
   // GET_VEHICLE_CLASS_FROM_NAME on 01.010.002 dereferences a null script context, so the
   // worker never runs the native here; until the warmer lands the filter reads -1 ("All").
-  if (!g_vehicle_class_cached) return -1;
+  if (!__atomic_load_n(&g_vehicle_class_cached, __ATOMIC_ACQUIRE)) return -1;
 #else
   // Worker-only lane: no frame hook -> no game-thread warmer -> the worker builds the
   // cache itself (the getter is a pure hash lookup, proven safe on this lane).
@@ -1482,6 +1652,10 @@ extern "C" int gtav_features_vehicle_class(uint32_t index) {
   if (index >= (uint32_t)(sizeof(g_vehicle_class_cache) / sizeof(g_vehicle_class_cache[0])))
     return -1;
   return g_vehicle_class_cache[index];
+}
+
+extern "C" int gtav_features_vehicle_classes_ready(void) {
+  return __atomic_load_n(&g_vehicle_class_cached, __ATOMIC_ACQUIRE);
 }
 
 #include "features/teleport.inc"
@@ -1561,6 +1735,8 @@ static void apply_telemetry_log_level(void) {
 }
 
 extern "C" void gtav_features_init(const GtavNativeAddressTable* table) {
+  // This initializer runs on the worker before any game-thread feature jobs.
+  gtav_custom_game_root_init();
   (void)table;  // Feature addresses come from the pinned generated table.
   memset(&g_state, 0, sizeof(g_state));
   apply_telemetry_log_level();  // telemetry just reset to off => INFO baseline
@@ -1612,6 +1788,7 @@ extern "C" void gtav_features_init(const GtavNativeAddressTable* table) {
   g_tyre_smoke_index = 0;
   g_wheel_type_index = 0;
   g_livery_stage = -1;
+  g_livery_vehicle = 0;
   g_plate_style_index = 0;
   g_plate_text_index = 0;
   g_pearl_color_index = 0;
@@ -1719,6 +1896,11 @@ extern "C" void gtav_features_shutdown(void) {
   g_menu_open = 0;
   disable_all_features();
 #if GTAV_MENU_ENABLE_FRAME_HOOK
+  crowd_request_stop(1);
+  // Let the existing game-thread tick release streaming requests and owned crowd entities.
+  for (int i = 0; i < 50 && __atomic_load_n(&g_crowd_busy, __ATOMIC_ACQUIRE); ++i) usleep(10000);
+  if (__atomic_load_n(&g_crowd_busy, __ATOMIC_ACQUIRE))
+    gtav_status_event(GTAV_MENU_EVENT_SHUTDOWN, "crowd cleanup could not run before shutdown");
   gtav_frame_hook_clear_jobs();
 #endif
   gtav_status_event(GTAV_MENU_EVENT_SHUTDOWN, "features shutdown complete");
@@ -1753,6 +1935,8 @@ extern "C" uint32_t gtav_features_activate(uint32_t action) {
 
 [[maybe_unused]] static int action_needs_main_thread(uint32_t action) {
   switch (action) {
+    case GTAV_NATIVE_SHELL_ACTION_SPAWN_CROWD:
+    case GTAV_NATIVE_SHELL_ACTION_TOGGLE_MAINTAIN_CROWD:
     case GTAV_NATIVE_SHELL_ACTION_SPAWN_VEHICLE:
     case GTAV_NATIVE_SHELL_ACTION_GIVE_WEAPONS:
     // A single weapon give goes through the same ped weapon manager as GIVE_WEAPONS,
@@ -1819,8 +2003,35 @@ extern "C" uint32_t gtav_features_activate(uint32_t action) {
     // Spooner load step CREATE_*s an entity at a saved transform (allocation-class). It is enqueued
     // directly by load_map(), but list it here too so the gating model stays honest.
     case GTAV_NATIVE_SHELL_ACTION_LOAD_MAP_STEP:
-    // The engine device mount uses the game thread's allocator and file-system lock.
-    case GTAV_NATIVE_SHELL_ACTION_MOUNT_CUSTOM_DEVICE:
+    // The pack steps and the texture card's residency queries/release all use the engine
+    // main-thread context.
+    case GTAV_NATIVE_SHELL_ACTION_SHOW_PACK_CARD:
+    case GTAV_NATIVE_SHELL_ACTION_RELEASE_PACK_CARD:
+    case GTAV_NATIVE_SHELL_ACTION_REGISTER_PACK:
+    case GTAV_NATIVE_SHELL_ACTION_REQUEST_PACK_CARD:
+    case GTAV_NATIVE_SHELL_ACTION_INSPECT_PACK:
+    case GTAV_NATIVE_SHELL_ACTION_LOAD_PACK_ARCHIVE:
+    case GTAV_NATIVE_SHELL_ACTION_LOAD_PACK_DATA:
+    case GTAV_NATIVE_SHELL_ACTION_PUMP_PACK_DATA:
+    case GTAV_NATIVE_SHELL_ACTION_LOAD_PACK_TYP:
+    case GTAV_NATIVE_SHELL_ACTION_LOAD_PACK_MAP:
+    case GTAV_NATIVE_SHELL_ACTION_FINISH_PACK_MAP:
+    case GTAV_NATIVE_SHELL_ACTION_LOAD_PACK_BOUNDS:
+    case GTAV_NATIVE_SHELL_ACTION_ADD_PACK_LABELS:
+    // Pack `hide` rows: CREATE_/REMOVE_MODEL_HIDE read the calling script thread's context.
+    case GTAV_NATIVE_SHELL_ACTION_PACK_HIDE:
+    // A pack screen effect resolves its modifier and calls SET/CLEAR_TIMECYCLE_MODIFIER, the
+    // render-script state the Screen Effect cycler also applies on the game thread.
+    case GTAV_NATIVE_SHELL_ACTION_APPLY_PACK_TIMECYCLE:
+    // A pack particle effect streams its pack dictionary (REQUEST_NAMED_PTFX_ASSET) and starts the
+    // effect, the Fireworks job's natives and lane, with the same bounded self-requeue.
+    case GTAV_NATIVE_SHELL_ACTION_PLAY_PACK_PTFX:
+    // A pack weapon component gives/equips its weapon and toggles the component (GIVE/REMOVE_
+    // WEAPON_COMPONENT_TO/FROM_PED walk the ped weapon manager, like Apply Attachments).
+    case GTAV_NATIVE_SHELL_ACTION_TOGGLE_PACK_COMPONENT:
+    // Reverting the stock overrides rewrites streaming-info handles and overlay-map nodes, which
+    // the game's own registration code changes on the main thread only.
+    case GTAV_NATIVE_SHELL_ACTION_REVERT_PACK_OVERRIDES:
     // Fireworks streams a named PTFX asset (allocation/streaming class, like REQUEST_MODEL) then
     // starts the fx -> game/script thread, with non-blocking self-requeue while the asset loads.
     case GTAV_NATIVE_SHELL_ACTION_SPAWN_FIREWORKS:
@@ -1846,6 +2057,7 @@ extern "C" uint32_t gtav_features_activate(uint32_t action) {
     case GTAV_NATIVE_SHELL_ACTION_TELEPORT_WAYPOINT:
     case GTAV_NATIVE_SHELL_ACTION_TELEPORT_OBJECTIVE:
     case GTAV_NATIVE_SHELL_ACTION_TELEPORT_PRESET:
+    case GTAV_NATIVE_SHELL_ACTION_TELEPORT_PACK_MAP:
     // Return To Saved Location goes through the same start_teleport() as the presets
     // (FREEZE_ENTITY_POSITION + SET_ENTITY_COORDS fault from the scePad worker on
     // 01.010.002), so it must ride the game/script-thread lane too.
@@ -1902,6 +2114,10 @@ extern "C" int gtav_features_save_slot_occupied(uint32_t action) {
 // execute in a valid context, or directly when main-thread gating is disabled.
 [[maybe_unused]] static uint32_t run_gated_action(uint32_t action, uint32_t param) {
   switch (action) {
+    case GTAV_NATIVE_SHELL_ACTION_SPAWN_CROWD:
+      return start_crowd();
+    case GTAV_NATIVE_SHELL_ACTION_TOGGLE_MAINTAIN_CROWD:
+      return toggle_maintain_crowd();
     case GTAV_NATIVE_SHELL_ACTION_SPAWN_VEHICLE:
       // Queue contract: param is already the model joaat hash. Streaming and
       // CREATE_VEHICLE both run from this game-thread job, with non-blocking
@@ -1912,8 +2128,46 @@ extern "C" int gtav_features_save_slot_occupied(uint32_t action) {
       return spawn_saved_vehicle();
     case GTAV_NATIVE_SHELL_ACTION_LOAD_MAP_STEP:
       return load_map_step(param);
-    case GTAV_NATIVE_SHELL_ACTION_MOUNT_CUSTOM_DEVICE:
-      return mount_custom_device();
+    case GTAV_NATIVE_SHELL_ACTION_SHOW_PACK_CARD:
+      return show_pack_card(param);
+    case GTAV_NATIVE_SHELL_ACTION_RELEASE_PACK_CARD:
+      return release_pack_card(param);
+    // Self-enqueued by the worker-direct EXPORT_RETAIL_FILE (not in action_needs_main_thread):
+    // the packfile read needs the main thread's engine allocator.
+    case GTAV_NATIVE_SHELL_ACTION_EXPORT_RETAIL_FILE:
+      return retail_export_read(param);
+    case GTAV_NATIVE_SHELL_ACTION_REGISTER_PACK:
+      return register_pack();
+    case GTAV_NATIVE_SHELL_ACTION_REQUEST_PACK_CARD:
+      return request_pack_card(param);
+    case GTAV_NATIVE_SHELL_ACTION_INSPECT_PACK:
+      return inspect_pack();
+    case GTAV_NATIVE_SHELL_ACTION_LOAD_PACK_ARCHIVE:
+      return load_pack_archive();
+    case GTAV_NATIVE_SHELL_ACTION_LOAD_PACK_DATA:
+      return load_pack_data(param);
+    case GTAV_NATIVE_SHELL_ACTION_PUMP_PACK_DATA:
+      return pump_pack_data();
+    case GTAV_NATIVE_SHELL_ACTION_LOAD_PACK_TYP:
+      return load_pack_typ(param);
+    case GTAV_NATIVE_SHELL_ACTION_LOAD_PACK_MAP:
+      return load_pack_map(param);
+    case GTAV_NATIVE_SHELL_ACTION_FINISH_PACK_MAP:
+      return finish_pack_map(param);
+    case GTAV_NATIVE_SHELL_ACTION_LOAD_PACK_BOUNDS:
+      return load_pack_bounds(param);
+    case GTAV_NATIVE_SHELL_ACTION_ADD_PACK_LABELS:
+      return add_pack_labels();
+    case GTAV_NATIVE_SHELL_ACTION_PACK_HIDE:
+      return apply_pack_hide(param);
+    case GTAV_NATIVE_SHELL_ACTION_APPLY_PACK_TIMECYCLE:
+      return apply_pack_timecycle(param);
+    case GTAV_NATIVE_SHELL_ACTION_PLAY_PACK_PTFX:
+      return play_pack_ptfx(param);
+    case GTAV_NATIVE_SHELL_ACTION_TOGGLE_PACK_COMPONENT:
+      return toggle_pack_component(param);
+    case GTAV_NATIVE_SHELL_ACTION_REVERT_PACK_OVERRIDES:
+      return revert_pack_overrides();
     case GTAV_NATIVE_SHELL_ACTION_SPAWN_FIREWORKS:
       return spawn_fireworks();
     case GTAV_NATIVE_SHELL_ACTION_TELEPORT_LAST_VEHICLE:
@@ -1924,6 +2178,8 @@ extern "C" int gtav_features_save_slot_occupied(uint32_t action) {
       return teleport_to_objective();
     case GTAV_NATIVE_SHELL_ACTION_TELEPORT_PRESET:
       return teleport_preset(param);
+    case GTAV_NATIVE_SHELL_ACTION_TELEPORT_PACK_MAP:
+      return teleport_pack_map(param);
     case GTAV_NATIVE_SHELL_ACTION_RETURN_SAVED_LOCATION:
       return return_saved_location();
     case GTAV_NATIVE_SHELL_ACTION_VEHICLE_ROCKET_BOOST:
@@ -1978,6 +2234,9 @@ extern "C" int gtav_features_save_slot_occupied(uint32_t action) {
       return apply_timecycle();
     case GTAV_NATIVE_SHELL_ACTION_CYCLE_ANIMPOSTFX:
       return apply_animpostfx();
+    // Self-enqueued by the worker-direct Component row's Cross (param = the component's joaat).
+    case GTAV_NATIVE_SHELL_ACTION_CYCLE_WEAPON_COMPONENT:
+      return apply_weapon_component(param);
     case GTAV_NATIVE_SHELL_ACTION_PEDS_ATTACK_PLAYER:
       return peds_attack_player();
     case GTAV_NATIVE_SHELL_ACTION_PEDS_FLEE_PLAYER:
@@ -2026,7 +2285,29 @@ extern "C" int gtav_features_save_slot_occupied(uint32_t action) {
 // Consumer callback for the frame-hook job queue (main thread).
 extern "C" void gtav_features_run_job(uint32_t action, uint32_t param, void* ctx) {
   (void)ctx;
-  run_gated_action(action, param);
+  const uint32_t result = run_gated_action(action, param);
+  // The worker already toasted "queued for main thread"; hand a refusal or failure back so the
+  // player sees why the job did nothing (e.g. "<member> in use"). Only for the job the menu queued
+  // (enqueue_game_thread_action): the pack load's stage jobs retry until ready and report their own
+  // failure. One slot: a refusal raised while the previous one is untaken is dropped (the status
+  // event and pack-notes keep it).
+  uint32_t queued = action;
+  if (!__atomic_compare_exchange_n(&g_job_menu_action, &queued, GTAV_NATIVE_SHELL_ACTION_NONE,
+                                   false, __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE))
+    return;
+  if ((result == GTAV_FEATURE_RESULT_UNAVAILABLE || result == GTAV_FEATURE_RESULT_FAILED) &&
+      !__atomic_load_n(&g_job_refusal_ready, __ATOMIC_ACQUIRE)) {
+    // Custom Packs rows (revert, effects, attachments, teleports) refuse with technical texts for
+    // pack-notes; the toast gets the short one (custom_pack_checks.c, unknown texts unchanged).
+    const int pack_row = action >= GTAV_NATIVE_SHELL_ACTION_REGISTER_PACK &&
+                         action <= GTAV_NATIVE_SHELL_ACTION_REVERT_PACK_OVERRIDES &&
+                         action != GTAV_NATIVE_SHELL_ACTION_CYCLE_WEAPON_CATEGORY &&
+                         action != GTAV_NATIVE_SHELL_ACTION_EXPORT_RETAIL_FILE;
+    snprintf(g_job_refusal, sizeof(g_job_refusal), "%s",
+             pack_row ? gtav_custom_pack_user_reason(g_state.last_message) : g_state.last_message);
+    g_job_refusal_result = result;
+    __atomic_store_n(&g_job_refusal_ready, 1u, __ATOMIC_RELEASE);
+  }
 }
 #endif
 
@@ -2041,9 +2322,12 @@ extern "C" void gtav_features_run_job(uint32_t action, uint32_t param, void* ctx
 static uint32_t enqueue_game_thread_action(uint32_t action, [[maybe_unused]] uint32_t param) {
 #if GTAV_MENU_ENABLE_FRAME_HOOK
   if (gtav_frame_hook_is_active()) {
+    // Marked before the enqueue: the game thread may run the job before this thread returns.
+    __atomic_store_n(&g_job_menu_action, action, __ATOMIC_RELEASE);
     if (gtav_frame_hook_enqueue(action, param)) {
       return ok(action, "queued for main thread");
     }
+    __atomic_store_n(&g_job_menu_action, (uint32_t)GTAV_NATIVE_SHELL_ACTION_NONE, __ATOMIC_RELEASE);
     return failed(action, "main-thread job queue full");
   }
 #endif
@@ -2114,6 +2398,20 @@ extern "C" uint32_t gtav_features_activate_param(uint32_t action, uint32_t param
 // feature adds a case here (plus the action enum + feature_actions.def name + a menu row).
 static uint32_t activate_worker_direct_action(uint32_t action, uint32_t param) {
   switch (action) {
+    // Custom Packs page: starts the worker-side load state machine (it enqueues the main-thread
+    // pack steps itself), so it runs here rather than on the game thread.
+    case GTAV_NATIVE_SHELL_ACTION_PACK_AUTOLOAD:
+      return start_pack_autoload();
+    // Custom Packs page: plain file IO on packs/active (worker side, no game state).
+    case GTAV_NATIVE_SHELL_ACTION_TOGGLE_PACK_ACTIVE:
+      return toggle_pack_active(param);
+    // Custom Packs page: step the uninstall target, or uninstall it (plain file IO, worker side).
+    case GTAV_NATIVE_SHELL_ACTION_UNINSTALL_PACK:
+      return uninstall_pack(param);
+    // Host export of an allow-listed retail file: queues its own main-thread read, then the
+    // worker tick writes the file (custom_retail_export.inc).
+    case GTAV_NATIVE_SHELL_ACTION_EXPORT_RETAIL_FILE:
+      return export_retail_file(param);
     case GTAV_NATIVE_SHELL_ACTION_TOGGLE_TELEMETRY:
       g_state.telemetry_enabled = !g_state.telemetry_enabled;
       apply_telemetry_log_level();
@@ -2187,6 +2485,8 @@ static uint32_t activate_worker_direct_action(uint32_t action, uint32_t param) {
       return return_saved_location();
     case GTAV_NATIVE_SHELL_ACTION_TELEPORT_PRESET:
       return teleport_preset(param);
+    case GTAV_NATIVE_SHELL_ACTION_TELEPORT_PACK_MAP:
+      return teleport_pack_map(param);
     case GTAV_NATIVE_SHELL_ACTION_DISABLE_ALL:
       return disable_all_features();
     case GTAV_NATIVE_SHELL_ACTION_PLACE_ON_WHEELS:
@@ -2326,8 +2626,38 @@ static uint32_t activate_worker_direct_action(uint32_t action, uint32_t param) {
       return toggle_spawn_maxed();
     case GTAV_NATIVE_SHELL_ACTION_TOGGLE_SPAWN_INVINCIBLE:
       return toggle_spawn_invincible();
-    case GTAV_NATIVE_SHELL_ACTION_TOGGLE_THIN_POPULATION:
-      return toggle_thin_population();
+    case GTAV_NATIVE_SHELL_ACTION_TOGGLE_SPAWN_UPGRADED:
+      return toggle_spawn_upgraded();
+    case GTAV_NATIVE_SHELL_ACTION_CYCLE_KIT_SLOT:
+      return cycle_kit_slot(param);
+    case GTAV_NATIVE_SHELL_ACTION_CYCLE_KIT_PART:
+      return cycle_kit_part(param);
+    case GTAV_NATIVE_SHELL_ACTION_CYCLE_POPULATION_DENSITY: {
+      // Left/Right (param 1/2) only stage; Cross (param 0) applies the staged density.
+      population_pick();
+      if (stage_step(&g_population_pick, 4u, param))
+        return ok(action, kPopulationLabels[g_population_pick % 4u]);
+      if (!g_n.set_ped_population_budget || !g_n.set_vehicle_population_budget)
+        return unavailable(action, "missing population natives");
+      g_population_density_index = g_population_pick % 4u;
+      g_population_seen = g_population_density_index;
+      g_thin_population_enabled = g_population_density_index == 0u;
+      char msg[GTAV_FEATURE_MESSAGE_LEN];
+      snprintf(msg, sizeof(msg), "population: %s", kPopulationLabels[g_population_density_index]);
+      return ok(action, msg);
+    }
+    case GTAV_NATIVE_SHELL_ACTION_TOGGLE_SPAWN_PRESERVE_SPEED:
+      g_spawn_preserve_speed = !g_spawn_preserve_speed;
+      return ok(action,
+                g_spawn_preserve_speed ? "preserve speed enabled" : "preserve speed disabled");
+    case GTAV_NATIVE_SHELL_ACTION_TOGGLE_SPAWN_REPLACE_PREVIOUS:
+      g_spawn_replace_previous = !g_spawn_replace_previous;
+      return ok(action, g_spawn_replace_previous ? "replace menu vehicle enabled"
+                                                 : "replace menu vehicle disabled");
+    case GTAV_NATIVE_SHELL_ACTION_TOGGLE_SPAWN_AIRCRAFT_IN_FLIGHT:
+      g_spawn_aircraft_in_flight = !g_spawn_aircraft_in_flight;
+      return ok(action, g_spawn_aircraft_in_flight ? "aircraft in flight enabled"
+                                                   : "aircraft in flight disabled");
     case GTAV_NATIVE_SHELL_ACTION_TOGGLE_IGNORED_BY_ALL:
       return toggle_ignored_by_all();
     case GTAV_NATIVE_SHELL_ACTION_TOGGLE_SUPER_BRAKE:
@@ -2382,6 +2712,8 @@ static uint32_t activate_worker_direct_action(uint32_t action, uint32_t param) {
       return toggle_emote_loop();
     case GTAV_NATIVE_SHELL_ACTION_CYCLE_WEAPON_TINT:
       return cycle_weapon_tint(param);
+    case GTAV_NATIVE_SHELL_ACTION_CYCLE_WEAPON_COMPONENT:
+      return cycle_weapon_component(param);
     case GTAV_NATIVE_SHELL_ACTION_CYCLE_ATTACH_SUPP:
       return cycle_weapon_attachment(action, GTAV_WATTACH_SUPP, param);
     case GTAV_NATIVE_SHELL_ACTION_CYCLE_ATTACH_SCOPE:
@@ -2398,8 +2730,6 @@ static uint32_t activate_worker_direct_action(uint32_t action, uint32_t param) {
       return load_map();
     case GTAV_NATIVE_SHELL_ACTION_CANCEL_MAP_LOAD:
       return cancel_map_load();
-    case GTAV_NATIVE_SHELL_ACTION_PROBE_CUSTOM_MOUNT:
-      return probe_custom_mount();
     case GTAV_NATIVE_SHELL_ACTION_CYCLE_AUTOPILOT_MODE:
       return cycle_autopilot_mode(param);
     case GTAV_NATIVE_SHELL_ACTION_CYCLE_AUTOPILOT_AGGRESSION:
@@ -2472,7 +2802,26 @@ static uint32_t activate_worker_direct_action(uint32_t action, uint32_t param) {
     case GTAV_NATIVE_SHELL_ACTION_CLEAR_SPAWNED_ALL:
     case GTAV_NATIVE_SHELL_ACTION_BRING_BODYGUARDS:
     case GTAV_NATIVE_SHELL_ACTION_DISMISS_BODYGUARDS:
-    case GTAV_NATIVE_SHELL_ACTION_MOUNT_CUSTOM_DEVICE:
+    case GTAV_NATIVE_SHELL_ACTION_SPAWN_CROWD:
+    case GTAV_NATIVE_SHELL_ACTION_TOGGLE_MAINTAIN_CROWD:
+    case GTAV_NATIVE_SHELL_ACTION_SHOW_PACK_CARD:
+    case GTAV_NATIVE_SHELL_ACTION_RELEASE_PACK_CARD:
+    case GTAV_NATIVE_SHELL_ACTION_REGISTER_PACK:
+    case GTAV_NATIVE_SHELL_ACTION_REQUEST_PACK_CARD:
+    case GTAV_NATIVE_SHELL_ACTION_INSPECT_PACK:
+    case GTAV_NATIVE_SHELL_ACTION_LOAD_PACK_ARCHIVE:
+    case GTAV_NATIVE_SHELL_ACTION_LOAD_PACK_DATA:
+    case GTAV_NATIVE_SHELL_ACTION_PUMP_PACK_DATA:
+    case GTAV_NATIVE_SHELL_ACTION_LOAD_PACK_TYP:
+    case GTAV_NATIVE_SHELL_ACTION_LOAD_PACK_MAP:
+    case GTAV_NATIVE_SHELL_ACTION_FINISH_PACK_MAP:
+    case GTAV_NATIVE_SHELL_ACTION_LOAD_PACK_BOUNDS:
+    case GTAV_NATIVE_SHELL_ACTION_ADD_PACK_LABELS:
+    case GTAV_NATIVE_SHELL_ACTION_APPLY_PACK_TIMECYCLE:
+    case GTAV_NATIVE_SHELL_ACTION_PLAY_PACK_PTFX:
+    case GTAV_NATIVE_SHELL_ACTION_TOGGLE_PACK_COMPONENT:
+    case GTAV_NATIVE_SHELL_ACTION_PACK_HIDE:
+    case GTAV_NATIVE_SHELL_ACTION_REVERT_PACK_OVERRIDES:
       return unavailable(action, "needs main-thread hook (not yet enabled)");
     case GTAV_NATIVE_SHELL_ACTION_CYCLE_CLOCK_HOUR:
       return cycle_clock_hour(param);
@@ -2601,6 +2950,10 @@ extern "C" void gtav_features_worker_tick(int menu_visible) {
   }
 #endif
   tick_frame_hook_telemetry();
+  // Custom Packs page: advance the one-press pack load (worker side; enqueues main-thread steps).
+  pack_autoload_tick();
+  // Host retail export: write a finished main-thread read (custom_retail_export.inc).
+  retail_export_tick();
 #if !GTAV_MENU_ENABLE_FRAME_HOOK
   // No game-thread frame-hook lane in this build, so fall back to re-asserting the held
   // toggles here on the worker. This is the historical lane and is NOT transition-safe (the
@@ -2920,12 +3273,14 @@ static void tick_player_toggles(void) {
       g_n.freeze_entity_position) {
     invoke_void(g_n.request_collision_at_coord, g_tp_x, g_tp_y, g_tp_z);
     int loaded = invoke_return<int>(g_n.has_collision_loaded_around_entity, g_tp_entity);
+    if (g_tp_clamp == GTAV_TP_CLAMP_INTERIOR && !pack_interior_collision_ready()) loaded = 0;
     if (loaded || --g_tp_ticks_left <= 0) {
       // Resolve the destination onto real ground before releasing the freeze, so waypoint /
       // objective jumps stop landing in the sky or below the terrain. Run on both the streamed
       // and the timeout release: settle_teleport_onto_ground() self-guards on an unstreamed cell
       // (GET_GROUND_Z returns false -> entity left at its requested Z, the old behaviour).
-      if (g_tp_clamp != GTAV_TP_CLAMP_NONE) settle_teleport_onto_ground();
+      if (g_tp_clamp != GTAV_TP_CLAMP_NONE && g_tp_clamp != GTAV_TP_CLAMP_INTERIOR)
+        settle_teleport_onto_ground();
       invoke_void(g_n.freeze_entity_position, g_tp_entity, 0);
       g_tp_active = 0;
     }
@@ -3049,10 +3404,11 @@ static void tick_player_toggles(void) {
   // Thin Population: hold the ped + vehicle population budgets at minimum. The engine re-raises
   // them, so re-assert every tick while enabled. Global int setters, no entity walk; the engine
   // restores normal density on its own once we stop forcing 0 (so no restore on disable).
-  if (g_thin_population_enabled && g_n.set_ped_population_budget &&
+  if (g_population_density_index != 1u && g_n.set_ped_population_budget &&
       g_n.set_vehicle_population_budget) {
-    invoke_void(g_n.set_ped_population_budget, 0);
-    invoke_void(g_n.set_vehicle_population_budget, 0);
+    int budget = g_population_density_index == 0u ? 0 : (g_population_density_index == 2u ? 2 : 3);
+    invoke_void(g_n.set_ped_population_budget, budget);
+    invoke_void(g_n.set_vehicle_population_budget, budget);
   }
   // Ignored By Everyone: re-assert the police/peds/gangs ignore flags while enabled (sticky
   // setters, but re-asserting survives respawns). The handler restores defaults on disable.
@@ -3114,5 +3470,20 @@ extern "C" const char* gtav_feature_result_name(uint32_t result) {
     case GTAV_FEATURE_RESULT_NONE:
     default:
       return "none";
+  }
+}
+
+extern "C" int gtav_features_setting_enabled(uint32_t action) {
+  switch (action) {
+    case GTAV_NATIVE_SHELL_ACTION_TOGGLE_SPAWN_PRESERVE_SPEED:
+      return g_spawn_preserve_speed;
+    case GTAV_NATIVE_SHELL_ACTION_TOGGLE_SPAWN_REPLACE_PREVIOUS:
+      return g_spawn_replace_previous;
+    case GTAV_NATIVE_SHELL_ACTION_TOGGLE_SPAWN_AIRCRAFT_IN_FLIGHT:
+      return g_spawn_aircraft_in_flight;
+    case GTAV_NATIVE_SHELL_ACTION_TOGGLE_MAINTAIN_CROWD:
+      return __atomic_load_n(&g_maintain_crowd, __ATOMIC_ACQUIRE);
+    default:
+      return 0;
   }
 }

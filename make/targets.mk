@@ -10,12 +10,13 @@
 .PHONY: all menu-live onionhen _onionhen onionhen-plugin-build package-onionhen \
 	etahen _etahen etahen-plugin-build package-etahen clean help FORCE require-ps5-sdk \
 	payload-loader-build deploy-payload-loader deploy-built-payload-loader package-payload _package-payload package-target \
-	feature-menu-frame-hook-playerped-build custom-map custom-texture-pack
+	feature-menu-frame-hook-playerped-build custom-map
 
 # Sources linked into the injected menu worker ELF (COMMON_SRCS comes from flags.mk,
 # which the root Makefile includes before this file).
 MODULE_SRCS := \
 	src/module/command_mailbox.c \
+	src/module/custom_root.c \
 	src/module/feature_catalog.c \
 	src/module/features.cpp \
 	src/module/frame_hook.c \
@@ -61,8 +62,9 @@ help:
 	@echo "  make deploy-payload-loader     Deploy the loader to PS5 (prospero-deploy)"
 	@echo "  make package-payload           Bundle the persistent daemon and worker"
 	@echo "  make package-target            Build all three versioned delivery packages"
+	@echo "  make universal                 Build all three deliveries with automatic title/build selection"
+	@echo "  make package-universal         Stage the universal Standalone, OnionHEN and etaHEN packages"
 	@echo "  make custom-map               Build the portable stock-prop map test package"
-	@echo "  make custom-texture-pack      Build the verified inactive authored-texture pack"
 	@echo "Select an exact profile with GTAV_TARGET=ppsa04264-01.005.000 (default: 01.010.002)."
 	@echo "Launch the default target with ./menu-ctl.sh cave-inject."
 
@@ -72,9 +74,6 @@ all: payload-loader-build feature-menu-frame-hook-playerped-build
 custom-map:
 	$(PYTHON) tools/prepare_map.py data/maps/gtavmenu-test-yard.json \
 		--output-dir build/maps/gtavmenu-test-yard
-
-custom-texture-pack:
-	$(PYTHON) tools/prepare_custom_pack.py prepare
 
 require-ps5-sdk:
 	@test "$(PS5_TOOLCHAIN_AVAILABLE)" = "1" || { \
@@ -110,9 +109,17 @@ LOADER_TARGET_CFLAGS := $(shell $(PYTHON) tools/target_loader_config.py \
 
 FORCE:
 
+# Git refs and tracked dirty state can change without touching source files.
+# Recheck each build; unchanged content keeps the header mtime and loader intact.
+$(BUILD_VERSION_HEADER): FORCE tools/write_build_version.py
+	$(PYTHON) tools/write_build_version.py --output "$@"
+
 $(BUILD_PROFILE_DIR):
 	mkdir -p $@
 
+# Retired gates keep their stamp keys as constant 0 (worker_rootdir, profile_storage_mount and,
+# for one release after cleanup steps 3 and 4, the three DLC-route lanes and the loader's sandbox
+# nullfs mount) so old and new stamps compare.
 $(BUILD_CONFIG_STAMP): FORCE tools/write_build_stamp.py tools/target_loader_config.py \
 		tools/target_build_config.py tools/gtavmenu_tools/target_profile.py \
 		$(GTAV_TARGET_MANIFEST) $(GTAV_TARGET_NATIVE_JSON) $(GTAV_TARGET_SCRIPT_JSON) \
@@ -132,7 +139,7 @@ $(BUILD_CONFIG_STAMP): FORCE tools/write_build_stamp.py tools/target_loader_conf
 		--set release_llvm_major=$(PS5_LLVM_MAJOR) \
 		--set unvalidated_toolchain=$(GTAV_ALLOW_UNVALIDATED_TOOLCHAIN) \
 		--set worker_rootdir=0 \
-		--set profile_storage_mount=1 \
+		--set profile_storage_mount=0 \
 		--set native_features=$(FEATURE_MENU_ENABLE_NATIVE_FEATURES) \
 		--set frame_hook=$(FEATURE_MENU_ENABLE_FRAME_HOOK) \
 		--set external_frame_hook=$(FRAME_HOOK_EXTERNAL_INSTALL) \
@@ -140,7 +147,10 @@ $(BUILD_CONFIG_STAMP): FORCE tools/write_build_stamp.py tools/target_loader_conf
 		--set require_context=$(FRAME_HOOK_REQUIRE_CONTEXT) \
 		--set pad_input=$(ENABLE_PAD_INPUT) --set pad_hook=$(PAD_HOOK) \
 		--set vehicle_preview=$(GTAV_MENU_ENABLE_VEHICLE_PREVIEW) \
-		--set custom_device=$(GTAV_MENU_ENABLE_CUSTOM_DEVICE) \
+		--set custom_packs=$(GTAV_MENU_ENABLE_CUSTOM_PACKS) \
+		--set custom_dlc_snapshot=0 \
+		--set custom_dlc_overlay=0 \
+		--set effective_dlclist_capture=0 \
 		--set instructional_scaleform=$(GTAV_MENU_ENABLE_INSTRUCTIONAL_SCALEFORM) \
 		--set button_glyphs=$(GTAV_MENU_ENABLE_BUTTON_GLYPHS) \
 		--set worker_text=$(GTAV_MENU_ENABLE_WORKER_TEXT_OVERLAY) \
@@ -187,7 +197,7 @@ $(BUILD_CONFIG_STAMP): FORCE tools/write_build_stamp.py tools/target_loader_conf
 		--set loader_broker=$(PAYLOAD_LOADER_INSTALL_BROKER) \
 		--set loader_phase=$(PAYLOAD_LOADER_INSTALL_RENDER_PHASE) \
 		--set loader_guard=$(PAYLOAD_LOADER_INJECT_GUARD) \
-		--set loader_custom_mount=$(PAYLOAD_LOADER_CUSTOM_MOUNT) \
+		--set loader_custom_mount=0 \
 		--set loader_verify_version=$(PAYLOAD_LOADER_VERIFY_VERSION)
 
 # OnionHEN-managed persistent watcher for the exact target-selected injection lane. The menu
@@ -211,8 +221,8 @@ onionhen-plugin-build: onionhen
 $(ONIONHEN_DAEMON_ELF): $(PAYLOAD_LOADER_SRCS) src/payload_loader/embedded_worker.S \
 		include/gtavmenu/loader_pins_generated.h include/gtavmenu/daemon_control.h \
 		include/gtavmenu/daemon_lifecycle.h include/gtavmenu/render_phase_discovery.h \
-		$(FEATURE_MENU_FRAME_HOOK_PLAYERPED_ELF) $(BUILD_CONFIG_STAMP) | $(ONIONHEN_OUTPUT_DIR) require-ps5-sdk
-	$(CC) $(CFLAGS) \
+		$(FEATURE_MENU_FRAME_HOOK_PLAYERPED_ELF) $(BUILD_CONFIG_STAMP) $(BUILD_VERSION_HEADER) | $(ONIONHEN_OUTPUT_DIR) require-ps5-sdk
+	$(CC) $(CFLAGS) $(LOADER_VERSION_CFLAGS) \
 		-DGTAV_LOADER_PROBE_NOSTOP=$(PAYLOAD_LOADER_PROBE_NOSTOP) \
 		-DGTAV_PROC_NOSTOP_IO=$(PAYLOAD_LOADER_NOSTOP_IO) \
 		-DGTAV_PROC_NOSTOP_STRICT=$(PAYLOAD_LOADER_NOSTOP_STRICT) \
@@ -245,7 +255,6 @@ $(ONIONHEN_DAEMON_ELF): $(PAYLOAD_LOADER_SRCS) src/payload_loader/embedded_worke
 		-DGTAV_PAYLOAD_SP_READY_POLL_USEC=$(PAYLOAD_LOADER_SP_READY_POLL_USEC) \
 		-DGTAV_PAYLOAD_SP_READY_POLL_MAX_USEC=$(PAYLOAD_LOADER_SP_READY_POLL_MAX_USEC) \
 		-DGTAV_PAYLOAD_INJECT_GUARD=$(PAYLOAD_LOADER_INJECT_GUARD) \
-		-DGTAV_PAYLOAD_CUSTOM_MOUNT=$(PAYLOAD_LOADER_CUSTOM_MOUNT) \
 		-DGTAV_LOADER_VERIFY_VERSION=$(PAYLOAD_LOADER_VERIFY_VERSION) \
 		-DGTAV_MENU_EMBEDDED_WORKER=1 \
 		$(LOADER_TARGET_CFLAGS) \
@@ -293,8 +302,8 @@ $(ETAHEN_RUNTIME_ELF): $(PAYLOAD_LOADER_SRCS) src/common/supervisor_lifecycle.c 
 		src/payload_loader/embedded_worker.S include/gtavmenu/loader_pins_generated.h \
 		include/gtavmenu/daemon_control.h include/gtavmenu/daemon_lifecycle.h \
 		include/gtavmenu/supervisor_lifecycle.h include/gtavmenu/render_phase_discovery.h \
-		$(FEATURE_MENU_FRAME_HOOK_PLAYERPED_ELF) $(BUILD_CONFIG_STAMP) | $(ETAHEN_OUTPUT_DIR) require-ps5-sdk
-	$(CC) $(CFLAGS) \
+		$(FEATURE_MENU_FRAME_HOOK_PLAYERPED_ELF) $(BUILD_CONFIG_STAMP) $(BUILD_VERSION_HEADER) | $(ETAHEN_OUTPUT_DIR) require-ps5-sdk
+	$(CC) $(CFLAGS) $(LOADER_VERSION_CFLAGS) \
 		-DGTAV_LOADER_PROBE_NOSTOP=$(PAYLOAD_LOADER_PROBE_NOSTOP) \
 		-DGTAV_PROC_NOSTOP_IO=$(PAYLOAD_LOADER_NOSTOP_IO) \
 		-DGTAV_PROC_NOSTOP_STRICT=$(PAYLOAD_LOADER_NOSTOP_STRICT) \
@@ -327,7 +336,6 @@ $(ETAHEN_RUNTIME_ELF): $(PAYLOAD_LOADER_SRCS) src/common/supervisor_lifecycle.c 
 		-DGTAV_PAYLOAD_SP_READY_POLL_USEC=$(PAYLOAD_LOADER_SP_READY_POLL_USEC) \
 		-DGTAV_PAYLOAD_SP_READY_POLL_MAX_USEC=$(PAYLOAD_LOADER_SP_READY_POLL_MAX_USEC) \
 		-DGTAV_PAYLOAD_INJECT_GUARD=$(PAYLOAD_LOADER_INJECT_GUARD) \
-		-DGTAV_PAYLOAD_CUSTOM_MOUNT=$(PAYLOAD_LOADER_CUSTOM_MOUNT) \
 		-DGTAV_LOADER_VERIFY_VERSION=$(PAYLOAD_LOADER_VERIFY_VERSION) \
 		-DGTAV_MANAGED_RUNTIME=1 \
 		-DGTAV_MENU_EMBEDDED_WORKER=1 \
@@ -387,8 +395,8 @@ payload-loader-build: $(PAYLOAD_LOADER_ELF)
 $(PAYLOAD_LOADER_ELF): $(PAYLOAD_LOADER_SRCS) src/payload_loader/embedded_worker.S \
 		$(FEATURE_MENU_FRAME_HOOK_PLAYERPED_ELF) include/gtavmenu/loader_pins_generated.h \
 		include/gtavmenu/daemon_control.h include/gtavmenu/daemon_lifecycle.h \
-		include/gtavmenu/render_phase_discovery.h $(BUILD_CONFIG_STAMP) | $(BUILD_PROFILE_DIR) require-ps5-sdk
-	$(CC) $(CFLAGS) \
+		include/gtavmenu/render_phase_discovery.h $(BUILD_CONFIG_STAMP) $(BUILD_VERSION_HEADER) | $(BUILD_PROFILE_DIR) require-ps5-sdk
+	$(CC) $(CFLAGS) $(LOADER_VERSION_CFLAGS) \
 		-DGTAV_LOADER_PROBE_NOSTOP=$(PAYLOAD_LOADER_PROBE_NOSTOP) \
 		-DGTAV_PROC_NOSTOP_IO=$(PAYLOAD_LOADER_NOSTOP_IO) \
 		-DGTAV_PROC_NOSTOP_STRICT=$(PAYLOAD_LOADER_NOSTOP_STRICT) \
@@ -423,7 +431,6 @@ $(PAYLOAD_LOADER_ELF): $(PAYLOAD_LOADER_SRCS) src/payload_loader/embedded_worker
 		-DGTAV_PAYLOAD_SP_READY_POLL_USEC=$(PAYLOAD_LOADER_SP_READY_POLL_USEC) \
 		-DGTAV_PAYLOAD_SP_READY_POLL_MAX_USEC=$(PAYLOAD_LOADER_SP_READY_POLL_MAX_USEC) \
 		-DGTAV_PAYLOAD_INJECT_GUARD=$(PAYLOAD_LOADER_INJECT_GUARD) \
-		-DGTAV_PAYLOAD_CUSTOM_MOUNT=$(PAYLOAD_LOADER_CUSTOM_MOUNT) \
 		-DGTAV_LOADER_VERIFY_VERSION=$(PAYLOAD_LOADER_VERIFY_VERSION) \
 		-DGTAV_MENU_EMBEDDED_WORKER=$(GTAV_MENU_EMBEDDED_WORKER) \
 		$(LOADER_TARGET_CFLAGS) \
@@ -489,10 +496,14 @@ $(FEATURE_MENU_FRAME_HOOK_PLAYERPED_ELF): $(MODULE_SRCS) $(MODULE_DEPS) $(BUILD_
 		-DGTAV_FRAME_HOOK_STOLEN_LEN=16u \
 		$(LDFLAGS) -o $@ $(MODULE_SRCS) $(PAD_INPUT_LDLIBS) $(QUIT_GUARD_LDLIBS)
 	$(PYTHON) tools/patch_inject_skip_sdk_patch.py $@
+	@# The loader refuses a worker larger than its in-game allocation; fail here instead of at inject.
+	$(PYTHON) tools/check_worker_span.py $@ --limit $(PAYLOAD_LOADER_CAVE_ALLOC) || { rm -f $@; exit 1; }
 
 feature-menu-frame-hook-playerped-build: $(FEATURE_MENU_FRAME_HOOK_PLAYERPED_ELF)
 
 package-target: package-payload package-onionhen package-etahen
+
+include make/universal.mk
 
 clean:
 	rm -rf $(BUILD_DIR)

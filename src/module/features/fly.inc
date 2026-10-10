@@ -179,15 +179,17 @@ static void fly_game_thread_tick(void) {
 }
 #endif  // GTAV_MENU_ENABLE_FRAME_HOOK
 
-// Worker-side cyclers. They advance the mode; the game-thread driver reads the live value. A non-Off
-// mode is refused until the frame hook is live (the velocity/camera natives run on that tick),
-// mirroring toggle_noclip() / cycle_autopilot_mode().
+// Worker-side cyclers, pick then apply (mode_pick_step): Left/Right stage a mode, Cross makes it the
+// live value the game-thread driver reads. A non-Off mode is refused until the frame hook is live
+// (the velocity/camera natives run on that tick), mirroring toggle_noclip() /
+// cycle_autopilot_mode().
+static ModePick g_fly_pick;
+static ModePick g_vehicle_fly_pick;
 static uint32_t cycle_fly_mode(uint32_t param) {
   const uint32_t action = GTAV_NATIVE_SHELL_ACTION_CYCLE_FLY_MODE;
   const uint32_t count = (uint32_t)(sizeof(kFlyModes) / sizeof(kFlyModes[0]));
-  if (param == 1u || param == 2u) {
-    g_fly_mode = (int)list_step((uint32_t)g_fly_mode, count, param == 2u ? -1 : 1);
-  }
+  if (mode_pick_step(&g_fly_pick, &g_fly_mode, count, param))
+    return ok(action, kFlyModes[g_fly_pick.pick % count].label);
   const uint32_t mode = (uint32_t)g_fly_mode % count;
   if (mode != (uint32_t)GTAV_FLY_OFF && !fly_hook_ready()) {
     return unavailable(action, "needs main-thread hook");
@@ -198,9 +200,8 @@ static uint32_t cycle_fly_mode(uint32_t param) {
 static uint32_t cycle_vehicle_fly(uint32_t param) {
   const uint32_t action = GTAV_NATIVE_SHELL_ACTION_CYCLE_VEHICLE_FLY;
   const uint32_t count = (uint32_t)(sizeof(kFlyModes) / sizeof(kFlyModes[0]));
-  if (param == 1u || param == 2u) {
-    g_vehicle_fly_mode = (int)list_step((uint32_t)g_vehicle_fly_mode, count, param == 2u ? -1 : 1);
-  }
+  if (mode_pick_step(&g_vehicle_fly_pick, &g_vehicle_fly_mode, count, param))
+    return ok(action, kFlyModes[g_vehicle_fly_pick.pick % count].label);
   const uint32_t mode = (uint32_t)g_vehicle_fly_mode % count;
   if (mode != (uint32_t)GTAV_FLY_OFF && !fly_hook_ready()) {
     return unavailable(action, "needs main-thread hook");

@@ -84,42 +84,49 @@ int gtav_proc_backend_init(void) {
   return 0;
 }
 
-int gtav_proc_find_game(const char* title_id, int* pid_out) {
-  char tid[128];
+int gtav_proc_foreground(char* title_id, size_t title_capacity, int* pid_out, uint64_t* token_out) {
+  char tid[128], check[128];
   int appid;
   int pid;
-
-  if (title_id == NULL || pid_out == NULL) {
-    return fail("find_game: null argument");
-  }
-
-  // 1. The foreground big app's app id.
+  if (!title_id || title_capacity < 10u || !pid_out || !token_out)
+    return fail("foreground: invalid argument");
+  title_id[0] = 0;
+  *pid_out = -1;
+  *token_out = 0;
   appid = sceSystemServiceGetAppIdOfRunningBigApp();
-  if (appid < 0) {
-    return fail("find_game: no running big app (appid=%d)", appid);
-  }
-
-  // 2. Confirm it is the title we want.
+  if (appid <= 0) return fail("foreground: no running big app (appid=%d)", appid);
   memset(tid, 0, sizeof(tid));
-  if (sceSystemServiceGetAppTitleId(appid, tid) != 0) {
-    return fail("find_game: GetAppTitleId failed appid=0x%x", appid);
-  }
-  if (strcmp(tid, title_id) != 0) {
-    return fail("find_game: foreground app is %s, not %s", tid, title_id);
-  }
-
-  // 3. Map the app id back to a pid (no direct API, so scan like the etaHEN loader).
+  if (sceSystemServiceGetAppTitleId(appid, tid) != 0)
+    return fail("foreground: title query failed appid=0x%x", appid);
+  const size_t title_length = strnlen(tid, sizeof(tid));
+  if (!title_length || title_length >= sizeof(tid) || title_length >= title_capacity)
+    return fail("foreground: invalid title appid=0x%x", appid);
   for (pid = 1; pid <= 9999; ++pid) {
     int current = 0;
-    if (_sceApplicationGetAppId(pid, &current) < 0) {
-      continue;
-    }
-    if (current == appid) {
-      *pid_out = pid;
-      return 0;
-    }
+    if (_sceApplicationGetAppId(pid, &current) < 0 || current != appid) continue;
+    memset(check, 0, sizeof(check));
+    if (sceSystemServiceGetAppIdOfRunningBigApp() != appid ||
+        sceSystemServiceGetAppTitleId(appid, check) != 0 || memcmp(tid, check, sizeof(tid)) != 0 ||
+        _sceApplicationGetAppId(pid, &current) < 0 || current != appid)
+      return fail("foreground: instance changed during discovery");
+    memcpy(title_id, tid, title_length + 1u);
+    *pid_out = pid;
+    *token_out = (uint64_t)appid;
+    return 0;
   }
-  return fail("find_game: no pid for appid 0x%x (%s)", appid, title_id);
+  return fail("foreground: no pid for appid 0x%x (%s)", appid, tid);
+}
+
+int gtav_proc_find_game(const char* title_id, int* pid_out) {
+  char foreground[128];
+  uint64_t token;
+  if (!title_id || !pid_out) return fail("find_game: null argument");
+  if (gtav_proc_foreground(foreground, sizeof(foreground), pid_out, &token) != 0) return -1;
+  if (strcmp(foreground, title_id) != 0) {
+    *pid_out = -1;
+    return fail("find_game: foreground app is %s, not %s", foreground, title_id);
+  }
+  return 0;
 }
 
 uint64_t gtav_proc_app_id(int pid) {

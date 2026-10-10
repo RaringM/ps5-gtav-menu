@@ -338,20 +338,6 @@ static uint32_t toggle_spawn_invincible() {
                                                : "spawn invincible disabled");
 }
 
-// Thin Population: flag flip only. SET_*_POPULATION_BUDGET(0) are global int setters (no entity
-// walk), but the engine re-raises the budget, so they are re-asserted every tick from
-// tick_player_toggles; the engine restores normal density once we stop forcing 0 (no explicit
-// restore needed on disable).
-static uint32_t toggle_thin_population() {
-  const uint32_t action = GTAV_NATIVE_SHELL_ACTION_TOGGLE_THIN_POPULATION;
-  if (!g_n.set_ped_population_budget || !g_n.set_vehicle_population_budget) {
-    return unavailable(action, "missing population natives");
-  }
-  g_thin_population_enabled = !g_thin_population_enabled;
-  return ok(action,
-            g_thin_population_enabled ? "thin population enabled" : "thin population disabled");
-}
-
 // Ignored By Everyone: police, ambient peds and gangs all leave the player alone. The ignore
 // flags are sticky player-state setters, so the game-thread tick re-asserts them while enabled
 // (survives respawns) and the handler restores the defaults once on disable -- same shape as

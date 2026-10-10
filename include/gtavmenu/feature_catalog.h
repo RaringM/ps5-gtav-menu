@@ -22,8 +22,22 @@ typedef struct GtavVehicleEntry {
   uint32_t model_hash;
 } GtavVehicleEntry;
 
+typedef enum GtavWeaponCategory {
+  GTAV_WEAPON_CATEGORY_PISTOLS = 0,
+  GTAV_WEAPON_CATEGORY_SMG_MG,
+  GTAV_WEAPON_CATEGORY_RIFLES,
+  GTAV_WEAPON_CATEGORY_SNIPERS,
+  GTAV_WEAPON_CATEGORY_SHOTGUNS,
+  GTAV_WEAPON_CATEGORY_HEAVY,
+  GTAV_WEAPON_CATEGORY_THROWABLES,
+  GTAV_WEAPON_CATEGORY_MELEE,
+  GTAV_WEAPON_CATEGORY_COUNT,
+} GtavWeaponCategory;
+
 typedef struct GtavWeaponEntry {
-  char name[32];  // GTA V weapon name (longest observed 28, WEAPON_GRENADELAUNCHER_SMOKE); for logs
+  char name[32];   // stable GTA native name, used for logs and hashing audits
+  char label[36];  // explicit friendly menu label; no substring categorization at runtime
+  uint8_t category;
   uint32_t hash;  // precomputed joaat(name), so give_weapons() needs no GET_HASH_KEY
   int ammo;       // ammo to grant with the weapon
 } GtavWeaponEntry;

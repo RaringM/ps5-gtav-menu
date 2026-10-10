@@ -28,7 +28,8 @@ static uint32_t start_teleport(uint32_t action, float x, float y, float z, const
   // ground when we unfreeze. SET_ENTITY_COORDS(entity, x,y,z, xAxis,yAxis,zAxis,
   // clearArea); clearArea=0 -- the freeze + collision request handle streaming.
   invoke_void(g_n.freeze_entity_position, entity, 1);
-  invoke_void(g_n.set_entity_coords, entity, x, y, z + 2.0f, 0, 0, 0, 0);
+  const float lift = clamp == GTAV_TP_CLAMP_INTERIOR ? 0.0f : 2.0f;
+  invoke_void(g_n.set_entity_coords, entity, x, y, z + lift, 0, 0, 0, 0);
   invoke_void(g_n.request_collision_at_coord, x, y, z);
   g_tp_entity = entity;
   g_tp_is_vehicle = (entity != ped) ? 1 : 0;
@@ -147,6 +148,9 @@ static uint32_t return_saved_location() {
 // All restores are modify-existing / global setters -- worker-safe like the toggles
 // themselves. Each native call is guarded so a partially-resolved table is safe.
 static uint32_t disable_all_features() {
+  crowd_request_stop();
+  g_population_density_index = 1u;
+  g_thin_population_enabled = 0;
   const uint32_t action = GTAV_NATIVE_SHELL_ACTION_DISABLE_ALL;
 
   // Capture whether weapon-damage was actually active BEFORE the flag reset below. The
@@ -314,6 +318,23 @@ static uint32_t teleport_preset(uint32_t param) {
   return start_teleport(action, d.x, d.y, d.z, d.name, GTAV_TP_CLAMP_FLOOR);
 }
 
+// Custom Packs: a pack map row's declared place (pack.cfg map row x/y/z, whole metres). An
+// interior's place is inside it: exact (the ground probe finds the roof above it), not
+// lifted, and released once the interior's collision is resident.
+static uint32_t teleport_pack_map(uint32_t param) {
+  const uint32_t action = GTAV_NATIVE_SHELL_ACTION_TELEPORT_PACK_MAP;
+  int32_t x = 0, y = 0, z = 0;
+  const char* text = nullptr;
+  int interior = 0;
+  if (!pack_map_place(param, &x, &y, &z, &text, &interior))
+    return unavailable(action, "pack map has no place");
+  // Custom Packs > Locations: which row was taken, for the hardware check (F2.4).
+  placement_note("pack teleport row=%u at (%d,%d,%d) interior=%d text=%.39s", (unsigned)param,
+                 (int)x, (int)y, (int)z, interior, text);
+  return start_teleport(action, (float)x, (float)y, (float)z, text,
+                        interior ? GTAV_TP_CLAMP_INTERIOR : GTAV_TP_CLAMP_FLOOR);
+}
+
 static uint32_t preset_stealth() {
   const uint32_t action = GTAV_NATIVE_SHELL_ACTION_PRESET_STEALTH;
   if (!has_core_player_natives() || !g_n.set_player_wanted_level ||
@@ -416,4 +437,3 @@ static uint32_t preset_parkour() {
   invoke_void(g_n.set_ped_move_rate_override, ped, current_move_rate());
   return ok(action, "parkour preset enabled");
 }
-

@@ -43,7 +43,8 @@
       "buttonGlyphs": false,
       "scriptGlobals": true,
       "phaseIntercept": true,
-      "phaseDrawList": true
+      "phaseDrawList": true,
+      "customPacks": false
     },
     "injection": {
       "lane": "ptrace-free-cave",

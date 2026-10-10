@@ -136,6 +136,10 @@ GTAV_FEATURE_NATIVE(set_vehicle_mod, SET_VEHICLE_MOD)
 GTAV_FEATURE_NATIVE(get_num_vehicle_mods, GET_NUM_VEHICLE_MODS)
 // read the installed tier of a slot so LSC rows match the car
 GTAV_FEATURE_NATIVE(get_vehicle_mod, GET_VEHICLE_MOD)
+// GXT label of a mod tier (const char* into the vehicle's mod kit; worker-safe getter) and the
+// GXT label -> localized text lookup (const char* into a static game buffer; worker-safe).
+GTAV_FEATURE_NATIVE(get_mod_text_label, GET_MOD_TEXT_LABEL)
+GTAV_FEATURE_NATIVE(get_filename_for_audio_conversation, GET_FILENAME_FOR_AUDIO_CONVERSATION)
 // Saved vehicles (garage): read the current vehicle's model hash to respawn it (worker-safe
 // getter).
 GTAV_FEATURE_NATIVE(get_entity_model, GET_ENTITY_MODEL)
@@ -337,3 +341,9 @@ GTAV_FEATURE_NATIVE(detach_entity, DETACH_ENTITY)
 GTAV_FEATURE_NATIVE(give_weapon_component_to_ped, GIVE_WEAPON_COMPONENT_TO_PED)
 GTAV_FEATURE_NATIVE(remove_weapon_component_from_ped, REMOVE_WEAPON_COMPONENT_FROM_PED)
 GTAV_FEATURE_NATIVE(has_ped_got_weapon_component, HAS_PED_GOT_WEAPON_COMPONENT)
+// Custom pack `hide` rows (custom_pack_hide.inc): hide stock map entities of one model inside a
+// sphere for the session; REMOVE_MODEL_HIDE backs the host `pack-unhide` debug undo. Game-thread
+// only: after a successful add the handler reads the script-thread context (fs:0-0x140, +0x8)
+// with no null test, which the static worker-safety walk misses.
+GTAV_FEATURE_NATIVE(create_model_hide, CREATE_MODEL_HIDE)
+GTAV_FEATURE_NATIVE(remove_model_hide, REMOVE_MODEL_HIDE)

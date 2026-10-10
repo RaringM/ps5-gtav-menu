@@ -6,6 +6,7 @@
 #   ./gtavmenu status    --host <ps5-ip>
 #
 # It forwards to tools/install_release.py (Python stdlib only) and installs the
-# locally staged bundle produced by `make package-payload`.
+# locally staged bundle produced by `make package-universal`.
+# The universal daemon embeds its workers; install validates it and prints deployment guidance.
 here=$(CD=$(dirname "$0"); cd "$CD" && pwd)
 exec python3 "$here/tools/install_release.py" "$@"

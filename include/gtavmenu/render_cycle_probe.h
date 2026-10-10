@@ -95,7 +95,7 @@ uint32_t gtav_render_cycle_read(GtavRenderCycleReadWord read_word, void* context
 // primitive to the phase experiment without turning the observer's historical state into a gate.
 uint32_t gtav_render_cycle_sample_target(GtavRenderCycleSample* out);
 #if GTAV_RENDER_CYCLE_PROBE
-// Arm once, only after research/tools/render/render_diagnostics.py cycle-arm has verified live pins
+// Arm once, only after the host-side render diagnostics have verified live pins
 // + mappings. 1 = arm; 2 = permanently disarm. Does not start/rearm the append-only event capture.
 int gtav_render_cycle_arm(uint32_t operation);
 // Called only while owning the existing callback drain guard. Never used as a rendering gate.

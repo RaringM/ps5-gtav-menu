@@ -1,178 +1,135 @@
 # GTAV-Menu for PS5
 
-GTAV-Menu is an in-process, single-player menu for the disc release of GTA V on PS5. This branch
-packages **PPSA04264 / 01.005.000**, **PPSA04264 / 01.010.002**, and
-**PPSA04263 / 01.010.002** as primary targets. The menu starts hidden and opens with
-**R1 + D-pad Left**.
+A single-player mod menu for GTA V Enhanced on a jailbroken PS5. Spawn and customize vehicles,
+change your character and weapons, teleport, build scenes, and load custom content from PC mods.
+The menu starts hidden; press **R1 + D-pad Left** to open it.
 
-## Requirements
+## Compatibility
 
-- A legally owned PPSA04264 or PPSA04263 installation at the exact content version named in your package.
-- A jailbroken PS5 and a compatible payload launcher.
-- Stock etaHEN 2.5B or newer when using the etaHEN plugin delivery.
-- The PS5 payload SDK v0.43, set with `PS5_PAYLOAD_SDK` or installed at
-  `$HOME/Projects/PS5/ps5-payload-sdk`.
-- `make`, Python 3.11+, `curl`, `socat`, and LLVM 20. Direct builds reject another LLVM major; set
-  `LLVM_CONFIG` to the absolute path of LLVM 20's `llvm-config` when multiple versions are
-  installed.
+Each universal package automatically selects the matching title ID and exact game content version.
 
-The operator scripts use the Python modules included under `tools/`; no `pip install` or virtual
-environment is required on the publication branch. Build metadata records the exact compiler
-version so console failures can be matched to the ELF that produced them.
+| Title ID | Game version | Menu | Custom packs |
+| --- | --- | --- | --- |
+| PPSA04264 (US) | 01.005.000 | Supported | Unavailable |
+| PPSA04264 (US) | 01.010.002 | Supported | Experimental |
+| PPSA04263 (EU) | 01.010.002 | Supported | Experimental |
+
+Other title IDs and versions are not supported. This project is for **Story Mode**.
+You need your own copy of the game, a jailbroken console, and a compatible payload launcher.
+Universal selection has been tested on both 01.010.002 titles; 01.005.000 selection remains untested.
+
+## Install a package
+
+Choose **one** delivery. Each universal bundle supports all three builds above and includes setup instructions.
+
+| Delivery | Installation |
+| --- | --- |
+| Standalone | Send `gtav-menu-daemon.elf` with your payload launcher before starting GTA. All three workers are embedded; no separate worker upload is needed. |
+| OnionHEN | Copy `GTAV00001.elf` to `/data/OnionHEN/plugins/`. In Toolbox, open **Payloads & Kernel > Plugins > GTAV Menu** and enable **Running**. The package targets OnionHEN v0.0.13. |
+| etaHEN | Copy `GTAV00001.plugin` to `/data/etaHEN/plugins/`. Enable **Running** under **Toolbox > Plugins**. Targets the etaHEN 2.5B plugin interface; see [tested setups](docs/user-guide.md#delivery-compatibility-and-updates). |
+
+Start GTA and load Story Mode. After the **GTAVMenu injected** notification, open the menu.
+Packaged loaders watch for later GTA relaunches; plugin **Auto-start** also starts the watcher
+when the launcher starts.
+
+To stop or update a plugin, disable **Auto-start** and **Running** in its Toolbox, then wait for
+`/data/GTAVMenu/daemon.lock` to disappear. For standalone, create an empty
+`/data/GTAVMenu/daemon.stop` file. Run only one loader at a time.
+After replacing an etaHEN plugin, reboot and reload etaHEN before enabling it to clear cached plugin code.
+
+## Controls and features
+
+| Control | Action |
+| --- | --- |
+| R1 + D-pad Left | Open / hide |
+| D-pad Up / Down | Navigate |
+| D-pad Left / Right | Change a value |
+| Cross | Select / apply |
+| Circle | Back |
+
+- **Vehicles:** class filters, previews, saved vehicles, spawning and LS Customs parts.
+- **Player and world:** skins, wardrobe, weapons and attachments, teleportation, weather and time.
+- **Scenes:** spawn and move objects, peds and vehicles; save and load your placements.
+- **Custom packs:** vehicles, wheels, weapons, peds, clothing, props, maps, interiors, textures
+  and effects on the 01.010.002 targets.
+- **Interface:** English and Brazilian Portuguese, configurable appearance and keybinds.
 
 ## Build and package
 
+Linux is the tested build host. Install **make**, **Python 3.11+**, **LLVM 20** (Clang, LLD and
+llvm-config), and **PS5 payload SDK v0.43**. Select the SDK and toolchain explicitly:
+
 ```sh
-make all
-make package-payload
-make package-onionhen
-make etahen
-make package-etahen
+export PS5_PAYLOAD_SDK=/path/to/ps5-payload-sdk
+export LLVM_CONFIG=/usr/bin/llvm-config-20
+make package-universal
 ```
 
-`make all` builds unstripped production loader and worker ELFs under `build/ps5`. The package
-targets create standalone, OnionHEN, and etaHEN bundles under `build/pkg`. `make etahen` builds the
-same production worker inside a Toolbox-managed `GTAV00001.plugin`. Building does not deploy or
-modify a console.
+Universal ELFs are written under `build/ps5/universal/production/`; the three bundles are under
+`build/pkg/universal/`. To build only one delivery, add `UNIVERSAL_DELIVERIES=standalone`
+(or `onionhen` / `etahen`). Builds do not deploy to the console.
 
-Fedora's system LLVM may be newer than the release toolchain. Build with the included Podman image
-without replacing system packages:
+Exact-target builds remain available: `make GTAV_TARGET=ppsa04263-01.010.002 all` builds the EU
+loader and worker, and `package-target` packages its three deliveries. The default target is
+`ppsa04264-01.010.002`; use a lowercase title/version from the table.
+
+Alternatively, the included container pins the SDK and compiler:
 
 ```sh
-podman build -t gtav-menu-ps5-builder .
-podman run --rm --userns=keep-id -v "$PWD:/workspace:Z" \
-  gtav-menu-ps5-builder all package-payload package-onionhen package-etahen
+podman build -t gtav-menu-builder .
+podman run --rm --userns=keep-id -v "$PWD:/workspace:Z" gtav-menu-builder \
+  package-universal
 ```
 
-For host-native builds and `menu-ctl.sh` on Fedora 44, install the parallel LLVM 20 packages once
-and select them explicitly:
+## Run from source
+
+Host deployment also needs **curl**, **socat**, and the console's FTP, ps5debug and payload services
+(default ports: 2121, 744 and 9021). Set your target and console address, start GTA, and wait until
+you have control in Story Mode:
 
 ```sh
-sudo dnf install clang20 llvm20 llvm20-devel lld20
-export LLVM_CONFIG=/usr/lib64/llvm20/bin/llvm-config
-```
-
-## Run
-
-With GTA already in single-player and player control available:
-
-```sh
-PS5_HOST=<console-ip> ./menu-ctl.sh cave-inject
+export GTAV_TARGET=ppsa04264-01.010.002  # use ppsa04263-01.010.002 for EU
+export PS5_HOST=<console-ip>
+./menu-ctl.sh cave-inject
 ./menu-ctl.sh doctor
 ```
 
-To arm the loader before starting GTA:
+To start the loader **before** launching GTA, use `./menu-ctl.sh watch` instead. Add `--persist`
+to inject after each relaunch; `./menu-ctl.sh daemon-stop` stops that watcher. Use Toolbox to stop
+an OnionHEN or etaHEN plugin.
+
+For health checks of an installed universal package, use `GTAV_AUTO_TARGET=1 ./menu-ctl.sh doctor`.
+Source injection and pack conversion still use an explicit `GTAV_TARGET`.
+
+The loader checks the exact game build and verifies its writes. After a failed or interrupted
+injection, restart GTA before trying again. Run `./menu-ctl.sh help` for all host commands.
+
+## Custom packs
+
+Custom assets require the console's `/data` to be shared with GTA by ShadowMountPlus or your HEN
+setup. Without game access to that folder, the regular menu works but custom assets are unavailable.
+Packs are installed separately and load only when you press **Load** in the menu:
 
 ```sh
-PS5_HOST=<console-ip> ./menu-ctl.sh watch
-PS5_HOST=<console-ip> ./menu-ctl.sh watch --persist
-./menu-ctl.sh daemon-stop
+./menu-ctl.sh pack-install /path/to/my-pack --activate-add
 ```
 
-Run `./menu-ctl.sh` without arguments for all operator commands. The supported route is ptrace-free,
-checks the exact game build, verifies writes, and does not permanently elevate the target. Use a
-fresh game process after a failed or interrupted injection.
+In Story Mode, open **Custom Packs > Manage Packs** to select content, then return and press
+**Load N selected packs**. Up to 8 packs can be active, with 64 installed. Restart GTA to change
+the loaded set; packs cannot be unloaded during a session.
 
-Controls: D-pad Up/Down navigates, D-pad Left/Right changes values, Cross selects, and Circle goes
-back. R1 + D-pad Left opens or hides the menu.
+The published converters build runtime packs from supported PC **Legacy** mods and templates
+from your own game. Model converters need NumPy (`python3 -m pip install numpy`); ordinary menu
+builds and deployment do not. Enhanced PC textures are supported, but Enhanced PC models are not.
+No game files or third-party mod assets are included.
 
-For etaHEN, copy
-`build/pkg/ppsa04264-01.010.002/etahen/GTAV00001.plugin` to `/data/etaHEN/plugins/`, then use etaHEN
-Toolbox to enable **Running** or **Auto-start**. The visible plugin launches an embedded helper
-through etaHEN's utility service so the helper receives a valid payload runtime and kernel binding.
-When Toolbox stops the visible plugin, the helper observes its supervisor lease closing, runs the
-normal menu shutdown, verifies the render callback and frame hook were restored, and exits.
+| Guide | Contents |
+| --- | --- |
+| [User guide](docs/user-guide.md) | Install and load packs, menu usage, known limits and troubleshooting |
+| [Pack author guide](docs/pack-author-guide.md) | Obtain templates, convert mods, validate and share packs |
+| [Pack reference](docs/pack-reference.md) | `pack.cfg` format, commands, limits and refusal messages |
+| [Stock conversion coverage](docs/stock-conversion.md) | Supported replacements and clothing slots |
 
-Tag pushes matching `v*` build standalone, OnionHEN, and etaHEN packages for all three exact targets
-and publish nine checksummed ZIPs. You can also run the release workflow manually with an existing
-tag. Names identify the game build and delivery, for example
-`GTAVMenu-PPSA04264-v01.005.000-etahen.zip` and `GTAVMenu-PPSA04264-v01.010.002-etahen.zip`.
-The menu release tag and source commit are recorded in `release-manifest.json`.
-Releases retain debug symbols; rebuilt artifacts require a new on-hardware regression before
-distribution.
+## License
 
-To package a specific game version locally:
-
-```sh
-make GTAV_TARGET=ppsa04264-01.005.000 package-target
-make GTAV_TARGET=ppsa04264-01.010.002 package-target
-make GTAV_TARGET=ppsa04263-01.010.002 package-target
-```
-
-## etaHEN container tools
-
-`python3 tools/inspect_etahen_plugin.py example.plugin` validates container metadata and ELF
-structure and reports SHA-256 hashes. `python3 tools/make_etahen_plugin.py --help` describes the
-offline container writer. Both tools use only the Python standard library. The `make etahen` target
-uses the same format implementation for both the embedded helper and installable supervisor.
-
-## Custom asset intake
-
-Custom cars, props, and textures are under development. **This build does not convert or load
-custom assets.** The offline inspector is available now and needs only Python's standard library:
-
-```sh
-python3 tools/inspect_assets.py status
-python3 tools/inspect_assets.py inspect /path/to/addon.zip --output build/assets/intake.json
-```
-
-Inputs can be folders, ordinary ZIPs, or supported unencrypted PC RPF7 containers. Inspection
-checks container bounds, resource compression/page sizes, XML syntax, path safety, and duplicate
-resource names/hashes. GXT2 localization tables and PC Legacy YTD texture names, formats, pointer
-bounds, and mip spans are also inspected. Per-texture diagnostics remain conversion blockers even
-when container inspection succeeds. Names containing the exact `script_rt_` marker are reported
-as target-native special resources and are ineligible for ordinary static-texture conversion,
-while their source payload diagnostics remain available. No textures are resized, dropped, or
-replaced. Localized readme filenames are accepted only as non-loadable ancillary files.
-
-For setup-defined PC add-ons, the report traces declared files and selected vehicle/model,
-texture, handling, and tuning references. It flags missing files, duplicate IDs/hashes, and
-possible cross-pack conflicts. Stock dependencies remain unverified; another pack or an
-undeclared loose file cannot silently satisfy a pack-local reference. This is a partial
-dependency report, not complete dependency closure or an activation plan.
-
-Inspection does not establish PS5 GPU compatibility, metadata semantics, stock
-dependency closure, or runtime registration safety. Unsupported table encodings and scripts are
-reported rather than guessed or executed. ZIP64 and protected archives require decoded input.
-
-Reports are deterministic JSON and must use a new filename outside the input tree. An `inspect`
-exit code of zero means only that inspection completed without errors. `validate`, `convert`, and
-`package` currently return a nonzero result with the outstanding qualification gates; they never
-create a loadable bundle. No manifest or command-line override can enable unqualified loading.
-
-The intended first release is additive-only, rejects unsupported dependencies, and requires a
-fresh game process after pack changes. The existing loader and retail archives remain untouched.
-
-Large PC add-on RPFs can be inventoried without loading the whole archive into memory, and exact
-vehicle source fixtures can be imported into `build/` for conversion work:
-
-```sh
-python3 tools/import_pc_assets.py inventory path/to/dlc.rpf --output build/assets/pack-inventory.json
-python3 tools/import_pc_assets.py vehicle path/to/dlc.rpf --model model_name \
-  --output-dir build/assets/pc-fixtures/model-name
-```
-
-The importer preserves exact RSC7 resources and pack metadata, records hashes and source table
-identities, and keeps conversion/upload/runtime gates false. Vehicle imports also isolate and hash
-the matching vehicle, variation, handling, layout and light records when they are uniquely present;
-ambiguous or stock references remain explicit in `metadata-selection/selection.json`. Console-side
-authored content is reserved under `/data/GTAVMenu/custom`, with converted packs planned beneath
-`custom/packs`.
-
-The first authored 16 x 16 BC1 texture can now be assembled into a strict inactive package with
-`make custom-texture-pack` and checked with `./menu-ctl.sh custom-verify`. Its upload/readback
-tooling is additive and does not change the activation catalog. The engine mount and ownership
-contract is still unqualified, so `custom-activate` and `custom-preview` fail closed and this is
-not yet a live-test-ready custom asset.
-
-## Custom maps from stock models
-
-The production menu now has a bounded custom-map lane for authored scenes made from stock models.
-`make custom-map` builds an eight-prop portable test yard, and `./menu-ctl.sh map-upload` verifies,
-uploads and reads back its versioned `map.cfg`. Load it from **World > Spawned Entities > Load Map**
-or with `./menu-ctl.sh map-load`; the menu supports cancellation and owns every created entity for
-cleanup. `docs/custom-maps.md` in the development checkout describes the manifest format and live
-acceptance sequence. This lane does not claim custom mesh, texture, collision or metadata loading.
-
-Licensed under the [MIT License](LICENSE). GTA V, PlayStation, the PS5 payload SDK, and third-party
-catalog inputs are not covered by that license. See `THIRD_PARTY_NOTICES` for catalog attribution.
+See [LICENSE](LICENSE) and [third-party notices](THIRD_PARTY_NOTICES).

@@ -28,6 +28,9 @@ GTA V Enhanced (**{title_id}, version {content_version}**) mod menu daemon.
 4. When the “GTAVMenu injected” notification appears, press **R1 + D-pad Left** to open the menu.
 
 Use D-pad Up/Down to move, Left/Right to change values, Cross to select, and Circle to go back.
+
+Custom assets require 01.010.002 and the console `/data` shared with GTA through ShadowMountPlus
+or the HEN setup. Without it the regular menu remains usable, with custom assets unavailable.
 The daemon stays running and injects again after each GTA V relaunch. To stop it, create an empty
 `/data/GTAVMenu/daemon.stop` file using FTP or a file manager; it exits after safely retiring the menu.
 """
@@ -176,7 +179,7 @@ def stage_package(
         "primaryLaunchSurface": "generic PS5 payload launcher",
         "ps5debugDependency": False,
         "requiresHardwareValidation": True,
-        "loaderLog": "/data/GTAVMenu/payload-loader.log",
+        "loaderLog": "/data/GTAVMenu/gtav-menu.log",
         "targetManifestSha256": sha256_file(target_manifest),
         "buildConfigSha256": sha256_file(build_config),
         "files": entries,

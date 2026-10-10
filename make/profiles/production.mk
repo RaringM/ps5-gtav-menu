@@ -23,6 +23,10 @@ WORKER_REQUIRE_CONTEXT = 0
 FRAME_HOOK_SELF_START_WORKER := $(GTAV_TARGET_SELF_START)
 RENDER_PHASE_INTERCEPT := $(GTAV_TARGET_PHASE_INTERCEPT)
 GTAV_MENU_PHASE_DRAW_LIST := $(GTAV_TARGET_PHASE_DRAW_LIST)
+# Runtime custom pack lane (worker device/stream lane requiring game-visible /data), on where the
+# target manifest sets features.customPacks (the 01.010.002 executables). `?=` so both
+# `make all CUSTOM_PACKS=0` and `CUSTOM_PACKS=0 make all` build the lane-off variant.
+CUSTOM_PACKS ?= $(GTAV_TARGET_CUSTOM_PACKS)
 
 PAYLOAD_LOADER_PROBE_NOSTOP := $(GTAV_TARGET_PROBE_NOSTOP)
 PAYLOAD_LOADER_NOSTOP_IO := $(GTAV_TARGET_NOSTOP_IO)

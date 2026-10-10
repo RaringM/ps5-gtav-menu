@@ -16,6 +16,7 @@
 #include "gtavmenu/features.h"
 #include "gtavmenu/frame_hook.h"
 #include "gtavmenu/inject_lock.h"
+#include "gtavmenu/localization.h"
 #include "gtavmenu/log.h"
 #include "gtavmenu/native_bridge.h"
 #include "gtavmenu/notify.h"
@@ -253,6 +254,11 @@ static void push_list_values(void) {
       gtav_native_bridge_set_list_value(action, value);
     }
   }
+  gtav_native_bridge_set_list_value(
+      GTAV_NATIVE_SHELL_ACTION_CYCLE_SPEEDOMETER_LAYOUT,
+      gtav_native_bridge_speedometer_layout() ? "Compact" : "Classic");
+  gtav_native_bridge_set_list_value(GTAV_NATIVE_SHELL_ACTION_CYCLE_LANGUAGE,
+                                    gtav_locale_display_name(gtav_locale_id()));
 }
 #endif
 
@@ -264,7 +270,7 @@ static void push_action_toast(void) {
   GtavFeatureState st;
   gtav_features_snapshot(&st);
   if (st.last_result != GTAV_FEATURE_RESULT_NONE) {
-    gtav_native_bridge_push_toast(st.last_message, st.last_result);
+    gtav_native_bridge_push_toast(gtav_locale_translate(st.last_message), st.last_result);
   }
 }
 #endif
@@ -278,11 +284,16 @@ static void set_worker_hz(uint32_t hz);
    index for each lives in the native bridge, so it round-trips through the feature profile (v11)
    instead of resetting to default on every re-inject. */
 static const uint32_t kWorkerHzChoices[] = {60u, 72u, 90u, 120u};
+static const char* const kWorkerHzLabels[] = {"60 Hz", "72 Hz", "90 Hz", "120 Hz"};
 static const uint32_t kToastTicks[] = {120u, 180u, 270u, 360u};
 static const char* const kToastLabels[] = {"2.0 s", "3.0 s", "4.5 s", "6.0 s"};
 #define GTAV_MENU_WORKER_HZ_COUNT \
   ((uint32_t)(sizeof(kWorkerHzChoices) / sizeof(kWorkerHzChoices[0])))
 #define GTAV_MENU_TOAST_COUNT ((uint32_t)(sizeof(kToastTicks) / sizeof(kToastTicks[0])))
+_Static_assert(sizeof(kWorkerHzLabels) / sizeof(kWorkerHzLabels[0]) == GTAV_MENU_WORKER_HZ_COUNT,
+               "one Worker Hz label per choice");
+_Static_assert(sizeof(kToastLabels) / sizeof(kToastLabels[0]) == GTAV_MENU_TOAST_COUNT,
+               "one Toast Time label per choice");
 
 /* v13 feel/accessibility cyclers. Motion is a 2-way (Full/Reduced) flag held in the bridge (the
    draw path reads it). Nav Delay / Nav Speed tune the live D-pad auto-repeat cadence (poll ticks;
@@ -317,13 +328,11 @@ static void apply_nav_repeat(void) {
 static void apply_view_settings_from_profile(void) {
   uint32_t whz = gtav_native_bridge_worker_hz_index() % GTAV_MENU_WORKER_HZ_COUNT;
   uint32_t ti = gtav_native_bridge_toast_time_index() % GTAV_MENU_TOAST_COUNT;
-  char label[16];
   gtav_native_bridge_set_worker_hz_index(whz);
   gtav_native_bridge_set_toast_time_index(ti);
   set_worker_hz(kWorkerHzChoices[whz]);
   gtav_native_bridge_set_toast_ticks(kToastTicks[ti]);
-  snprintf(label, sizeof(label), "%u Hz", (unsigned)kWorkerHzChoices[whz]);
-  gtav_native_bridge_set_list_value(GTAV_NATIVE_SHELL_ACTION_CYCLE_WORKER_HZ, label);
+  gtav_native_bridge_set_list_value(GTAV_NATIVE_SHELL_ACTION_CYCLE_WORKER_HZ, kWorkerHzLabels[whz]);
   gtav_native_bridge_set_list_value(GTAV_NATIVE_SHELL_ACTION_CYCLE_TOAST_TIME, kToastLabels[ti]);
   // v13: Reduce Motion + Nav Delay/Speed. Clamp the restored indices, actuate the pad repeat
   // cadence, and seed the cycler displays. (Reduce Motion needs no actuation -- the draw path reads
@@ -340,17 +349,110 @@ static void apply_view_settings_from_profile(void) {
 }
 #endif
 
-/* Setting cyclers for render cadence + toast dwell have no immediately visible effect (unlike
-   Theme/Draw Side, which you SEE change), so a Cross "apply" press (emit_toast=1) confirms the
-   new value with a toast -- the same acknowledgement every other row gives. Left/Right
-   (emit_toast=0) stay quiet and rely on the live "< value >" display, matching the cycler
-   convention. Works in every build: push_toast is a no-op when toasts are built out, and these
-   cyclers are pure bridge state (no native-feature gate). */
+/* "<name>: <value>" toast for a setting step that asks for one (emit_toast): every Left/Right step
+   of a SETTING_TOAST row such as Toast Time, and an explicit action+param mailbox command. Quiet
+   SETTING steps (emit_toast=0) rely on the live "< value >" display. Works in every build:
+   push_toast is a no-op when toasts are built out. */
 static void push_setting_toast(int emit_toast, const char* name, const char* value) {
   if (!emit_toast) return;
   char msg[80];
-  snprintf(msg, sizeof(msg), "%s: %s", name, value);
+  snprintf(msg, sizeof(msg), "%s: %s", gtav_locale_translate(name), gtav_locale_translate(value));
   gtav_native_bridge_push_toast(msg, GTAV_FEATURE_RESULT_OK);
+}
+
+/* Menu-settings cyclers (Settings > Menu / Runtime): pure bridge render-state, no game native, so
+   they work in every build. All are live SETTING rows (list_kinds.def): param 2 = prev (Left),
+   anything else = next (Right); Cross (param 0) never reaches them (setting_row_ignores_apply).
+   A step sets the bridge index, refreshes the live "< value >", actuates the value where the bridge
+   alone is not enough (worker period, toast dwell, pad repeat cadence), toasts "<name>: <value>"
+   for the rows that name one, and autosaves so chrome settings stick across re-injects without a
+   manual Runtime > Save Profile. Language is not here: it steps by locale id (handled inline). */
+typedef struct {
+  uint32_t action;
+  uint32_t count;             /* fixed choice count; 0 = count_fn() */
+  uint32_t (*count_fn)(void); /* bridge-owned choice count */
+  uint32_t (*get)(void);
+  void (*set)(uint32_t index);
+  const char* const* labels;               /* fixed labels; NULL = label_fn(index) */
+  const char* (*label_fn)(uint32_t index); /* bridge-owned label */
+  void (*apply)(void);                     /* actuation after the display refresh, or NULL */
+  const char* toast;                       /* toast name, or NULL = no toast */
+} MenuSetting;
+
+static const char* const kSpeedometerLayoutLabels[] = {"Classic", "Compact"};
+static const char* const kOffOnLabels[] = {"Off", "On"};
+
+static uint32_t reduce_motion_get(void) {
+  return gtav_native_bridge_reduce_motion() ? 1u : 0u;
+}
+static void reduce_motion_set(uint32_t on) {
+  gtav_native_bridge_set_reduce_motion((int)on);
+}
+static uint32_t touchpad_get(void) {
+  return gtav_native_bridge_touchpad_enabled() ? 1u : 0u;
+}
+static void touchpad_set(uint32_t on) {
+  gtav_native_bridge_set_touchpad_enabled((int)on);
+}
+static void apply_worker_hz(void) {
+  set_worker_hz(kWorkerHzChoices[gtav_native_bridge_worker_hz_index() % GTAV_MENU_WORKER_HZ_COUNT]);
+}
+static void apply_toast_time(void) {
+  gtav_native_bridge_set_toast_ticks(
+      kToastTicks[gtav_native_bridge_toast_time_index() % GTAV_MENU_TOAST_COUNT]);
+}
+
+static const MenuSetting kMenuSettings[] = {
+    {GTAV_NATIVE_SHELL_ACTION_CYCLE_THEME, 0u, gtav_native_bridge_theme_count,
+     gtav_native_bridge_theme, gtav_native_bridge_set_theme, NULL, gtav_native_bridge_theme_label,
+     NULL, NULL},
+    {GTAV_NATIVE_SHELL_ACTION_CYCLE_REGION, 0u, gtav_native_bridge_region_count,
+     gtav_native_bridge_region, gtav_native_bridge_set_region, NULL,
+     gtav_native_bridge_region_label, NULL, NULL},
+    {GTAV_NATIVE_SHELL_ACTION_CYCLE_PANEL_WIDTH, 0u, gtav_native_bridge_panel_width_count,
+     gtav_native_bridge_panel_width_index, gtav_native_bridge_set_panel_width_index, NULL,
+     gtav_native_bridge_panel_width_label, NULL, NULL},
+    {GTAV_NATIVE_SHELL_ACTION_CYCLE_SPEEDOMETER_LAYOUT, 2u, NULL,
+     gtav_native_bridge_speedometer_layout, gtav_native_bridge_set_speedometer_layout,
+     kSpeedometerLayoutLabels, NULL, NULL, NULL},
+    {GTAV_NATIVE_SHELL_ACTION_CYCLE_MOTION, 2u, NULL, reduce_motion_get, reduce_motion_set,
+     kMotionLabels, NULL, NULL, NULL},
+    {GTAV_NATIVE_SHELL_ACTION_CYCLE_TOUCHPAD, 2u, NULL, touchpad_get, touchpad_set, kOffOnLabels,
+     NULL, NULL, NULL},
+    {GTAV_NATIVE_SHELL_ACTION_CYCLE_NAV_DELAY, GTAV_MENU_NAV_DELAY_COUNT, NULL,
+     gtav_native_bridge_nav_delay_index, gtav_native_bridge_set_nav_delay_index, kNavDelayLabels,
+     NULL, apply_nav_repeat, NULL},
+    {GTAV_NATIVE_SHELL_ACTION_CYCLE_NAV_SPEED, GTAV_MENU_NAV_SPEED_COUNT, NULL,
+     gtav_native_bridge_nav_speed_index, gtav_native_bridge_set_nav_speed_index, kNavSpeedLabels,
+     NULL, apply_nav_repeat, NULL},
+    {GTAV_NATIVE_SHELL_ACTION_CYCLE_WORKER_HZ, GTAV_MENU_WORKER_HZ_COUNT, NULL,
+     gtav_native_bridge_worker_hz_index, gtav_native_bridge_set_worker_hz_index, kWorkerHzLabels,
+     NULL, apply_worker_hz, "Worker Hz"},
+    {GTAV_NATIVE_SHELL_ACTION_CYCLE_TOAST_TIME, GTAV_MENU_TOAST_COUNT, NULL,
+     gtav_native_bridge_toast_time_index, gtav_native_bridge_set_toast_time_index, kToastLabels,
+     NULL, apply_toast_time, "Toast Time"},
+};
+
+static const MenuSetting* find_menu_setting(uint32_t action) {
+  for (size_t i = 0; i < sizeof(kMenuSettings) / sizeof(kMenuSettings[0]); ++i) {
+    if (kMenuSettings[i].action == action) return &kMenuSettings[i];
+  }
+  return NULL;
+}
+
+static void step_menu_setting(const MenuSetting* s, uint32_t param, int emit_toast) {
+  const uint32_t count = s->count ? s->count : s->count_fn();
+  const uint32_t cur = s->get() % count;
+  const uint32_t next = (param == 2u) ? (cur + count - 1u) % count : (cur + 1u) % count;
+  const char* label;
+  s->set(next);
+  label = s->labels ? s->labels[next] : s->label_fn(next);
+  gtav_native_bridge_set_list_value(s->action, label);
+  if (s->apply) s->apply();
+  if (s->toast) push_setting_toast(emit_toast, s->toast, label);
+#if GTAV_MENU_ENABLE_NATIVE_FEATURES
+  gtav_features_profile_save_default();
+#endif
 }
 
 /* Destructive one-shots that wipe state the user can't easily get back. Activating one of
@@ -362,6 +464,10 @@ static int action_needs_confirm(uint32_t action) {
     case GTAV_NATIVE_SHELL_ACTION_KILL_SELF:
     case GTAV_NATIVE_SHELL_ACTION_DELETE_VEHICLE:
     case GTAV_NATIVE_SHELL_ACTION_CLEAR_SPAWNED_ALL:
+    /* Custom Packs "Uninstall < id >": Cross applies the picked pack (its files stay). */
+    case GTAV_NATIVE_SHELL_ACTION_UNINSTALL_PACK:
+    /* Custom Packs "Revert overrides": puts every overridden stock asset back for this process. */
+    case GTAV_NATIVE_SHELL_ACTION_REVERT_PACK_OVERRIDES:
       return 1;
 #if GTAV_MENU_ENABLE_NATIVE_FEATURES
     case GTAV_NATIVE_SHELL_ACTION_SAVE_VEHICLE:
@@ -375,29 +481,29 @@ static int action_needs_confirm(uint32_t action) {
   }
 }
 
-/* Cyclers whose Left/Right step ACTUATES the feature immediately (not just stages a value that is
-   applied later on Cross), so a value change deserves the same toast acknowledgement Cross gives --
-   otherwise the user can't tell the change took effect (test note T1, e.g. "Fly: Off/On/Fast"
-   silently switching mode). Pure-staging cyclers (LSC tiers, paint, spawn catalogs, cash) apply
-   only on Cross and stay quiet on the step; menu-chrome cyclers (Theme/Draw Side/Menu Width, whose
-   effect you SEE on screen) are likewise deliberately quiet. Keep this in sync when adding a cycler
-   that actuates on the step (see the menu feature-add touch-points). */
-static int action_applies_on_change(uint32_t action) {
-  switch (action) {
-    case GTAV_NATIVE_SHELL_ACTION_CYCLE_FLY_MODE:
-    case GTAV_NATIVE_SHELL_ACTION_CYCLE_VEHICLE_FLY:
-    case GTAV_NATIVE_SHELL_ACTION_CYCLE_AUTOPILOT_MODE:
-    case GTAV_NATIVE_SHELL_ACTION_CYCLE_AUTOPILOT_AGGRESSION:
-    case GTAV_NATIVE_SHELL_ACTION_CYCLE_AUTOPILOT_SPEED:
-    case GTAV_NATIVE_SHELL_ACTION_CYCLE_ACTIVE_GUN:
-    case GTAV_NATIVE_SHELL_ACTION_CYCLE_FREE_CAM_SPEED:
-    case GTAV_NATIVE_SHELL_ACTION_CYCLE_WIND:
-    case GTAV_NATIVE_SHELL_ACTION_CYCLE_CAM_SHAKE:
-    case GTAV_NATIVE_SHELL_ACTION_CYCLE_ENTITY_ALPHA:
-      return 1;
-    default:
-      return 0;
-  }
+/* Whether a Left/Right step should toast like Cross does: only live SETTING_TOAST rows, whose step
+   actuates something off the menu (Wind, Camera Shake, autopilot tuning, ...). Pick-then-apply
+   CHOICE rows only stage on the step and toast on Cross; quiet SETTING rows (menu chrome, browser
+   filters, spawn parameters) show their effect on screen. Single-sourced from list_kinds.def. */
+static int list_step_toasts(uint32_t action) {
+  return gtav_native_bridge_list_kind(action) == GTAV_LIST_KIND_SETTING_TOAST;
+}
+
+/* D-pad Left/Right: a list step toasts per list_step_toasts; a toggle row's Off/On (Left = OFF,
+   Right = ON) flips the feature like Cross does, so it confirms with the same toast. */
+static int left_right_toasts(uint32_t action) {
+  if (action != GTAV_NATIVE_SHELL_ACTION_NONE && gtav_native_bridge_selected_is_toggle()) return 1;
+  return list_step_toasts(action);
+}
+
+/* A live SETTING row already applied its value on Left/Right, so Cross (param 0) does nothing --
+   the bridge never dispatches it from the pad; this also covers the mailbox lane. A SETTING_APPLY
+   row's Cross applies the shown value (Wardrobe Style/Texture), so it passes. Unlisted actions
+   read as CHOICE, so only real list rows are affected. */
+static int setting_row_ignores_apply(uint32_t action, uint32_t param) {
+  if (param != 0u || action == GTAV_NATIVE_SHELL_ACTION_NONE) return 0;
+  const uint32_t kind = gtav_native_bridge_list_kind(action);
+  return kind == GTAV_LIST_KIND_SETTING || kind == GTAV_LIST_KIND_SETTING_TOAST;
 }
 
 /* The action awaiting its confirming second press (0 = none). Armed on the first interactive
@@ -414,16 +520,28 @@ static void handle_shell_action_param(uint32_t action, uint32_t param, int emit_
   if (emit_toast && param == 0u && action_needs_confirm(action)) {
     if (g_pending_confirm_action != action) {
       g_pending_confirm_action = action;
-      char msg[80];
-      snprintf(msg, sizeof(msg), "Press again to confirm: %s",
-               gtav_native_bridge_action_name(action));
+      /* Name the row the user is on ("Uninstall: gtavmenu-col-v1"), not the internal action name
+         (a hardware run showed "uninstall__pack"); the action name stays the fallback. */
+      GtavNativeShellSnapshot snap;
+      memset(&snap, 0, sizeof(snap));
+      gtav_native_bridge_snapshot(&snap);
+      const char* what = snap.selected_label[0]
+                             ? snap.selected_label
+                             : gtav_locale_translate(gtav_native_bridge_action_name(action));
+      char msg[96];
+      snprintf(msg, sizeof(msg), gtav_locale_text("toast.confirm"), what);
       gtav_native_bridge_push_toast(msg, GTAV_FEATURE_RESULT_UNAVAILABLE);
       return;
     }
     g_pending_confirm_action = GTAV_NATIVE_SHELL_ACTION_NONE; /* confirmed -> fall through + run */
   } else if (emit_toast && param == 0u) {
     g_pending_confirm_action = GTAV_NATIVE_SHELL_ACTION_NONE; /* any other activation disarms */
+  } else if (param != 0u && action == g_pending_confirm_action) {
+    /* A Left/Right step on an armed list row (Uninstall < id >) picks another value: the next
+       Cross must confirm that one afresh. */
+    g_pending_confirm_action = GTAV_NATIVE_SHELL_ACTION_NONE;
   }
+  if (setting_row_ignores_apply(action, param)) return;
   switch (action) {
     case GTAV_NATIVE_SHELL_ACTION_HIDE:
       gtav_menu_set_visible(0);
@@ -452,23 +570,6 @@ static void handle_shell_action_param(uint32_t action, uint32_t param, int emit_
                          gtav_native_bridge_action_name(action));
 #endif
       return;
-    /* Menu customisation cyclers: pure bridge render-state, no game native, so they work
-       in every build (independent of GTAV_MENU_ENABLE_NATIVE_FEATURES). Cycler param: 2 =
-       prev (Left), 0/1 = next (Cross/Right). The live "< value >" updates via set_list_value;
-       no toast (matches the quiet left/right cycle convention). */
-    case GTAV_NATIVE_SHELL_ACTION_CYCLE_THEME: {
-      uint32_t count = gtav_native_bridge_theme_count();
-      uint32_t cur = gtav_native_bridge_theme();
-      uint32_t next = (param == 2u) ? (cur + count - 1u) % count : (cur + 1u) % count;
-      gtav_native_bridge_set_theme(next);
-      gtav_native_bridge_set_list_value(action, gtav_native_bridge_theme_label(next));
-      /* Autosave on change so chrome settings stick like favorites/Quick pins do, instead of
-         only persisting on a manual Runtime > Save Profile. */
-#if GTAV_MENU_ENABLE_NATIVE_FEATURES
-      gtav_features_profile_save_default();
-#endif
-      return;
-    }
     case GTAV_NATIVE_SHELL_ACTION_RESET_CUSTOM_THEME:
       /* Re-seed the Custom theme to the default palette (the safety net for an unreadable custom
          colour). Pure bridge render-state; if the Custom slot is active the recolour previews
@@ -480,126 +581,29 @@ static void handle_shell_action_param(uint32_t action, uint32_t param, int emit_
 #endif
       push_setting_toast(emit_toast, "Custom Theme", "Reset");
       return;
-    case GTAV_NATIVE_SHELL_ACTION_CYCLE_REGION: {
-      uint32_t count = gtav_native_bridge_region_count();
-      uint32_t cur = gtav_native_bridge_region();
-      uint32_t next = (param == 2u) ? (cur + count - 1u) % count : (cur + 1u) % count;
-      gtav_native_bridge_set_region(next);
-      gtav_native_bridge_set_list_value(action, gtav_native_bridge_region_label(next));
+    case GTAV_NATIVE_SHELL_ACTION_CYCLE_LANGUAGE: {
+      /* Not a kMenuSettings row: the locale list steps by id and a change relabels every row. */
+      uint32_t count = gtav_locale_count();
+      if (count <= 1u) return;
+      uint32_t cur = gtav_locale_id();
+      uint32_t next = gtav_locale_step_id(cur, param == 2u ? -1 : 1);
+      gtav_native_bridge_set_language(next);
 #if GTAV_MENU_ENABLE_NATIVE_FEATURES
-      gtav_features_profile_save_default();  // autosave on change (see CYCLE_THEME)
+      push_list_values();
+      gtav_features_profile_save_default();
+#else
+      gtav_native_bridge_set_list_value(action, gtav_locale_display_name(gtav_locale_id()));
 #endif
       return;
     }
-    case GTAV_NATIVE_SHELL_ACTION_CYCLE_PANEL_WIDTH: {
-      /* Menu panel width: immediate-effect render-state cycler (like CYCLE_REGION). Left/Right
-         (param 2/1) and Cross (0) all step it; the live "< value >" updates and the change is
-         autosaved so the width persists across re-injects (profile v16). */
-      uint32_t count = gtav_native_bridge_panel_width_count();
-      uint32_t cur = gtav_native_bridge_panel_width_index();
-      uint32_t next = (param == 2u) ? (cur + count - 1u) % count : (cur + 1u) % count;
-      gtav_native_bridge_set_panel_width_index(next);
-      gtav_native_bridge_set_list_value(action, gtav_native_bridge_panel_width_label(next));
-#if GTAV_MENU_ENABLE_NATIVE_FEATURES
-      gtav_features_profile_save_default();  // autosave on change (see CYCLE_THEME)
-#endif
-      return;
-    }
-    case GTAV_NATIVE_SHELL_ACTION_CYCLE_WORKER_HZ: {
-      /* Off-thread render over-sample rate: raising it past the game frame rate hides the
-         phase-beat flicker. STAGE/APPLY like the gameplay sliders (world.inc): Left/Right
-         (param 2/1) only pick the value; Cross (param 0) applies it via set_worker_hz. The
-         selection index lives in the bridge so it persists across re-injects (profile v11). */
-      const uint32_t count = GTAV_MENU_WORKER_HZ_COUNT;
-      uint32_t idx = gtav_native_bridge_worker_hz_index() % count;
-      char label[16];
-      if (param == 1u || param == 2u) {  // stage only -- do not apply yet
-        idx = (param == 2u) ? (idx + count - 1u) % count : (idx + 1u) % count;
-        gtav_native_bridge_set_worker_hz_index(idx);
-        snprintf(label, sizeof(label), "%u Hz", (unsigned)kWorkerHzChoices[idx]);
-        gtav_native_bridge_set_list_value(action, label);
+    default: {
+      const MenuSetting* setting = find_menu_setting(action);
+      if (setting) {
+        step_menu_setting(setting, param, emit_toast);
         return;
       }
-      set_worker_hz(kWorkerHzChoices[idx]);  // apply the staged value
-      snprintf(label, sizeof(label), "%u Hz", (unsigned)kWorkerHzChoices[idx]);
-      push_setting_toast(emit_toast, "Worker Hz", label);
-#if GTAV_MENU_ENABLE_NATIVE_FEATURES
-      gtav_features_profile_save_default();  // autosave on apply so the tuned rate survives a
-                                             // re-inject
-#endif
-      return;
-    }
-    case GTAV_NATIVE_SHELL_ACTION_CYCLE_TOAST_TIME: {
-      /* Toast dwell, in worker ticks (labelled at the 60 Hz default; the dwell scales with
-         worker_hz). Default index 2 == 270 ticks, matching the g_toast_ticks default. The
-         selection index lives in the bridge so it persists across re-injects (profile v11). */
-      const uint32_t count = GTAV_MENU_TOAST_COUNT;
-      uint32_t idx = gtav_native_bridge_toast_time_index() % count;
-      if (param == 1u || param == 2u) {  // stage only -- do not apply yet
-        idx = (param == 2u) ? (idx + count - 1u) % count : (idx + 1u) % count;
-        gtav_native_bridge_set_toast_time_index(idx);
-        gtav_native_bridge_set_list_value(action, kToastLabels[idx]);
-        return;
-      }
-      gtav_native_bridge_set_toast_ticks(kToastTicks[idx]);  // apply the staged value
-      push_setting_toast(emit_toast, "Toast Time", kToastLabels[idx]);
-#if GTAV_MENU_ENABLE_NATIVE_FEATURES
-      gtav_features_profile_save_default();  // autosave on apply
-#endif
-      return;
-    }
-    case GTAV_NATIVE_SHELL_ACTION_CYCLE_MOTION: {
-      /* Reduce Motion: a 2-way Full/Reduced flag held in the bridge (read by the draw path). The
-         effect is immediately visible, so cycle on any of Left/Right/Cross like Theme/Region (no
-         stage/apply). Autosave on change. */
-      int on = !gtav_native_bridge_reduce_motion();
-      gtav_native_bridge_set_reduce_motion(on);
-      gtav_native_bridge_set_list_value(action, kMotionLabels[on ? 1 : 0]);
-#if GTAV_MENU_ENABLE_NATIVE_FEATURES
-      gtav_features_profile_save_default();
-#endif
-      return;
-    }
-    case GTAV_NATIVE_SHELL_ACTION_CYCLE_TOUCHPAD: {
-      /* Optional touchpad gesture input (Off/On). Bridge flag read by the live pad poll path;
-         default off until calibrated on hardware. 2-way like Motion. Autosave on change. */
-      int on = !gtav_native_bridge_touchpad_enabled();
-      gtav_native_bridge_set_touchpad_enabled(on);
-      gtav_native_bridge_set_list_value(action, on ? "On" : "Off");
-#if GTAV_MENU_ENABLE_NATIVE_FEATURES
-      gtav_features_profile_save_default();
-#endif
-      return;
-    }
-    case GTAV_NATIVE_SHELL_ACTION_CYCLE_NAV_DELAY: {
-      /* D-pad auto-repeat start delay. Cycler param: 2 = prev (Left), 0/1 = next (Cross/Right).
-         Applies immediately to the pad mapper + autosaves; the index persists (profile v13). */
-      const uint32_t count = GTAV_MENU_NAV_DELAY_COUNT;
-      uint32_t idx = gtav_native_bridge_nav_delay_index() % count;
-      idx = (param == 2u) ? (idx + count - 1u) % count : (idx + 1u) % count;
-      gtav_native_bridge_set_nav_delay_index(idx);
-      gtav_native_bridge_set_list_value(action, kNavDelayLabels[idx]);
-      apply_nav_repeat();
-#if GTAV_MENU_ENABLE_NATIVE_FEATURES
-      gtav_features_profile_save_default();
-#endif
-      return;
-    }
-    case GTAV_NATIVE_SHELL_ACTION_CYCLE_NAV_SPEED: {
-      /* D-pad auto-repeat speed (smaller rate = faster). See CYCLE_NAV_DELAY. */
-      const uint32_t count = GTAV_MENU_NAV_SPEED_COUNT;
-      uint32_t idx = gtav_native_bridge_nav_speed_index() % count;
-      idx = (param == 2u) ? (idx + count - 1u) % count : (idx + 1u) % count;
-      gtav_native_bridge_set_nav_speed_index(idx);
-      gtav_native_bridge_set_list_value(action, kNavSpeedLabels[idx]);
-      apply_nav_repeat();
-#if GTAV_MENU_ENABLE_NATIVE_FEATURES
-      gtav_features_profile_save_default();
-#endif
-      return;
-    }
-    default:
       break;
+    }
   }
 
     /* Everything else is a native gameplay feature (god mode, vehicle spawn,
@@ -613,6 +617,12 @@ static void handle_shell_action_param(uint32_t action, uint32_t param, int emit_
   gtav_features_activate_param(action, param);
   gtav_native_bridge_set_feature_toggles(gtav_features_toggle_mask());
   push_list_values();
+  if (action == GTAV_NATIVE_SHELL_ACTION_TOGGLE_SPAWN_PRESERVE_SPEED ||
+      action == GTAV_NATIVE_SHELL_ACTION_TOGGLE_SPAWN_REPLACE_PREVIOUS ||
+      action == GTAV_NATIVE_SHELL_ACTION_TOGGLE_SPAWN_AIRCRAFT_IN_FLIGHT ||
+      action == GTAV_NATIVE_SHELL_ACTION_CYCLE_POPULATION_DENSITY) {
+    gtav_features_profile_save_default();
+  }
   if (emit_toast) push_action_toast();
 #else
   (void)param;
@@ -627,15 +637,26 @@ static void handle_shell_action(uint32_t action) {
   handle_shell_action_param(action, 0, 1);
 }
 
-// Coarse-step a value cycler several values in one L1/R1 press (paint/livery lists are long).
-// Reuses the fully-tested single-step adjust path so each value still stages/applies through
-// the feature layer. dir<0 = left/prev, dir>=0 = right/next.
-#define GTAV_MENU_CYCLER_FAST_STEP 5
-static void cycler_fast_step(int dir) {
-  for (int i = 0; i < GTAV_MENU_CYCLER_FAST_STEP; ++i) {
-    uint32_t action = (dir < 0) ? gtav_native_bridge_left() : gtav_native_bridge_right();
-    handle_shell_action_param(action, gtav_native_bridge_last_action_param(), 0);
-  }
+/* A pick-then-apply row whose staged value was not applied reverts once the cursor leaves it
+   (another row or menu, Back, menu closed): replay the opposite single steps through the feature
+   layer, which walks its staged index back to the applied value, then refresh the shown values.
+   Staging a CHOICE row has no side effect, so the replay is pure index math. Runs once per worker
+   tick after all input (pad, mailbox, command file, object-move hide). */
+static void revert_unapplied_pick(void) {
+  uint32_t action = GTAV_NATIVE_SHELL_ACTION_NONE;
+  uint32_t param = 0u;
+  uint32_t steps = 0u;
+  if (!gtav_native_bridge_take_staged_revert(&action, &param, &steps)) return;
+  if (action == g_pending_confirm_action) g_pending_confirm_action = GTAV_NATIVE_SHELL_ACTION_NONE;
+#if GTAV_MENU_ENABLE_NATIVE_FEATURES
+  for (uint32_t i = 0; i < steps; ++i) gtav_features_activate_param(action, param);
+  push_list_values();
+#else
+  (void)param;
+  (void)steps;
+#endif
+  gtav_status_eventf(GTAV_MENU_EVENT_NATIVE_SHELL, "shell pick reverted action=%s steps=%u",
+                     gtav_native_bridge_action_name(action), steps);
 }
 
 static int vehicle_model_hash_from_index(uint32_t index, uint32_t* model_hash) {
@@ -805,6 +826,17 @@ static const char* dispatch_menu_command(uint32_t command, uint64_t argument, co
       gtav_status_eventf(GTAV_MENU_EVENT_COMMAND, "%s activate action=%u (post)", source,
                          (uint32_t)argument);
       return "activate_action";
+    case GTAV_MENU_COMMAND_ACTIVATE_ACTION_PARAM: {
+      const uint32_t action = (uint32_t)argument;
+      const uint32_t param = (uint32_t)(argument >> 32);
+      gtav_status_eventf(GTAV_MENU_EVENT_COMMAND, "%s activate action=%u param=0x%x (pre)", source,
+                         action, param);
+      g_pending_confirm_action = action;
+      handle_shell_action_param(action, param, 1);
+      gtav_status_eventf(GTAV_MENU_EVENT_COMMAND, "%s activate action=%u param=0x%x (post)", source,
+                         action, param);
+      return "activate_action_param";
+    }
     case GTAV_MENU_COMMAND_STOP:
       request_stop(source);
       return "stop";
@@ -821,35 +853,29 @@ static const char* dispatch_menu_command(uint32_t command, uint64_t argument, co
     }
     case GTAV_MENU_COMMAND_LEFT: {
       uint32_t action = gtav_native_bridge_left();
-      /* Apply-on-change cyclers toast on the step (the change actuates now); staging cyclers stay
-         quiet and rely on the live "< value >" display. */
+      /* Live SETTING_TOAST rows toast on the step (the change actuates now), and so does a toggle
+         row's Off/On (it flips the feature like Cross); the rest stay quiet and rely on the live
+         "< value >" display. */
       handle_shell_action_param(action, gtav_native_bridge_last_action_param(),
-                                action_applies_on_change(action));
+                                left_right_toasts(action));
       return "left";
     }
     case GTAV_MENU_COMMAND_RIGHT: {
       uint32_t action = gtav_native_bridge_right();
       handle_shell_action_param(action, gtav_native_bridge_last_action_param(),
-                                action_applies_on_change(action));
+                                left_right_toasts(action));
       return "right";
     }
     case GTAV_MENU_COMMAND_PAGE_NEXT:
-      // On a value cycler, L1/R1 fast-step the value; elsewhere they page the cursor, rolling into
-      // the next sibling submenu once the list is already at its bottom edge.
-      if (gtav_native_bridge_selected_faststeppable()) {
-        cycler_fast_step(1);
-      } else {
-        gtav_native_bridge_page_or_sibling(1);
-      }
+      // Page the cursor (touchpad flick, mailbox), rolling into the next sibling submenu once the
+      // list is already at its bottom edge.
+      gtav_native_bridge_page_or_sibling(1);
       return "page_next";
     case GTAV_MENU_COMMAND_PAGE_PREV:
-      if (gtav_native_bridge_selected_faststeppable()) {
-        cycler_fast_step(-1);
-      } else {
-        gtav_native_bridge_page_or_sibling(-1);
-      }
+      gtav_native_bridge_page_or_sibling(-1);
       return "page_prev";
     case GTAV_MENU_COMMAND_HOME:
+      // L1 / R1 (and the mailbox home / end): the first / last selectable row of the page.
       gtav_native_bridge_home();
       return "home";
     case GTAV_MENU_COMMAND_END:
@@ -1313,7 +1339,15 @@ void gtav_menu_worker_tick(void) {
       gtav_menu_set_visible(1);
     }
   }
+  // A queued game-thread job that refused or failed: its reason replaces the "queued" toast.
+  {
+    char why[GTAV_FEATURE_MESSAGE_LEN];
+    uint32_t result = GTAV_FEATURE_RESULT_NONE;
+    if (gtav_features_take_job_refusal(why, sizeof(why), &result))
+      gtav_native_bridge_push_toast(gtav_locale_translate(why), result);
+  }
 #endif
+  revert_unapplied_pick();
   gtav_native_bridge_worker_tick(tick, g_visible);
 #if GTAV_MENU_ENABLE_NATIVE_FEATURES
   // Skip per-tick feature work once the quit-guard has parked the renderer for a teardown/suspend:
@@ -1321,6 +1355,9 @@ void gtav_menu_worker_tick(void) {
   // wholly GTA-inert so the app can suspend cleanly. No-op gate unless the quit-guard is built in.
   if (!gtav_native_bridge_is_parked()) {
     gtav_features_worker_tick(g_visible);
+    // Once a second at 60 Hz: copy new "GTAVMenu pack ..." klog lines to the console (klog.c),
+    // so a run's pack results survive klog delivery gaps and the status ring.
+    if ((tick % 60u) == 0u) (void)gtav_pack_notes_flush();
   }
 #endif
 

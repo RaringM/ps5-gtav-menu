@@ -4,6 +4,25 @@ GTAV-Menu third-party notices
 This repository does not contain Grand Theft Auto V or PlayStation system binaries.
 Those products and their marks belong to their respective owners.
 
+AMD AddrLib (MIT license)
+  https://github.com/GPUOpen-Drivers/pal
+  Reference commit: c5e800072a32f68b6ccc4422936d96167c6e0728
+  tools/gtavmenu_tools/texture_layout.py adapts the public GFX10 standard-swizzle
+  surface and coordinate algorithms. The full AMD copyright and permission notice
+  is retained in that module. Agreement with this CPU model does not establish
+  PlayStation hardware compatibility.
+
+CodeWalker
+  https://github.com/dexyfex/CodeWalker
+  Reference commit: 485d56bec00262ed7fa472261cce7bbc6202b96e
+  Copyright (c) 2017-2019 dexyfex. No project-wide license is declared upstream (no
+  LICENSE file; Readme_Src.txt states the source is released for educational purposes
+  only). data/drawable_contracts/codewalker-485d56b.json holds field layouts, enum codes
+  and the Legacy -> Gen9 shader parameter mapping table derived from nine CodeWalker.Core
+  source files at that commit (each listed with its sha256 in the file). No CodeWalker
+  source text is included. The data is included with attribution at the publisher's
+  decision; the copyright holder may request its removal.
+
 Generated vehicle, pedestrian, object, scenario, animation, and preview catalog headers
 contain names and identifiers derived in part from these community data sources:
 

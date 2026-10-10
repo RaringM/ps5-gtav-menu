@@ -45,6 +45,22 @@ extern "C" {
 
 typedef int (*GtavRenderPhaseRead)(void* context, uintptr_t address, void* output, size_t size);
 
+typedef struct GtavRenderPhaseFingerprint {
+  uintptr_t address;
+  uint8_t bytes[48];
+  size_t size;
+} GtavRenderPhaseFingerprint;
+
+// Immutable loader-side contract. Worker builds keep their compile-time wrapper below.
+typedef struct GtavRenderPhaseProfile {
+  uintptr_t root;
+  uintptr_t leaf_vtable;
+  uintptr_t group_vtable;
+  uint32_t task_id;
+  uintptr_t original;
+  GtavRenderPhaseFingerprint fingerprints[4];
+} GtavRenderPhaseProfile;
+
 typedef struct GtavRenderPhaseDiscovery {
   uintptr_t object;
   uintptr_t slot;
@@ -69,6 +85,9 @@ enum {
 
 int gtav_render_phase_discover(GtavRenderPhaseRead read, void* context,
                                GtavRenderPhaseDiscovery* result);
+int gtav_render_phase_discover_profile(const GtavRenderPhaseProfile* profile,
+                                       GtavRenderPhaseRead read, void* context,
+                                       GtavRenderPhaseDiscovery* result);
 
 #ifdef __cplusplus
 }

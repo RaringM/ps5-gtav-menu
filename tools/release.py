@@ -187,7 +187,9 @@ def validate_tag(tag: str, *, require_head: bool = True) -> None:
             fail(f"tag {tag} resolves to {tagged}, but HEAD is {head}")
 
 
-def assemble(tag: str, output: Path, package_root: Path, targets: tuple[str, ...] = TARGETS) -> Path:
+def assemble(tag: str, output: Path, package_root: Path, targets: tuple[str, ...] | None = None) -> Path:
+    if targets is None:
+        return assemble_universal(tag, output, package_root)
     validate_tag(tag)
     if not targets or len(set(targets)) != len(targets):
         fail("release targets must be nonempty and unique")
@@ -244,8 +246,142 @@ def assemble(tag: str, output: Path, package_root: Path, targets: tuple[str, ...
     return output
 
 
+def assemble_universal(tag: str, output: Path, package_root: Path) -> Path:
+    from gtavmenu_tools.universal_package import LAYOUTS
+    from gtavmenu_tools.universal_package import verify_package as verify_universal_package
+
+    validate_tag(tag)
+    if output.exists() and any(output.iterdir()):
+        fail(f"release output must be empty: {output}")
+    commit = git_output("rev-parse", "HEAD")
+    packages = []
+    for delivery in LAYOUTS:
+        root = package_root / "universal" / delivery
+        manifest = load_json(package_manifest_path(root))
+        verify_universal_package(root, manifest, delivery=delivery, source_commit=commit)
+        packages.append((delivery, root, manifest))
+    # A mixed worker inventory across delivery wrappers is never a single release.
+    inventories = [
+        [
+            {key: value for key, value in entry.items() if key != "worker"}
+            | {"worker": {key: value for key, value in entry["worker"].items() if key != "offset"}}
+            for entry in manifest["supportedTargets"]
+        ]
+        for _, _, manifest in packages
+    ]
+    if any(inventory != inventories[0] for inventory in inventories[1:]):
+        fail("universal deliveries contain different worker inventories")
+    output.mkdir(parents=True, exist_ok=True)
+    artifacts = []
+    for delivery, root, manifest in packages:
+        name = f"GTAVMenu-universal-{delivery}.zip"
+        archive = output / name
+        deterministic_zip(root, archive, archive_root=None, members=package_members(manifest))
+        artifacts.append(
+            {
+                "delivery": delivery,
+                "file": name,
+                "size": archive.stat().st_size,
+                "sha256": sha256_file(archive),
+                "packageManifest": manifest,
+            }
+        )
+    manifest = {
+        "schemaVersion": 3,
+        "mode": "universal",
+        "tag": tag,
+        "targets": [target_metadata(target) for target in TARGETS],
+        "sourceCommit": commit,
+        "requiresHardwareValidation": True,
+        "artifacts": artifacts,
+    }
+    manifest_path = output / "release-manifest.json"
+    manifest_path.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    checksum_paths = sorted([manifest_path, *(output / entry["file"] for entry in artifacts)])
+    (output / "SHA256SUMS").write_text(
+        "".join(f"{sha256_file(path)}  {path.name}\n" for path in checksum_paths), encoding="utf-8"
+    )
+    return output
+
+
+def verify_universal_release(tag: str, assets: Path, manifest: dict) -> dict:
+    import tempfile
+
+    from gtavmenu_tools.universal_package import LAYOUTS
+    from gtavmenu_tools.universal_package import verify_package as verify_universal_package
+
+    commit = git_output("rev-parse", "HEAD")
+    required = {
+        "schemaVersion": 3,
+        "mode": "universal",
+        "tag": tag,
+        "sourceCommit": commit,
+        "targets": [target_metadata(target) for target in TARGETS],
+        "requiresHardwareValidation": True,
+    }
+    if any(manifest.get(key) != value for key, value in required.items()):
+        fail("universal release schema, target inventory, tag, or source commit mismatch")
+    entries = manifest.get("artifacts")
+    if not isinstance(entries, list) or len(entries) != len(LAYOUTS):
+        fail("universal release artifact inventory mismatch")
+    seen, inventories = set(), []
+    for entry in entries:
+        if not isinstance(entry, dict) or entry.get("delivery") not in LAYOUTS:
+            fail("malformed universal release artifact")
+        delivery = entry["delivery"]
+        name = f"GTAVMenu-universal-{delivery}.zip"
+        if entry.get("file") != name or name in seen:
+            fail("unexpected or duplicate universal release artifact")
+        seen.add(name)
+        path = assets / name
+        if path.is_symlink() or not path.is_file():
+            fail(f"release asset missing: {name}")
+        if path.stat().st_size != entry.get("size") or sha256_file(path) != entry.get("sha256"):
+            fail(f"release asset hash/size mismatch: {name}")
+        package = entry.get("packageManifest")
+        if not isinstance(package, dict):
+            fail("universal release artifact has no package proof")
+        with tempfile.TemporaryDirectory(prefix="gtavmenu-release-verify-") as temporary:
+            root = Path(temporary)
+            try:
+                with zipfile.ZipFile(path) as archive:
+                    infos = archive.infolist()
+                    if len(infos) != len(LAYOUTS[delivery]) or {info.filename for info in infos} != set(
+                        LAYOUTS[delivery]
+                    ):
+                        fail(f"unexpected universal archive layout: {name}")
+                    for info in infos:
+                        mode = info.external_attr >> 16
+                        if stat.S_ISLNK(mode) or info.is_dir():
+                            fail(f"unsafe universal archive member: {info.filename}")
+                        (root / info.filename).write_bytes(archive.read(info))
+            except zipfile.BadZipFile as exc:
+                fail(f"invalid release archive {name}: {exc}")
+            verify_universal_package(root, package, delivery=delivery, source_commit=commit)
+        inventories.append(
+            [
+                {key: value for key, value in item.items() if key != "worker"}
+                | {"worker": {key: value for key, value in item["worker"].items() if key != "offset"}}
+                for item in package["supportedTargets"]
+            ]
+        )
+    if any(inventory != inventories[0] for inventory in inventories[1:]):
+        fail("universal deliveries contain different worker inventories")
+    names = seen | {"release-manifest.json", "SHA256SUMS"}
+    if {path.name for path in assets.iterdir()} != names or any((assets / name).is_symlink() for name in names):
+        fail("release asset inventory mismatch")
+    checksums = "".join(
+        f"{sha256_file(path)}  {path.name}\n" for path in sorted(assets / name for name in names - {"SHA256SUMS"})
+    )
+    if (assets / "SHA256SUMS").read_text(encoding="utf-8") != checksums:
+        fail("release checksums mismatch")
+    return manifest
+
+
 def verify_release(tag: str, assets: Path) -> dict[str, object]:
     manifest = load_json(assets / "release-manifest.json")
+    if manifest.get("schemaVersion") == 3:
+        return verify_universal_release(tag, assets, manifest)
     if (
         manifest.get("schemaVersion") != 2
         or manifest.get("tag") != tag
@@ -330,10 +466,15 @@ def release_body(tag: str, manifest: dict[str, object]) -> str:
         if item["releaseChannel"] == "local-development-candidate"
     ]
     note = f"\n\nDevelopment candidates: {', '.join(development)}." if development else ""
+    selection = (
+        "Choose the Universal ZIP for standalone, OnionHEN, or etaHEN. The runtime selects the supported title/build automatically. "
+        if manifest.get("mode") == "universal"
+        else "Choose the ZIP matching your exact game version and standalone, OnionHEN, or etaHEN delivery. "
+    )
     return (
         f"GTAVMenu {tag} for {versions}.\n\n"
-        "Choose the ZIP matching your exact game version and standalone, OnionHEN, or etaHEN delivery. "
-        "Each archive contains its runtime and setup README. SHA-256 checksums and source provenance "
+        + selection
+        + "Each archive contains its runtime and setup README. SHA-256 checksums and source provenance "
         "are provided separately. Rebuilt artifacts require on-hardware validation." + note
     )
 
@@ -401,7 +542,16 @@ def parse_args() -> argparse.Namespace:
     assemble_parser.add_argument("--tag", required=True)
     assemble_parser.add_argument("--output", type=Path, default=REPO_ROOT / "build/release")
     assemble_parser.add_argument("--package-root", type=Path, default=REPO_ROOT / "build/pkg")
-    assemble_parser.add_argument("--targets", nargs="+", choices=TARGETS, default=TARGETS)
+    assemble_parser.add_argument(
+        "--legacy-per-target", action="store_true", help="assemble existing exact-target packages"
+    )
+    assemble_parser.add_argument(
+        "--targets",
+        nargs="+",
+        choices=TARGETS,
+        default=None,
+        help="legacy exact-target subset (implies --legacy-per-target)",
+    )
     verify_parser = sub.add_parser("verify")
     verify_parser.add_argument("--tag", required=True)
     verify_parser.add_argument("--assets", type=Path, default=REPO_ROOT / "build/release")
@@ -420,7 +570,7 @@ def main() -> int:
                 args.tag,
                 args.output.expanduser().resolve(),
                 args.package_root.expanduser().resolve(),
-                tuple(args.targets),
+                tuple(args.targets or TARGETS) if args.legacy_per_target or args.targets else None,
             )
             print(f"release assets assembled: {output}")
         elif args.command == "verify":

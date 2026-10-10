@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Install a locally staged GTAVMenu standalone bundle onto a PS5 over FTP.
+"""Validate a staged universal daemon or install a legacy standalone worker over FTP.
 
 This standard-library-only helper is used by the ``./gtavmenu`` front-end from a source
 checkout. Public release archives stay minimal and carry manual setup in ``README.md``.
@@ -9,8 +9,8 @@ the staged bundle. Only entries with a ``remote`` path are uploaded.
 
 Subcommands::
 
-    install_release.py preflight --host <ip>   # check ports are reachable
-    install_release.py install   --host <ip>   # upload every bundled file over FTP
+    install_release.py preflight --host <ip>   # validate universal bundle or check legacy FTP
+    install_release.py install   --host <ip>   # show universal launch steps or upload legacy worker
     install_release.py status    --host <ip>   # tail the on-console loader/module logs
 """
 
@@ -29,7 +29,7 @@ DEFAULT_PS5DEBUG_PORT = 744
 DEFAULT_KLOG_PORT = 9081
 # Repo-root-relative location of the staged bundle. Anchored on this file's location so
 # ``./gtavmenu`` works from any working directory.
-DEFAULT_BUNDLE = Path(__file__).resolve().parent.parent / "build/pkg/ppsa04264-01.010.002/standalone"
+DEFAULT_BUNDLE = Path(__file__).resolve().parent.parent / "build/pkg/universal/standalone"
 TARGETS_DIR = Path(__file__).resolve().parent.parent / "data/targets"
 MANIFEST_SUFFIX = ".package-manifest.json"
 EXPECTED_TARGET_ID = "PPSA04264_01.010.002_DISC"
@@ -50,8 +50,14 @@ def package_manifest_path(bundle: Path) -> Path:
 def load_manifest(bundle: Path) -> dict:
     manifest_path = package_manifest_path(bundle)
     if not manifest_path.is_file():
-        raise InstallError(f"no staging metadata at {manifest_path} -- run `make package-payload` first")
-    return json.loads(manifest_path.read_text(encoding="utf-8"))
+        raise InstallError(f"no staging metadata at {manifest_path} -- run `make package-universal` first")
+    try:
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise InstallError(f"cannot read staging metadata: {exc}") from exc
+    if not isinstance(manifest, dict):
+        raise InstallError("staging metadata must be an object")
+    return manifest
 
 
 def upload_entries(manifest: dict) -> list[dict]:
@@ -66,6 +72,14 @@ def upload_entries(manifest: dict) -> list[dict]:
 
 def validate_bundle_safety(bundle: Path, manifest: dict) -> None:
     """Validate the staged runtime files before opening an FTP connection."""
+    if manifest.get("target") == "universal":
+        from gtavmenu_tools.universal_package import verify_package
+
+        try:
+            verify_package(bundle, manifest, delivery="standalone", targets_dir=TARGETS_DIR)
+        except (OSError, KeyError, TypeError, ValueError) as exc:
+            raise InstallError(str(exc)) from exc
+        return
     target = manifest.get("target")
     if not isinstance(target, str) or not target or "/" in target or ".." in target:
         raise InstallError("bundle has an unsafe or missing target identity")
@@ -109,7 +123,10 @@ def validate_bundle_safety(bundle: Path, manifest: dict) -> None:
 
 
 def _print_post_install_guidance(manifest: dict, host: str, uploaded: int) -> None:
-    print(f"\nInstalled {uploaded} file(s) to {host}.")
+    if manifest.get("selfContained"):
+        print("\nValidated self-contained universal daemon. No FTP upload is required.")
+    else:
+        print(f"\nInstalled {uploaded} file(s) to {host}.")
 
     release_channel = manifest.get("releaseChannel")
     if release_channel:
@@ -187,6 +204,10 @@ def install(bundle: Path, host: str, ftp_port: int) -> int:
     validate_bundle_safety(bundle, manifest)
     entries = upload_entries(manifest)
     if not entries:
+        if manifest.get("target") == "universal" and manifest.get("selfContained"):
+            print(f"Runtime: {bundle / str(manifest['daemonElfName'])}")
+            _print_post_install_guidance(manifest, host, 0)
+            return 0
         raise InstallError("manifest lists no uploadable files")
 
     preflight(host, ftp_port, strict=True)
@@ -264,7 +285,7 @@ def status(bundle: Path, host: str, ftp_port: int, max_lines: int = 25) -> int:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Install the GTAVMenu release bundle onto a PS5 over FTP")
+    parser = argparse.ArgumentParser(description="Validate a universal daemon or install a legacy GTAVMenu worker")
     parser.add_argument("command", choices=("preflight", "install", "status"))
     parser.add_argument("--host", required=True, help="PS5 IP address")
     parser.add_argument("--ftp-port", type=int, default=DEFAULT_FTP_PORT)
@@ -276,6 +297,12 @@ def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     try:
         if args.command == "preflight":
+            if package_manifest_path(args.bundle).is_file():
+                manifest = load_manifest(args.bundle)
+                if manifest.get("target") == "universal":
+                    validate_bundle_safety(args.bundle, manifest)
+                    print("Universal daemon validated. Deploy it with your PS5 payload launcher; FTP is optional.")
+                    return 0
             return 0 if preflight(args.host, args.ftp_port, strict=True) else 1
         if args.command == "install":
             return install(args.bundle, args.host, args.ftp_port)

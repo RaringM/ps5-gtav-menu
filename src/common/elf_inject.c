@@ -3,7 +3,7 @@
 // Depends only on the process-control backend (proc_backend.h); it never includes a
 // PS5 SDK header, so the host test drives it with a stub backend over a fake target
 // buffer and the real feature-menu ELF. The parsing/relocation math mirrors the
-// host plan tool research/tools/offline/elf_map_plan.py.
+// host-side ELF map plan tool used during development.
 
 #include "gtavmenu/elf_inject.h"
 

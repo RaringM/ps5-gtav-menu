@@ -38,8 +38,13 @@ extern "C" {
  * slots: the old single saved vehicle migrates into garage slot 0 (the bare saved_vehicle_model key
  * and the 17 saved_vehicle_mod0..16 keys load into slot 0), and the old single outfit is left in
  * the live wardrobe editor (wardrobe_drawable/texture) for the user to re-save into an outfit slot.
+ * v17 appended the three vehicle-spawn policy flags, population-density index, speedometer layout,
+ * and stable locale id. Pre-v17 imports preserve historical presentation (Classic/English), map
+ * Thin Population to density index 0, and enable the fork-compatible spawn policy defaults.
+ * v18 changed no keys: the default panel width became Wide, so a pre-v18 file that still holds the
+ * old default (Normal) loads as Wide once; an explicit Narrow or Wide choice is kept.
  */
-#define GTAV_FEATURE_PROFILE_VERSION 16u
+#define GTAV_FEATURE_PROFILE_VERSION 18u
 
 /* v16: saved-vehicle (garage) and saved-outfit slot counts. Save/Spawn/Apply act on the currently
  * selected slot (a worker-side index, not persisted -- it resets to 0 on reload). */
@@ -148,6 +153,14 @@ typedef struct GtavFeatureProfile {
   uint32_t touchpad_enabled;
   /* v16: menu panel width index (Narrow/Normal/Wide). Pre-v16 version-gates to Normal (1). */
   uint32_t panel_width_index;
+  /* v17: spawn policy, ambient density, HUD layout and stable locale ID. Crowd is session-only. */
+  uint32_t spawn_preserve_speed;
+  uint32_t spawn_replace_previous;
+  uint32_t spawn_aircraft_in_flight;
+  uint32_t population_density_index;
+  uint32_t speedometer_layout;
+  uint32_t language_id;
+
 } GtavFeatureProfile;
 
 /* Write/read a profile as an INI file under the game's root (via the rootdir guard).

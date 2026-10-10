@@ -1,0 +1,286 @@
+{
+  "kind": "gtavmenu-stock-members",
+  "schemaVersion": 1,
+  "target": "ppsa04264-01.010.002",
+  "scope": "Combat Pistol and Police3 replacements; Franklin torso 14 and legs 6; MP Male legs additions. Other names and absence are unknown.",
+  "archives": {
+    "prosperoe.rpf": 2052179968,
+    "prosperov.rpf": 1955414016,
+    "update/ps5/dlcpacks/mp2023_01/dlc.rpf": 738064384,
+    "update/ps5/dlcpacks/patchDay2NG/dlc.rpf": 693553152,
+    "update/ps5/dlcpacks/patchDay3NG/dlc.rpf": 1414559744,
+    "update/ps5/dlcpacks/patchDay4NG/dlc.rpf": 299087872,
+    "update/ps5/dlcpacks/patchDay8NG/dlc.rpf": 303710208
+  },
+  "owners": {
+    "lowr_000_r.pdd": [
+      "prosperov.rpf:models/cdimages/streamedpeds_players.rpf/player_one/lowr_000_r.pdd",
+      "prosperov.rpf:models/cdimages/streamedpeds_mp.rpf/mp_m_freemode_01/lowr_000_r.pdd"
+    ],
+    "lowr_006_u.pdd": [
+      "prosperov.rpf:models/cdimages/streamedpeds_players.rpf/player_one/lowr_006_u.pdd"
+    ],
+    "lowr_diff_006_a_uni.ptd": [
+      "prosperov.rpf:models/cdimages/streamedpeds_players.rpf/player_one/lowr_diff_006_a_uni.ptd"
+    ],
+    "lowr_diff_006_b_uni.ptd": [
+      "prosperov.rpf:models/cdimages/streamedpeds_players.rpf/player_one/lowr_diff_006_b_uni.ptd"
+    ],
+    "lowr_diff_006_c_uni.ptd": [
+      "prosperov.rpf:models/cdimages/streamedpeds_players.rpf/player_one/lowr_diff_006_c_uni.ptd"
+    ],
+    "lowr_diff_006_d_uni.ptd": [
+      "prosperov.rpf:models/cdimages/streamedpeds_players.rpf/player_one/lowr_diff_006_d_uni.ptd"
+    ],
+    "lowr_diff_006_e_uni.ptd": [
+      "prosperov.rpf:models/cdimages/streamedpeds_players.rpf/player_one/lowr_diff_006_e_uni.ptd"
+    ],
+    "lowr_diff_006_f_uni.ptd": [
+      "prosperov.rpf:models/cdimages/streamedpeds_players.rpf/player_one/lowr_diff_006_f_uni.ptd"
+    ],
+    "lowr_diff_006_g_uni.ptd": [
+      "prosperov.rpf:models/cdimages/streamedpeds_players.rpf/player_one/lowr_diff_006_g_uni.ptd"
+    ],
+    "lowr_diff_006_h_uni.ptd": [
+      "prosperov.rpf:models/cdimages/streamedpeds_players.rpf/player_one/lowr_diff_006_h_uni.ptd"
+    ],
+    "mp_m_freemode_01.pft": [
+      "prosperov.rpf:models/cdimages/streamedpeds_mp.rpf/mp_m_freemode_01.pft"
+    ],
+    "mp_m_freemode_01_mp_m_2023_01.pmt": [
+      "update/ps5/dlcpacks/mp2023_01/dlc.rpf:ps5/models/cdimages/mp2023_01_male.rpf/mp_m_freemode_01_mp_m_2023_01.pmt"
+    ],
+    "player_one.pft": [
+      "prosperov.rpf:models/cdimages/streamedpeds_players.rpf/player_one.pft"
+    ],
+    "police3+hi.ptd": [
+      "prosperoe.rpf:levels/gta5/vehicles.rpf/police3+hi.ptd",
+      "update/ps5/dlcpacks/patchDay3NG/dlc.rpf:ps5/levels/gta5/vehicles.rpf/police3+hi.ptd",
+      "update/ps5/dlcpacks/patchDay4NG/dlc.rpf:ps5/levels/gta5/vehicles.rpf/police3+hi.ptd"
+    ],
+    "police3.pft": [
+      "prosperoe.rpf:levels/gta5/vehicles.rpf/police3.pft",
+      "update/ps5/dlcpacks/patchDay3NG/dlc.rpf:ps5/levels/gta5/vehicles.rpf/police3.pft",
+      "update/ps5/dlcpacks/patchDay4NG/dlc.rpf:ps5/levels/gta5/vehicles.rpf/police3.pft"
+    ],
+    "police3.ptd": [
+      "prosperoe.rpf:levels/gta5/vehicles.rpf/police3.ptd",
+      "update/ps5/dlcpacks/patchDay3NG/dlc.rpf:ps5/levels/gta5/vehicles.rpf/police3.ptd",
+      "update/ps5/dlcpacks/patchDay4NG/dlc.rpf:ps5/levels/gta5/vehicles.rpf/police3.ptd"
+    ],
+    "police3_hi.pft": [
+      "prosperoe.rpf:levels/gta5/vehicles.rpf/police3_hi.pft",
+      "update/ps5/dlcpacks/patchDay3NG/dlc.rpf:ps5/levels/gta5/vehicles.rpf/police3_hi.pft",
+      "update/ps5/dlcpacks/patchDay4NG/dlc.rpf:ps5/levels/gta5/vehicles.rpf/police3_hi.pft"
+    ],
+    "uppr_014_u.pdd": [
+      "prosperov.rpf:models/cdimages/streamedpeds_players.rpf/player_one/uppr_014_u.pdd"
+    ],
+    "uppr_diff_014_a_uni.ptd": [
+      "prosperov.rpf:models/cdimages/streamedpeds_players.rpf/player_one/uppr_diff_014_a_uni.ptd"
+    ],
+    "uppr_diff_014_b_uni.ptd": [
+      "prosperov.rpf:models/cdimages/streamedpeds_players.rpf/player_one/uppr_diff_014_b_uni.ptd"
+    ],
+    "uppr_diff_014_c_uni.ptd": [
+      "prosperov.rpf:models/cdimages/streamedpeds_players.rpf/player_one/uppr_diff_014_c_uni.ptd"
+    ],
+    "uppr_diff_014_d_uni.ptd": [
+      "prosperov.rpf:models/cdimages/streamedpeds_players.rpf/player_one/uppr_diff_014_d_uni.ptd"
+    ],
+    "uppr_diff_014_e_uni.ptd": [
+      "prosperov.rpf:models/cdimages/streamedpeds_players.rpf/player_one/uppr_diff_014_e_uni.ptd"
+    ],
+    "uppr_diff_014_f_uni.ptd": [
+      "prosperov.rpf:models/cdimages/streamedpeds_players.rpf/player_one/uppr_diff_014_f_uni.ptd"
+    ],
+    "uppr_diff_014_g_uni.ptd": [
+      "prosperov.rpf:models/cdimages/streamedpeds_players.rpf/player_one/uppr_diff_014_g_uni.ptd"
+    ],
+    "uppr_diff_014_h_uni.ptd": [
+      "prosperov.rpf:models/cdimages/streamedpeds_players.rpf/player_one/uppr_diff_014_h_uni.ptd"
+    ],
+    "w_pi_combatpistol+hi.ptd": [
+      "update/ps5/dlcpacks/patchDay2NG/dlc.rpf:ps5/models/cdimages/weapons.rpf/w_pi_combatpistol+hi.ptd",
+      "update/ps5/dlcpacks/patchDay3NG/dlc.rpf:ps5/models/cdimages/weapons.rpf/w_pi_combatpistol+hi.ptd",
+      "update/ps5/dlcpacks/patchDay8NG/dlc.rpf:ps5/models/cdimages/weapons.rpf/w_pi_combatpistol+hi.ptd"
+    ],
+    "w_pi_combatpistol.pdr": [
+      "prosperoe.rpf:models/cdimages/weapons.rpf/w_pi_combatpistol.pdr",
+      "update/ps5/dlcpacks/patchDay2NG/dlc.rpf:ps5/models/cdimages/weapons.rpf/w_pi_combatpistol.pdr",
+      "update/ps5/dlcpacks/patchDay3NG/dlc.rpf:ps5/models/cdimages/weapons.rpf/w_pi_combatpistol.pdr",
+      "update/ps5/dlcpacks/patchDay8NG/dlc.rpf:ps5/models/cdimages/weapons.rpf/w_pi_combatpistol.pdr"
+    ],
+    "w_pi_combatpistol.ptd": [
+      "prosperoe.rpf:models/cdimages/weapons.rpf/w_pi_combatpistol.ptd",
+      "update/ps5/dlcpacks/patchDay2NG/dlc.rpf:ps5/models/cdimages/weapons.rpf/w_pi_combatpistol.ptd",
+      "update/ps5/dlcpacks/patchDay3NG/dlc.rpf:ps5/models/cdimages/weapons.rpf/w_pi_combatpistol.ptd",
+      "update/ps5/dlcpacks/patchDay8NG/dlc.rpf:ps5/models/cdimages/weapons.rpf/w_pi_combatpistol.ptd"
+    ],
+    "w_pi_combatpistol_hi.pdr": [
+      "prosperoe.rpf:models/cdimages/weapons.rpf/w_pi_combatpistol_hi.pdr",
+      "update/ps5/dlcpacks/patchDay2NG/dlc.rpf:ps5/models/cdimages/weapons.rpf/w_pi_combatpistol_hi.pdr",
+      "update/ps5/dlcpacks/patchDay3NG/dlc.rpf:ps5/models/cdimages/weapons.rpf/w_pi_combatpistol_hi.pdr",
+      "update/ps5/dlcpacks/patchDay8NG/dlc.rpf:ps5/models/cdimages/weapons.rpf/w_pi_combatpistol_hi.pdr"
+    ],
+    "w_pi_combatpistol_mag1.pdr": [
+      "prosperoe.rpf:models/cdimages/weapons.rpf/w_pi_combatpistol_mag1.pdr",
+      "update/ps5/dlcpacks/patchDay2NG/dlc.rpf:ps5/models/cdimages/weapons.rpf/w_pi_combatpistol_mag1.pdr",
+      "update/ps5/dlcpacks/patchDay3NG/dlc.rpf:ps5/models/cdimages/weapons.rpf/w_pi_combatpistol_mag1.pdr",
+      "update/ps5/dlcpacks/patchDay8NG/dlc.rpf:ps5/models/cdimages/weapons.rpf/w_pi_combatpistol_mag1.pdr"
+    ],
+    "w_pi_combatpistol_mag1.ptd": [
+      "prosperoe.rpf:models/cdimages/weapons.rpf/w_pi_combatpistol_mag1.ptd",
+      "update/ps5/dlcpacks/patchDay2NG/dlc.rpf:ps5/models/cdimages/weapons.rpf/w_pi_combatpistol_mag1.ptd",
+      "update/ps5/dlcpacks/patchDay3NG/dlc.rpf:ps5/models/cdimages/weapons.rpf/w_pi_combatpistol_mag1.ptd",
+      "update/ps5/dlcpacks/patchDay8NG/dlc.rpf:ps5/models/cdimages/weapons.rpf/w_pi_combatpistol_mag1.ptd"
+    ]
+  },
+  "absent": {},
+  "templates": [
+    {
+      "owner": "prosperov.rpf:models/cdimages/streamedpeds_mp.rpf/mp_m_freemode_01.pft",
+      "storedOffset": 1079072768,
+      "bytes": 15935,
+      "flags": [
+        2684880896,
+        2952921088
+      ],
+      "sha256": "15e72077535a18511e0fb425717fceea3269d57de854fe80d917469312cdd458"
+    },
+    {
+      "owner": "prosperov.rpf:models/cdimages/streamedpeds_mp.rpf/mp_m_freemode_01/lowr_000_r.pdd",
+      "storedOffset": 1031748608,
+      "bytes": 243459,
+      "flags": [
+        2415919248,
+        4026531889
+      ],
+      "sha256": "109369fa428f371265ee0b885711d21f6a888fde040d41f0ee57ecb7fc2f18d1"
+    },
+    {
+      "owner": "prosperov.rpf:models/cdimages/streamedpeds_players.rpf/player_one.pft",
+      "storedOffset": 1454936064,
+      "bytes": 37638,
+      "flags": [
+        2684354944,
+        2952921088
+      ],
+      "sha256": "e13ddc7b7ea3adeac8dc6008d73cca6e20af6fba08e2bc0a6203b8f3ddad5744"
+    },
+    {
+      "owner": "prosperov.rpf:models/cdimages/streamedpeds_players.rpf/player_one/lowr_000_r.pdd",
+      "storedOffset": 1274995200,
+      "bytes": 1312398,
+      "flags": [
+        2415919121,
+        4026531988
+      ],
+      "sha256": "157935014f2e28149c777ffaeb62ec9c7e4f9adf360764c3559f3417d60a9c84"
+    },
+    {
+      "owner": "prosperov.rpf:models/cdimages/streamedpeds_players.rpf/player_one/lowr_006_u.pdd",
+      "storedOffset": 1289427968,
+      "bytes": 474693,
+      "flags": [
+        2415919153,
+        4026531890
+      ],
+      "sha256": "59abdfaada42c322224dadf9764a1635a89d7ed059c00f89ddfffc8ceb90d6fb"
+    },
+    {
+      "owner": "prosperov.rpf:models/cdimages/streamedpeds_players.rpf/player_one/uppr_014_u.pdd",
+      "storedOffset": 1543055872,
+      "bytes": 1999421,
+      "flags": [
+        2415919170,
+        4026531988
+      ],
+      "sha256": "fa667ee6624100adb489c26d72783d7cf564df9937d0afcd43f55f5cf295516f"
+    },
+    {
+      "owner": "update/ps5/dlcpacks/mp2023_01/dlc.rpf:ps5/models/cdimages/mp2023_01_male.rpf/mp_m_freemode_01_mp_m_2023_01.pmt",
+      "storedOffset": 669526528,
+      "bytes": 3018,
+      "flags": [
+        393216,
+        536870912
+      ],
+      "sha256": "c8d06dafe1b592640218f002ccdba4bf134ccf5434bac9d4ef70d2d78a4fd491"
+    },
+    {
+      "owner": "update/ps5/dlcpacks/patchDay8NG/dlc.rpf:ps5/models/cdimages/weapons.rpf/w_pi_combatpistol.pdr",
+      "storedOffset": 177304576,
+      "bytes": 26382,
+      "flags": [
+        2416050208,
+        4026662912
+      ],
+      "sha256": "49b7a64a6ae1d5b7559b81b3c55eeb28631875b752e0360d7fdf57b3093a96d8"
+    },
+    {
+      "owner": "update/ps5/dlcpacks/patchDay8NG/dlc.rpf:ps5/models/cdimages/weapons.rpf/w_pi_combatpistol_hi.pdr",
+      "storedOffset": 177331200,
+      "bytes": 157362,
+      "flags": [
+        2415919122,
+        4026533888
+      ],
+      "sha256": "aab4cf8c56902e9b365f24aa9b47af897f4e75f925ade9621a21890e73771fc3"
+    },
+    {
+      "owner": "update/ps5/dlcpacks/patchDay8NG/dlc.rpf:ps5/models/cdimages/weapons.rpf/w_pi_combatpistol_mag1.pdr",
+      "storedOffset": 178594304,
+      "bytes": 2854,
+      "flags": [
+        2416050176,
+        4026662912
+      ],
+      "sha256": "a049f5128bb9d5f9aee36ee035380bb0f6f1364c5592ec3d24e325b02c5a94f2"
+    }
+  ],
+  "clothing": {
+    "player_one": {
+      "uppr": {
+        "targets": [
+          14
+        ],
+        "members": [
+          "uppr_014_u.pdd",
+          "uppr_diff_014_a_uni.ptd",
+          "uppr_diff_014_b_uni.ptd",
+          "uppr_diff_014_c_uni.ptd",
+          "uppr_diff_014_d_uni.ptd",
+          "uppr_diff_014_e_uni.ptd",
+          "uppr_diff_014_f_uni.ptd",
+          "uppr_diff_014_g_uni.ptd",
+          "uppr_diff_014_h_uni.ptd"
+        ]
+      },
+      "lowr": {
+        "targets": [
+          6
+        ],
+        "members": [
+          "lowr_000_r.pdd",
+          "lowr_006_u.pdd",
+          "lowr_diff_006_a_uni.ptd",
+          "lowr_diff_006_b_uni.ptd",
+          "lowr_diff_006_c_uni.ptd",
+          "lowr_diff_006_d_uni.ptd",
+          "lowr_diff_006_e_uni.ptd",
+          "lowr_diff_006_f_uni.ptd",
+          "lowr_diff_006_g_uni.ptd",
+          "lowr_diff_006_h_uni.ptd"
+        ]
+      }
+    },
+    "mp_m_freemode_01": {
+      "lowr": {
+        "members": [
+          "lowr_000_r.pdd"
+        ]
+      }
+    }
+  }
+}

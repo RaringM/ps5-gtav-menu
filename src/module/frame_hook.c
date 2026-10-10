@@ -489,6 +489,13 @@ int gtav_menu_start_thread(void);
 
 static volatile uint32_t g_self_start_claimed;
 
+// The loader opens this gate only after the complete broker transaction succeeds and it has
+// retained lifecycle ownership. A detour may fire during jump verification or rollback; those
+// calls must remain passthroughs without creating a worker. Keep this separate from broker.state:
+// even a failed INSTALLED publication may have changed the remote bytes before returning failure.
+volatile uint32_t gtav_frame_hook_self_start_authorized
+    __attribute__((used, retain, visibility("default"))) = 0u;
+
 // Exported so the loader can read the outcome over kernel R/W after the hook goes live: this is the
 // only evidence that pthread_create from inside a chained native worked, and calling it mid-frame
 // on the game thread is the one genuinely untested step of the ptrace-free lane. 0xFFFFFFFF = never
@@ -501,6 +508,9 @@ volatile uint32_t gtav_frame_hook_self_start_rc
 // failed start is not retried -- pthread_create failing here means the process is in no state for a
 // second attempt, and retrying every fire would be ~8000 attempts a second.
 static void self_start_worker_once(void) {
+  if (__atomic_load_n(&gtav_frame_hook_self_start_authorized, __ATOMIC_ACQUIRE) != 1u) {
+    return;
+  }
   if (__atomic_load_n(&g_self_start_claimed, __ATOMIC_ACQUIRE)) {
     return;
   }

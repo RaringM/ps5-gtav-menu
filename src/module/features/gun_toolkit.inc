@@ -268,15 +268,16 @@ static void gun_toolkit_game_thread_tick(void) {
 }
 #endif  // GTAV_MENU_ENABLE_FRAME_HOOK
 
-// Worker-side cycler. Advances the active gun; the game-thread driver reads the live value. A
-// non-Off gun is refused until the frame hook is live (the raycast/explosion natives run on that
-// tick), mirroring cycle_fly_mode() / cycle_autopilot_mode().
+// Worker-side cycler, pick then apply (mode_pick_step): Left/Right stage a gun, Cross makes it the
+// live value the game-thread driver reads. A non-Off gun is refused until the frame hook is live
+// (the raycast/explosion natives run on that tick), mirroring cycle_fly_mode() /
+// cycle_autopilot_mode().
+static ModePick g_gun_pick;
 static uint32_t cycle_active_gun(uint32_t param) {
   const uint32_t action = GTAV_NATIVE_SHELL_ACTION_CYCLE_ACTIVE_GUN;
   const uint32_t count = (uint32_t)(sizeof(kGunModes) / sizeof(kGunModes[0]));
-  if (param == 1u || param == 2u) {
-    g_active_gun = (int)list_step((uint32_t)g_active_gun, count, param == 2u ? -1 : 1);
-  }
+  if (mode_pick_step(&g_gun_pick, &g_active_gun, count, param))
+    return ok(action, kGunModes[g_gun_pick.pick % count].label);
   const uint32_t mode = (uint32_t)g_active_gun % count;
   if (mode != (uint32_t)GTAV_GUN_NONE && !fly_hook_ready()) {
     return unavailable(action, "needs main-thread hook");

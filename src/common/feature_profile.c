@@ -96,6 +96,12 @@ int gtav_feature_profile_save(const char* path, const GtavFeatureProfile* profil
   fprintf(fp, "nav_speed_index=%u\n", profile->nav_speed_index);
   fprintf(fp, "touchpad_enabled=%u\n", profile->touchpad_enabled);
   fprintf(fp, "panel_width_index=%u\n", profile->panel_width_index);
+  fprintf(fp, "spawn_preserve_speed=%u\n", profile->spawn_preserve_speed);
+  fprintf(fp, "spawn_replace_previous=%u\n", profile->spawn_replace_previous);
+  fprintf(fp, "spawn_aircraft_in_flight=%u\n", profile->spawn_aircraft_in_flight);
+  fprintf(fp, "population_density_index=%u\n", profile->population_density_index);
+  fprintf(fp, "speedometer_layout=%u\n", profile->speedometer_layout);
+  fprintf(fp, "language_id=%u\n", profile->language_id);
 
   fclose(fp);
   return 0;
@@ -110,6 +116,10 @@ int gtav_feature_profile_load(const char* path, GtavFeatureProfile* profile) {
   if (!profile) return -1;
   memset(profile, 0, sizeof(*profile));
   profile->version = GTAV_FEATURE_PROFILE_VERSION;
+  profile->spawn_preserve_speed = 1;
+  profile->spawn_replace_previous = 1;
+  profile->spawn_aircraft_in_flight = 1;
+  profile->population_density_index = 1;
 
   rooted = gtav_rootdir_enter(&rootdir) == 0;
   fp = fopen(path ? path : GTAV_FEATURE_PROFILE_DEFAULT_PATH, "r");
@@ -166,6 +176,18 @@ int gtav_feature_profile_load(const char* path, GtavFeatureProfile* profile) {
       /* Pre-v16 migration: the bare scalar key (no slot digit) loads into garage slot 0. New files
        * write saved_vehicle_model0..9 (handled by the load_hash_array chain below). */
       profile->saved_vehicle_model[0] = value;
+    } else if (!strcmp(key, "spawn_preserve_speed")) {
+      profile->spawn_preserve_speed = value;
+    } else if (!strcmp(key, "spawn_replace_previous")) {
+      profile->spawn_replace_previous = value;
+    } else if (!strcmp(key, "spawn_aircraft_in_flight")) {
+      profile->spawn_aircraft_in_flight = value;
+    } else if (!strcmp(key, "population_density_index")) {
+      profile->population_density_index = value;
+    } else if (!strcmp(key, "speedometer_layout")) {
+      profile->speedometer_layout = value;
+    } else if (!strcmp(key, "language_id")) {
+      profile->language_id = value;
     } else if (!strcmp(key, "panel_width_index")) {
       profile->panel_width_index = value;
     } else if (!strcmp(key, "worker_hz_index")) {

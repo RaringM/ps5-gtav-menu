@@ -7,6 +7,7 @@
 #define MAX_DEPTH 32u
 
 typedef struct DiscoveryWalk {
+  const GtavRenderPhaseProfile* profile;
   GtavRenderPhaseRead read;
   void* context;
   GtavRenderPhaseDiscovery* result;
@@ -62,17 +63,15 @@ static int walk_nodes(DiscoveryWalk* walk, uintptr_t address, uint32_t group_id,
     const uint32_t task_id = rd32(before + 16);
     const uintptr_t sibling = (uintptr_t)rd64(before + 24);
     const uintptr_t payload = (uintptr_t)rd64(before + 32);
-    if (vtable != GTAV_RENDER_PHASE_DISCOVERY_LEAF_VTABLE &&
-        vtable != GTAV_RENDER_PHASE_DISCOVERY_GROUP_VTABLE)
+    if (vtable != walk->profile->leaf_vtable && vtable != walk->profile->group_vtable)
       return fail(walk, GTAV_RENDER_PHASE_DISCOVERY_ERROR_VTABLE);
-    if (vtable == GTAV_RENDER_PHASE_DISCOVERY_LEAF_VTABLE && group_id == 2u &&
-        task_id == GTAV_RENDER_PHASE_DISCOVERY_TASK_ID &&
-        payload == GTAV_RENDER_PHASE_DISCOVERY_ORIGINAL) {
+    if (vtable == walk->profile->leaf_vtable && group_id == 2u &&
+        task_id == walk->profile->task_id && payload == walk->profile->original) {
       ++walk->result->matches;
       walk->result->object = address;
       walk->result->slot = address + 32u;
     }
-    if (vtable == GTAV_RENDER_PHASE_DISCOVERY_GROUP_VTABLE && payload &&
+    if (vtable == walk->profile->group_vtable && payload &&
         walk_nodes(walk, payload, group_id, depth + 1u) != 0)
       return -1;
     if (read_exact(walk, address, after, sizeof(after)) != 0) return -1;
@@ -92,37 +91,45 @@ static int check_bytes(DiscoveryWalk* walk, uintptr_t address, const uint8_t* ex
              : fail(walk, GTAV_RENDER_PHASE_DISCOVERY_ERROR_FINGERPRINT);
 }
 
-int gtav_render_phase_discover(GtavRenderPhaseRead read, void* context,
-                               GtavRenderPhaseDiscovery* result) {
-  static const uint8_t kLeafInvoke[] = {GTAV_RENDER_PHASE_LEAF_INVOKE_BYTES};
-  static const uint8_t kGroupDispatch[] = {GTAV_RENDER_PHASE_GROUP_INVOKE_BYTES};
-  static const uint8_t kGroup2Dispatch[] = {GTAV_RENDER_PHASE_GROUP2_DISPATCH_BYTES};
-  static const uint8_t kRegistration[] = {GTAV_RENDER_PHASE_REGISTRATION_BYTES};
-  static const uint64_t kLeafInvokePointer = GTAV_RENDER_PHASE_LEAF_INVOKE_ADDR;
-  static const uint64_t kGroupInvokePointer = GTAV_RENDER_PHASE_GROUP_INVOKE_ADDR;
+int gtav_render_phase_discover_profile(const GtavRenderPhaseProfile* profile,
+                                       GtavRenderPhaseRead read, void* context,
+                                       GtavRenderPhaseDiscovery* result) {
+  uint64_t leaf_pointer, group_pointer;
   DiscoveryWalk walk;
   uint64_t root_before = 0, root_after = 0;
-  if (!read || !result) return -1;
+  if (!result) return -1;
+  memset(result, 0, sizeof(*result));
+  if (!read || !profile || !profile->root || !profile->leaf_vtable || !profile->group_vtable ||
+      !profile->original) {
+    result->error = GTAV_RENDER_PHASE_DISCOVERY_ERROR_ARGUMENT;
+    return -1;
+  }
+  for (size_t i = 0; i < 4; ++i) {
+    if (!profile->fingerprints[i].address || !profile->fingerprints[i].size ||
+        profile->fingerprints[i].size > sizeof(profile->fingerprints[i].bytes)) {
+      result->error = GTAV_RENDER_PHASE_DISCOVERY_ERROR_ARGUMENT;
+      return -1;
+    }
+  }
+  leaf_pointer = profile->fingerprints[0].address;
+  group_pointer = profile->fingerprints[1].address;
   memset(&walk, 0, sizeof(walk));
   memset(result, 0, sizeof(*result));
+  walk.profile = profile;
   walk.read = read;
   walk.context = context;
   walk.result = result;
-  if (check_bytes(&walk, GTAV_RENDER_PHASE_LEAF_INVOKE_ADDR, kLeafInvoke, sizeof(kLeafInvoke)) !=
-          0 ||
-      check_bytes(&walk, GTAV_RENDER_PHASE_GROUP_INVOKE_ADDR, kGroupDispatch,
-                  sizeof(kGroupDispatch)) != 0 ||
-      check_bytes(&walk, GTAV_RENDER_PHASE_GROUP2_DISPATCH_ADDR, kGroup2Dispatch,
-                  sizeof(kGroup2Dispatch)) != 0 ||
-      check_bytes(&walk, GTAV_RENDER_PHASE_REGISTRATION_ADDR, kRegistration,
-                  sizeof(kRegistration)) != 0 ||
-      check_bytes(&walk, GTAV_RENDER_PHASE_DISCOVERY_LEAF_VTABLE + 16u,
-                  (const uint8_t*)&kLeafInvokePointer, sizeof(kLeafInvokePointer)) != 0 ||
-      check_bytes(&walk, GTAV_RENDER_PHASE_DISCOVERY_GROUP_VTABLE + 16u,
-                  (const uint8_t*)&kGroupInvokePointer, sizeof(kGroupInvokePointer)) != 0)
+  for (size_t i = 0; i < 4; ++i) {
+    const GtavRenderPhaseFingerprint* fingerprint = &profile->fingerprints[i];
+    if (check_bytes(&walk, fingerprint->address, fingerprint->bytes, fingerprint->size) != 0)
+      return -1;
+  }
+  if (check_bytes(&walk, profile->leaf_vtable + 16u, (const uint8_t*)&leaf_pointer,
+                  sizeof(leaf_pointer)) != 0 ||
+      check_bytes(&walk, profile->group_vtable + 16u, (const uint8_t*)&group_pointer,
+                  sizeof(group_pointer)) != 0)
     return -1;
-  if (read_exact(&walk, GTAV_RENDER_PHASE_DISCOVERY_ROOT, &root_before, sizeof(root_before)) != 0)
-    return -1;
+  if (read_exact(&walk, profile->root, &root_before, sizeof(root_before)) != 0) return -1;
   uintptr_t group = (uintptr_t)root_before;
   while (group) {
     uint8_t before[24], after[24];
@@ -141,10 +148,32 @@ int gtav_render_phase_discover(GtavRenderPhaseRead read, void* context,
       return fail(&walk, GTAV_RENDER_PHASE_DISCOVERY_ERROR_MUTATION);
     group = following;
   }
-  if (read_exact(&walk, GTAV_RENDER_PHASE_DISCOVERY_ROOT, &root_after, sizeof(root_after)) != 0)
-    return -1;
+  if (read_exact(&walk, profile->root, &root_after, sizeof(root_after)) != 0) return -1;
   if (root_before != root_after) return fail(&walk, GTAV_RENDER_PHASE_DISCOVERY_ERROR_MUTATION);
   if (result->matches != 1u || !result->object || !result->slot)
     return fail(&walk, GTAV_RENDER_PHASE_DISCOVERY_ERROR_MATCH);
   return 0;
+}
+
+int gtav_render_phase_discover(GtavRenderPhaseRead read, void* context,
+                               GtavRenderPhaseDiscovery* result) {
+  static const GtavRenderPhaseProfile profile = {
+      GTAV_RENDER_PHASE_DISCOVERY_ROOT,
+      GTAV_RENDER_PHASE_DISCOVERY_LEAF_VTABLE,
+      GTAV_RENDER_PHASE_DISCOVERY_GROUP_VTABLE,
+      GTAV_RENDER_PHASE_DISCOVERY_TASK_ID,
+      GTAV_RENDER_PHASE_DISCOVERY_ORIGINAL,
+      {{GTAV_RENDER_PHASE_LEAF_INVOKE_ADDR,
+        {GTAV_RENDER_PHASE_LEAF_INVOKE_BYTES},
+        sizeof((uint8_t[]){GTAV_RENDER_PHASE_LEAF_INVOKE_BYTES})},
+       {GTAV_RENDER_PHASE_GROUP_INVOKE_ADDR,
+        {GTAV_RENDER_PHASE_GROUP_INVOKE_BYTES},
+        sizeof((uint8_t[]){GTAV_RENDER_PHASE_GROUP_INVOKE_BYTES})},
+       {GTAV_RENDER_PHASE_GROUP2_DISPATCH_ADDR,
+        {GTAV_RENDER_PHASE_GROUP2_DISPATCH_BYTES},
+        sizeof((uint8_t[]){GTAV_RENDER_PHASE_GROUP2_DISPATCH_BYTES})},
+       {GTAV_RENDER_PHASE_REGISTRATION_ADDR,
+        {GTAV_RENDER_PHASE_REGISTRATION_BYTES},
+        sizeof((uint8_t[]){GTAV_RENDER_PHASE_REGISTRATION_BYTES})}}};
+  return gtav_render_phase_discover_profile(&profile, read, context, result);
 }

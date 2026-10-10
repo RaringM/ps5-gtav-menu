@@ -1,4 +1,4 @@
-// Spooner entity tweaks (World > Spawned Entities): act on the LAST spawned object.
+// Spooner entity tweaks (Spawn > Spawned Entities): act on the LAST spawned object.
 //
 // Source fragment of features.cpp, textually included AFTER spawned_entities.inc (the
 // g_spawned_object_* roster + roster_handle_alive) and spawn_entity.inc (run_entity_spawn_job)

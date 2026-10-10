@@ -87,7 +87,7 @@ enum ShellMenuId {
   SHELL_MENU_WORLD_SPECTACLE = 42,
   // Self > Free Camera: enter the detached cinematic camera + tune its fly speed.
   SHELL_MENU_FREE_CAM = 43,
-  // Menu Settings > Controls: a read-only reference of the full controller grammar.
+  // Settings > Menu > Controls: a read-only reference of the full controller grammar.
   SHELL_MENU_CONTROLS = 44,
   // Self goal sub-pages (keep the Self root short): money one-shots, wanted-level controls, and
   // the appearance editors (skin / wardrobe / scenarios / emotes).
@@ -103,13 +103,40 @@ enum ShellMenuId {
   // stays short.
   SHELL_MENU_THEME_EDITOR_MORE = 50,
   // Top-level "Find": a flat, alphabetised index of every actionable row across the whole tree
-  // (toggles / actions / cyclers), built at runtime like Quick. Pairs with L3/R3 letter-jump so any
-  // feature is a couple of presses away without remembering its path. Excludes the giant dynamic
+  // (toggles / actions / cyclers), built at runtime like Quick, so any feature is a couple of
+  // presses away without remembering its path. Excludes the giant dynamic
   // catalogs (vehicle/ped/object/scenario browsers) and the Quick/Find hubs themselves.
   SHELL_MENU_FIND = 51,
-  // Weapons > Attachments: per-slot Off/On staging rows + Apply/Remove for the equipped weapon.
+  // Weapons > Attachments: the Component row (every weapon) + the Quick Slots (retail) link.
   SHELL_MENU_WEAPON_ATTACH = 52,
-  SHELL_MENU_COUNT = 53,
+  // Top-level "Custom Packs": load the active runtime pack and spawn its vehicles/props, built at
+  // runtime from gtav_features_pack_menu() (CUSTOM_STREAM builds; a single locked row otherwise).
+  SHELL_MENU_CUSTOM_PACKS = 53,
+  // World > Population: the density picker and the crowd rows.
+  SHELL_MENU_WORLD_POPULATION = 54,
+  // Top-level "Spawn": the ped / object browsers, Companions and Spawned Entities.
+  SHELL_MENU_SPAWN = 55,
+  // Top-level "Settings": Menu (appearance / behaviour), HUD and Runtime.
+  SHELL_MENU_SETTINGS = 56,
+  // Vehicles sub-pages: saved vehicles, the create-time spawn toggles, and performance/driving.
+  SHELL_MENU_VEHICLE_GARAGE = 57,
+  SHELL_MENU_VEHICLE_SPAWN_OPTIONS = 58,
+  SHELL_MENU_VEHICLE_HANDLING = 59,
+  // Spawn > Objects > Placement: where and how the next prop is placed.
+  SHELL_MENU_OBJECT_PLACEMENT = 60,
+  // Custom Packs folders (kCustomPackFolders): the installed list, then the loaded packs' rows by
+  // kind, all built at runtime from gtav_features_pack_menu().
+  SHELL_MENU_PACK_MANAGE = 61,
+  SHELL_MENU_PACK_VEHICLES = 62,
+  SHELL_MENU_PACK_WEAPONS = 63,
+  SHELL_MENU_PACK_PEDS = 64,
+  SHELL_MENU_PACK_OBJECTS = 65,
+  SHELL_MENU_PACK_EFFECTS = 66,
+  SHELL_MENU_PACK_LOCATIONS = 67,
+  // Weapons > Attachments > Quick Slots (retail): per-slot Off/On staging rows + Apply/Remove for
+  // a retail weapon of the kWAttach table (weapon_attachments.inc).
+  SHELL_MENU_WEAPON_ATTACH_SLOTS = 68,
+  SHELL_MENU_COUNT = 69,
   SHELL_MENU_NONE = 0xffffffffu,
 };
 
@@ -127,20 +154,62 @@ enum ShellRowType {
 static const uint32_t kShellMaxMenuDepth = 4;
 static const uint32_t kShellVisibleRows = 10;
 
+// Root: the hubs (Quick pins, Find index), the four gameplay areas,
+// the spawners, then Settings and Custom Packs. Every page sits within kShellMaxMenuDepth pushes
+// (Settings > Menu > Theme Editor > More Colours is the deepest, tests/test_menu_tree.py).
 static const ShellItem kMainItems[] = {
     {"Quick", SHELL_ROW_SUBMENU, SHELL_MENU_QUICK, GTAV_NATIVE_SHELL_ACTION_NONE, nullptr, 0},
+    {"Find", SHELL_ROW_SUBMENU, SHELL_MENU_FIND, GTAV_NATIVE_SHELL_ACTION_NONE, nullptr, 0},
     {"Self", SHELL_ROW_SUBMENU, SHELL_MENU_SELF, GTAV_NATIVE_SHELL_ACTION_NONE, nullptr, 0},
     {"Vehicles", SHELL_ROW_SUBMENU, SHELL_MENU_VEHICLES, GTAV_NATIVE_SHELL_ACTION_NONE, nullptr, 0},
     {"Weapons", SHELL_ROW_SUBMENU, SHELL_MENU_WEAPONS, GTAV_NATIVE_SHELL_ACTION_NONE, nullptr, 0},
     {"World", SHELL_ROW_SUBMENU, SHELL_MENU_WORLD, GTAV_NATIVE_SHELL_ACTION_NONE, nullptr, 0},
-    {"HUD", SHELL_ROW_SUBMENU, SHELL_MENU_HUD, GTAV_NATIVE_SHELL_ACTION_NONE, nullptr, 0},
-    {"Runtime", SHELL_ROW_SUBMENU, SHELL_MENU_RUNTIME, GTAV_NATIVE_SHELL_ACTION_NONE, nullptr, 0},
-    {"Menu Settings", SHELL_ROW_SUBMENU, SHELL_MENU_MENU_SETTINGS, GTAV_NATIVE_SHELL_ACTION_NONE,
+    {"Spawn", SHELL_ROW_SUBMENU, SHELL_MENU_SPAWN, GTAV_NATIVE_SHELL_ACTION_NONE, nullptr, 0},
+    {"Settings", SHELL_ROW_SUBMENU, SHELL_MENU_SETTINGS, GTAV_NATIVE_SHELL_ACTION_NONE, nullptr, 0},
+    {"Custom Packs", SHELL_ROW_SUBMENU, SHELL_MENU_CUSTOM_PACKS, GTAV_NATIVE_SHELL_ACTION_NONE,
      nullptr, 0},
-    {"Find", SHELL_ROW_SUBMENU, SHELL_MENU_FIND, GTAV_NATIVE_SHELL_ACTION_NONE, nullptr, 0},
 };
 
-// Menu customisation: colour theme + draw side. Submenus first (Theme Editor / Keybinds /
+// Custom Packs folders, below the root's load row. Manage Packs (the installed list, its toggles
+// and the uninstall row) is always listed; a content folder only while the loaded packs have rows
+// of its kind (build_custom_pack_items copies these rows; Effects holds timecycle and particle
+// rows, Locations the map teleports).
+static const ShellItem kCustomPackFolders[] = {
+    {"Manage Packs", SHELL_ROW_SUBMENU, SHELL_MENU_PACK_MANAGE, GTAV_NATIVE_SHELL_ACTION_NONE,
+     nullptr, 0},
+    {"Vehicles", SHELL_ROW_SUBMENU, SHELL_MENU_PACK_VEHICLES, GTAV_NATIVE_SHELL_ACTION_NONE,
+     nullptr, 0},
+    {"Weapons", SHELL_ROW_SUBMENU, SHELL_MENU_PACK_WEAPONS, GTAV_NATIVE_SHELL_ACTION_NONE, nullptr,
+     0},
+    {"Peds", SHELL_ROW_SUBMENU, SHELL_MENU_PACK_PEDS, GTAV_NATIVE_SHELL_ACTION_NONE, nullptr, 0},
+    {"Objects", SHELL_ROW_SUBMENU, SHELL_MENU_PACK_OBJECTS, GTAV_NATIVE_SHELL_ACTION_NONE, nullptr,
+     0},
+    {"Effects", SHELL_ROW_SUBMENU, SHELL_MENU_PACK_EFFECTS, GTAV_NATIVE_SHELL_ACTION_NONE, nullptr,
+     0},
+    {"Locations", SHELL_ROW_SUBMENU, SHELL_MENU_PACK_LOCATIONS, GTAV_NATIVE_SHELL_ACTION_NONE,
+     nullptr, 0},
+};
+
+// Settings: the menu's own look and behaviour, the HUD overlay, and the runtime controls.
+static const ShellItem kSettingsItems[] = {
+    {"Menu", SHELL_ROW_SUBMENU, SHELL_MENU_MENU_SETTINGS, GTAV_NATIVE_SHELL_ACTION_NONE, nullptr,
+     0},
+    {"HUD", SHELL_ROW_SUBMENU, SHELL_MENU_HUD, GTAV_NATIVE_SHELL_ACTION_NONE, nullptr, 0},
+    {"Runtime", SHELL_ROW_SUBMENU, SHELL_MENU_RUNTIME, GTAV_NATIVE_SHELL_ACTION_NONE, nullptr, 0},
+};
+
+// Spawn: the ped and object browsers, the bodyguards, and the spawned-entity tools.
+static const ShellItem kSpawnItems[] = {
+    {"Peds", SHELL_ROW_SUBMENU, SHELL_MENU_PED_SPAWNER, GTAV_NATIVE_SHELL_ACTION_NONE, nullptr, 0},
+    {"Objects", SHELL_ROW_SUBMENU, SHELL_MENU_OBJECT_SPAWNER, GTAV_NATIVE_SHELL_ACTION_NONE,
+     nullptr, 0},
+    {"Companions", SHELL_ROW_SUBMENU, SHELL_MENU_COMPANIONS, GTAV_NATIVE_SHELL_ACTION_NONE, nullptr,
+     0},
+    {"Spawned Entities", SHELL_ROW_SUBMENU, SHELL_MENU_SPAWNED_ENTITIES,
+     GTAV_NATIVE_SHELL_ACTION_NONE, nullptr, 0},
+};
+
+// Settings > Menu: colour theme + draw side. Submenus first (Theme Editor / Keybinds /
 // Controls), then the SHELL_ROW_LIST cyclers handled in menu.c (bridge render state, not native
 // features): appearance cyclers (Theme / Draw Side) then the behaviour/timing cyclers.
 static const ShellItem kMenuSettingsItems[] = {
@@ -164,6 +233,10 @@ static const ShellItem kMenuSettingsItems[] = {
      nullptr, 0},
     {"Touchpad", SHELL_ROW_LIST, SHELL_MENU_NONE, GTAV_NATIVE_SHELL_ACTION_CYCLE_TOUCHPAD, nullptr,
      0},
+#if GTAV_LOCALE_GENERATED_META_COUNT > 1
+    {"Language", SHELL_ROW_LIST, SHELL_MENU_NONE, GTAV_NATIVE_SHELL_ACTION_CYCLE_LANGUAGE, nullptr,
+     0},
+#endif
 };
 
 // Theme Editor: per-channel RGB sliders for the mutable "Custom" theme. The "More Colours"
@@ -273,14 +346,19 @@ static const ShellItem kControlsItems[] = {
      nullptr, 0},
     {"Circle: Back  (Hold: To Root)", SHELL_ROW_DISABLED, SHELL_MENU_NONE,
      GTAV_NATIVE_SHELL_ACTION_NONE, nullptr, 0},
-    {"DPad Left / Right: Adjust Value", SHELL_ROW_DISABLED, SHELL_MENU_NONE,
+    {"Left / Right: Adjust a list", SHELL_ROW_DISABLED, SHELL_MENU_NONE,
      GTAV_NATIVE_SHELL_ACTION_NONE, nullptr, 0},
+    {"Left / Right: Toggle Off / On", SHELL_ROW_DISABLED, SHELL_MENU_NONE,
+     GTAV_NATIVE_SHELL_ACTION_NONE, nullptr, 0},
+    {"Left (other rows): Back", SHELL_ROW_DISABLED, SHELL_MENU_NONE, GTAV_NATIVE_SHELL_ACTION_NONE,
+     nullptr, 0},
     {"R3: Pin to Quick / Favorite", SHELL_ROW_DISABLED, SHELL_MENU_NONE,
      GTAV_NATIVE_SHELL_ACTION_NONE, nullptr, 0},
-    {"L1 / R1 / L3: free (gameplay)", SHELL_ROW_DISABLED, SHELL_MENU_NONE,
-     GTAV_NATIVE_SHELL_ACTION_NONE, nullptr, 0},
-    {"Triangle / Square: free (gameplay)", SHELL_ROW_DISABLED, SHELL_MENU_NONE,
-     GTAV_NATIVE_SHELL_ACTION_NONE, nullptr, 0},
+    {"L1 / R1: Top / Bottom", SHELL_ROW_DISABLED, SHELL_MENU_NONE, GTAV_NATIVE_SHELL_ACTION_NONE,
+     nullptr, 0},
+    {"L3: game", SHELL_ROW_DISABLED, SHELL_MENU_NONE, GTAV_NATIVE_SHELL_ACTION_NONE, nullptr, 0},
+    {"Triangle / Square: game", SHELL_ROW_DISABLED, SHELL_MENU_NONE, GTAV_NATIVE_SHELL_ACTION_NONE,
+     nullptr, 0},
 };
 
 // Self is split into goal sub-pages so the root stays short and navigable. Layout convention
@@ -363,7 +441,7 @@ static const ShellItem kSelfScenariosItems[] = {
     {"Browse Scenarios", SHELL_ROW_SUBMENU, SHELL_MENU_SELF_SCENARIO_PICKER,
      GTAV_NATIVE_SHELL_ACTION_NONE, nullptr, 0},
     {"Stop Scenario", SHELL_ROW_ACTION, SHELL_MENU_NONE, GTAV_NATIVE_SHELL_ACTION_STOP_SCENARIO,
-     "Needs main-thread hook", 0},
+     nullptr, 0},
 };
 
 static const ShellItem kSelfPresetItems[] = {
@@ -397,7 +475,7 @@ static const ShellItem kSelfTeleportItems[] = {
     {"To Objective", SHELL_ROW_ACTION, SHELL_MENU_NONE, GTAV_NATIVE_SHELL_ACTION_TELEPORT_OBJECTIVE,
      nullptr, 0},
     {"Into Last Vehicle", SHELL_ROW_ACTION, SHELL_MENU_NONE,
-     GTAV_NATIVE_SHELL_ACTION_TELEPORT_LAST_VEHICLE, "Needs main-thread hook", 0},
+     GTAV_NATIVE_SHELL_ACTION_TELEPORT_LAST_VEHICLE, nullptr, 0},
 };
 
 // .param indexes into kTeleportPresets[] in features.cpp -- keep them in sync.
@@ -502,7 +580,7 @@ static const ShellItem kWeaponItems[] = {
     {"Give Weapon Pack", SHELL_ROW_ACTION, SHELL_MENU_NONE, GTAV_NATIVE_SHELL_ACTION_GIVE_WEAPONS,
      nullptr, 0},
     {"Give Max Ammo", SHELL_ROW_ACTION, SHELL_MENU_NONE, GTAV_NATIVE_SHELL_ACTION_GIVE_MAX_AMMO,
-     "Needs main-thread hook", 0},
+     nullptr, 0},
     {"Remove All Weapons", SHELL_ROW_ACTION, SHELL_MENU_NONE,
      GTAV_NATIVE_SHELL_ACTION_REMOVE_WEAPONS, nullptr, 0},
     {"Infinite Ammo", SHELL_ROW_TOGGLE, SHELL_MENU_NONE,
@@ -515,9 +593,23 @@ static const ShellItem kWeaponItems[] = {
      nullptr, 0},
 };
 
-// Weapons > Attachments: stage each slot Off/On for the equipped weapon (worker-side cyclers), then
-// Apply (game-thread, gives/removes the weapon's canonical component per slot). Remove strips them.
+// Weapons > Attachments (2026-10-08 session 3 fix): "Component" first, the one row that works for
+// every weapon -- it picks any component the equipped weapon's meta lists (a pack weapon's own,
+// else the kWAttach table) and Cross fits or removes it; a default part reads "(default)". Then the
+// retail per-slot rows in their own page. The one deliberate leaf-before-submenu page
+// (test_menu_submenus_first.py): the working row stays on top.
 static const ShellItem kWeaponAttachItems[] = {
+    {"Component", SHELL_ROW_LIST, SHELL_MENU_NONE, GTAV_NATIVE_SHELL_ACTION_CYCLE_WEAPON_COMPONENT,
+     nullptr, 0},
+    {"Quick Slots (retail)", SHELL_ROW_SUBMENU, SHELL_MENU_WEAPON_ATTACH_SLOTS,
+     GTAV_NATIVE_SHELL_ACTION_NONE, nullptr, 0},
+};
+
+// Weapons > Attachments > Quick Slots (retail): stage each slot Off/On for the equipped retail
+// weapon (worker-side cyclers) and Apply (game-thread, gives/removes the weapon's canonical
+// component per slot); Remove All strips them. With a pack weapon (or a weapon the table does not
+// know) in hand the rows stage nothing and the footer points to Component.
+static const ShellItem kWeaponAttachSlotItems[] = {
     {"Suppressor", SHELL_ROW_LIST, SHELL_MENU_NONE, GTAV_NATIVE_SHELL_ACTION_CYCLE_ATTACH_SUPP,
      nullptr, 0},
     {"Scope", SHELL_ROW_LIST, SHELL_MENU_NONE, GTAV_NATIVE_SHELL_ACTION_CYCLE_ATTACH_SCOPE, nullptr,
@@ -529,9 +621,9 @@ static const ShellItem kWeaponAttachItems[] = {
     {"Flashlight", SHELL_ROW_LIST, SHELL_MENU_NONE, GTAV_NATIVE_SHELL_ACTION_CYCLE_ATTACH_FLASH,
      nullptr, 0},
     {"Apply Attachments", SHELL_ROW_ACTION, SHELL_MENU_NONE,
-     GTAV_NATIVE_SHELL_ACTION_APPLY_ATTACHMENTS, "Needs main-thread hook", 0},
-    {"Remove All Attachments", SHELL_ROW_ACTION, SHELL_MENU_NONE,
-     GTAV_NATIVE_SHELL_ACTION_REMOVE_ATTACHMENTS, "Needs main-thread hook", 0},
+     GTAV_NATIVE_SHELL_ACTION_APPLY_ATTACHMENTS, nullptr, 0},
+    {"Remove All", SHELL_ROW_ACTION, SHELL_MENU_NONE, GTAV_NATIVE_SHELL_ACTION_REMOVE_ATTACHMENTS,
+     nullptr, 0},
 };
 
 // Weapon effects: explosive / fire ammo. Continuous toggles whose entity-creating natives
@@ -554,7 +646,9 @@ static const ShellItem kWeaponFxItems[] = {
 // Los Santos Customs: worker-safe mod/respray on the current vehicle, grouped into
 // Performance / Paint & Color / Cosmetics sub-categories. Paint, tint, neon and tyre
 // smoke are list cyclers (Left/Right stage a value, Cross applies); the rest are
-// one-shots. "Reset to Stock" lives at the root and reverts every category.
+// one-shots. "Part Type" + "Part" reach every part of the car's mod kit (also the slots without a
+// row of their own: right fender, plate holder, interior, engine bay, livery mods, ...).
+// "Reset to Stock" lives at the root and reverts every category.
 static const ShellItem kVehicleCustomsItems[] = {
     {"Performance", SHELL_ROW_SUBMENU, SHELL_MENU_LSC_PERFORMANCE, GTAV_NATIVE_SHELL_ACTION_NONE,
      nullptr, 0},
@@ -566,6 +660,9 @@ static const ShellItem kVehicleCustomsItems[] = {
      nullptr, 0},
     {"Plates & Livery", SHELL_ROW_SUBMENU, SHELL_MENU_LSC_PLATES, GTAV_NATIVE_SHELL_ACTION_NONE,
      nullptr, 0},
+    {"Part Type", SHELL_ROW_LIST, SHELL_MENU_NONE, GTAV_NATIVE_SHELL_ACTION_CYCLE_KIT_SLOT, nullptr,
+     0},
+    {"Part", SHELL_ROW_LIST, SHELL_MENU_NONE, GTAV_NATIVE_SHELL_ACTION_CYCLE_KIT_PART, nullptr, 0},
     {"Reset to Stock", SHELL_ROW_ACTION, SHELL_MENU_NONE, GTAV_NATIVE_SHELL_ACTION_LS_STOCK_VEHICLE,
      nullptr, 0},
 };
@@ -616,9 +713,9 @@ static const ShellItem kLscPaintItems[] = {
      nullptr, 0},
     {"Wheel Color", SHELL_ROW_LIST, SHELL_MENU_NONE, GTAV_NATIVE_SHELL_ACTION_CYCLE_WHEEL_COLOR,
      nullptr, 0},
-    {"Custom Primary", SHELL_ROW_LIST, SHELL_MENU_NONE,
+    {"Custom Color 1", SHELL_ROW_LIST, SHELL_MENU_NONE,
      GTAV_NATIVE_SHELL_ACTION_CYCLE_CUSTOM_PRIMARY, nullptr, 0},
-    {"Custom Secondary", SHELL_ROW_LIST, SHELL_MENU_NONE,
+    {"Custom Color 2", SHELL_ROW_LIST, SHELL_MENU_NONE,
      GTAV_NATIVE_SHELL_ACTION_CYCLE_CUSTOM_SECONDARY, nullptr, 0},
     {"Rainbow Neon", SHELL_ROW_TOGGLE, SHELL_MENU_NONE,
      GTAV_NATIVE_SHELL_ACTION_TOGGLE_RAINBOW_NEON, nullptr, 0},
@@ -673,29 +770,21 @@ static const ShellItem kWorldEnvironmentItems[] = {
      nullptr, 0},
 };
 
-// World root: every sub-page first (ambiance: Environment / Effects / Spectacle; spawning:
-// Spawn Ped / Spawn Object / Spawned Entities; peds: Companions / Ped Control; fun: Minigames),
-// then the leaf toggle (Thin Population) and the experimental one-shot last.
+// World root: every sub-page first (ambiance: Environment / Effects / Spectacle / Population;
+// peds: Ped Control; fun: Minigames), then the experimental one-shot last. The spawners moved to
+// the top-level Spawn page.
 static const ShellItem kWorldItems[] = {
     {"Environment", SHELL_ROW_SUBMENU, SHELL_MENU_WORLD_ENVIRONMENT, GTAV_NATIVE_SHELL_ACTION_NONE,
      nullptr, 0},
     {"Effects", SHELL_ROW_SUBMENU, SHELL_MENU_EFFECTS, GTAV_NATIVE_SHELL_ACTION_NONE, nullptr, 0},
     {"Spectacle", SHELL_ROW_SUBMENU, SHELL_MENU_WORLD_SPECTACLE, GTAV_NATIVE_SHELL_ACTION_NONE,
      nullptr, 0},
-    {"Spawn Ped", SHELL_ROW_SUBMENU, SHELL_MENU_PED_SPAWNER, GTAV_NATIVE_SHELL_ACTION_NONE, nullptr,
-     0},
-    {"Spawn Object", SHELL_ROW_SUBMENU, SHELL_MENU_OBJECT_SPAWNER, GTAV_NATIVE_SHELL_ACTION_NONE,
+    {"Population", SHELL_ROW_SUBMENU, SHELL_MENU_WORLD_POPULATION, GTAV_NATIVE_SHELL_ACTION_NONE,
      nullptr, 0},
-    {"Spawned Entities", SHELL_ROW_SUBMENU, SHELL_MENU_SPAWNED_ENTITIES,
-     GTAV_NATIVE_SHELL_ACTION_NONE, nullptr, 0},
-    {"Companions", SHELL_ROW_SUBMENU, SHELL_MENU_COMPANIONS, GTAV_NATIVE_SHELL_ACTION_NONE, nullptr,
-     0},
     {"Ped Control", SHELL_ROW_SUBMENU, SHELL_MENU_PED_CONTROL, GTAV_NATIVE_SHELL_ACTION_NONE,
      nullptr, 0},
     {"Minigames", SHELL_ROW_SUBMENU, SHELL_MENU_MINIGAMES, GTAV_NATIVE_SHELL_ACTION_NONE, nullptr,
      0},
-    {"Thin Population", SHELL_ROW_TOGGLE, SHELL_MENU_NONE,
-     GTAV_NATIVE_SHELL_ACTION_TOGGLE_THIN_POPULATION, nullptr, 0},
 #if GTAV_MENU_ENABLE_PROLOGUE_SKIP
     // Experimental: write the prologue1 mission-complete script global, terminate the running
     // prologue1, and warp to Los Santos. Game-thread gated, so the row stays locked ("needs
@@ -706,6 +795,20 @@ static const ShellItem kWorldItems[] = {
 #endif
 };
 
+// World > Population: the density picker and the ambient crowd rows.
+static const ShellItem kWorldPopulationItems[] = {
+    // Population (Thin / Normal / Dense / Max) is pick then apply; it absorbed the old Thin
+    // Population toggle (the toggle bit and its profile migration stay for compatibility).
+    {"Population", SHELL_ROW_LIST, SHELL_MENU_NONE,
+     GTAV_NATIVE_SHELL_ACTION_CYCLE_POPULATION_DENSITY, nullptr, 0},
+    {"Spawn Crowd", SHELL_ROW_ACTION, SHELL_MENU_NONE, GTAV_NATIVE_SHELL_ACTION_SPAWN_CROWD,
+     nullptr, 0},
+    // Locks through the live gate (gtav_features_action_is_gated) until the frame hook is live,
+    // like the spawn rows, so it carries no static reason.
+    {"Maintain Crowd", SHELL_ROW_TOGGLE, SHELL_MENU_NONE,
+     GTAV_NATIVE_SHELL_ACTION_TOGGLE_MAINTAIN_CROWD, nullptr, 0},
+};
+
 // World > Spectacle: world-effect toys. Wind is a worker-safe global setter (like Weather); Camera
 // Shake is a game-thread re-asserted mode; Fireworks is a game-thread PTFX streaming job (locked
 // until the frame hook is live, like the spawn rows).
@@ -714,7 +817,7 @@ static const ShellItem kWorldSpectacleItems[] = {
     {"Camera Shake", SHELL_ROW_LIST, SHELL_MENU_NONE, GTAV_NATIVE_SHELL_ACTION_CYCLE_CAM_SHAKE,
      nullptr, 0},
     {"Fireworks", SHELL_ROW_ACTION, SHELL_MENU_NONE, GTAV_NATIVE_SHELL_ACTION_SPAWN_FIREWORKS,
-     "Needs main-thread hook", 0},
+     nullptr, 0},
 };
 
 // Self > Free Camera: enter the detached cinematic camera (closes the menu; Circle exits) and tune
@@ -727,31 +830,49 @@ static const ShellItem kFreeCamItems[] = {
      nullptr, 0},
 };
 
+// Spawn > Objects > Placement: the spawn-placement parameters the object rows read (Spawn At /
+// Distance / Heading / Place on Ground), the saved toggle that enters move mode right after a
+// spawn, and the row that re-enters it for the most recent object. Move Last Object is
+// worker-direct (it only flips transient flags) and refuses with a toast until the frame hook is
+// live, so it is not LOCK-gated.
+static const ShellItem kObjectPlacementItems[] = {
+    {"Spawn At", SHELL_ROW_LIST, SHELL_MENU_NONE, GTAV_NATIVE_SHELL_ACTION_CYCLE_OBJECT_SPAWN_AT,
+     nullptr, 0},
+    {"Distance", SHELL_ROW_LIST, SHELL_MENU_NONE, GTAV_NATIVE_SHELL_ACTION_CYCLE_OBJECT_DISTANCE,
+     nullptr, 0},
+    {"Heading", SHELL_ROW_LIST, SHELL_MENU_NONE, GTAV_NATIVE_SHELL_ACTION_CYCLE_OBJECT_HEADING,
+     nullptr, 0},
+    {"Place on Ground", SHELL_ROW_LIST, SHELL_MENU_NONE,
+     GTAV_NATIVE_SHELL_ACTION_CYCLE_OBJECT_ON_GROUND, nullptr, 0},
+    {"Auto-edit on Spawn", SHELL_ROW_TOGGLE, SHELL_MENU_NONE,
+     GTAV_NATIVE_SHELL_ACTION_TOGGLE_AUTO_EDIT_OBJECT, nullptr, 0},
+    {"Move Last Object", SHELL_ROW_ACTION, SHELL_MENU_NONE,
+     GTAV_NATIVE_SHELL_ACTION_MOVE_LAST_OBJECT, nullptr, 0},
+};
+
 static const ShellItem kSpawnedEntitiesItems[] = {
-    {"Clear Spawned Vehicles", SHELL_ROW_ACTION, SHELL_MENU_NONE,
-     GTAV_NATIVE_SHELL_ACTION_CLEAR_SPAWNED_VEHICLES, "Needs main-thread hook", 0},
-    {"Clear Spawned Peds", SHELL_ROW_ACTION, SHELL_MENU_NONE,
-     GTAV_NATIVE_SHELL_ACTION_CLEAR_SPAWNED_PEDS, "Needs main-thread hook", 0},
-    {"Clear Spawned Objects", SHELL_ROW_ACTION, SHELL_MENU_NONE,
-     GTAV_NATIVE_SHELL_ACTION_CLEAR_SPAWNED_OBJECTS, "Needs main-thread hook", 0},
-    {"Clear All Spawned", SHELL_ROW_ACTION, SHELL_MENU_NONE,
-     GTAV_NATIVE_SHELL_ACTION_CLEAR_SPAWNED_ALL, "Needs main-thread hook", 0},
+    {"Clear Vehicles", SHELL_ROW_ACTION, SHELL_MENU_NONE,
+     GTAV_NATIVE_SHELL_ACTION_CLEAR_SPAWNED_VEHICLES, nullptr, 0},
+    {"Clear Peds", SHELL_ROW_ACTION, SHELL_MENU_NONE, GTAV_NATIVE_SHELL_ACTION_CLEAR_SPAWNED_PEDS,
+     nullptr, 0},
+    {"Clear Objects", SHELL_ROW_ACTION, SHELL_MENU_NONE,
+     GTAV_NATIVE_SHELL_ACTION_CLEAR_SPAWNED_OBJECTS, nullptr, 0},
+    {"Clear All", SHELL_ROW_ACTION, SHELL_MENU_NONE, GTAV_NATIVE_SHELL_ACTION_CLEAR_SPAWNED_ALL,
+     nullptr, 0},
     // Spooner-lite: Save/Load parse and publish worker-side; streaming + CREATE_* run through the
     // game-thread chain. Cancel atomically stops that chain before its next entry.
     {"Save Map", SHELL_ROW_ACTION, SHELL_MENU_NONE, GTAV_NATIVE_SHELL_ACTION_SAVE_MAP, nullptr, 0},
     {"Load Map", SHELL_ROW_ACTION, SHELL_MENU_NONE, GTAV_NATIVE_SHELL_ACTION_LOAD_MAP, nullptr, 0},
     {"Cancel Map Load", SHELL_ROW_ACTION, SHELL_MENU_NONE, GTAV_NATIVE_SHELL_ACTION_CANCEL_MAP_LOAD,
      nullptr, 0},
-    {"Check Custom Assets", SHELL_ROW_ACTION, SHELL_MENU_NONE,
-     GTAV_NATIVE_SHELL_ACTION_PROBE_CUSTOM_MOUNT, nullptr, 0},
     // Last-object tweaks. Duplicate/Attach/Detach touch entity managers (gated until the hook is
     // live); Object Alpha is a worker-safe transparency cycler.
     {"Duplicate Last Object", SHELL_ROW_ACTION, SHELL_MENU_NONE,
-     GTAV_NATIVE_SHELL_ACTION_DUPLICATE_LAST_ENTITY, "Needs main-thread hook", 0},
+     GTAV_NATIVE_SHELL_ACTION_DUPLICATE_LAST_ENTITY, nullptr, 0},
     {"Attach Last to Player", SHELL_ROW_ACTION, SHELL_MENU_NONE,
-     GTAV_NATIVE_SHELL_ACTION_ATTACH_LAST_ENTITY, "Needs main-thread hook", 0},
+     GTAV_NATIVE_SHELL_ACTION_ATTACH_LAST_ENTITY, nullptr, 0},
     {"Detach Last Object", SHELL_ROW_ACTION, SHELL_MENU_NONE,
-     GTAV_NATIVE_SHELL_ACTION_DETACH_LAST_ENTITY, "Needs main-thread hook", 0},
+     GTAV_NATIVE_SHELL_ACTION_DETACH_LAST_ENTITY, nullptr, 0},
     {"Object Alpha", SHELL_ROW_LIST, SHELL_MENU_NONE, GTAV_NATIVE_SHELL_ACTION_CYCLE_ENTITY_ALPHA,
      nullptr, 0},
 };
@@ -762,10 +883,10 @@ static const ShellItem kSpawnedEntitiesItems[] = {
 static const ShellItem kCompanionItems[] = {
     {"Spawn Bodyguard", SHELL_ROW_SUBMENU, SHELL_MENU_BODYGUARD_SPAWNER,
      GTAV_NATIVE_SHELL_ACTION_NONE, nullptr, 0},
-    {"Bodyguard Health", SHELL_ROW_LIST, SHELL_MENU_NONE,
-     GTAV_NATIVE_SHELL_ACTION_CYCLE_BODYGUARD_HEALTH, nullptr, 0},
-    {"Bodyguard Armor", SHELL_ROW_LIST, SHELL_MENU_NONE,
-     GTAV_NATIVE_SHELL_ACTION_CYCLE_BODYGUARD_ARMOR, nullptr, 0},
+    {"Health", SHELL_ROW_LIST, SHELL_MENU_NONE, GTAV_NATIVE_SHELL_ACTION_CYCLE_BODYGUARD_HEALTH,
+     nullptr, 0},
+    {"Armor", SHELL_ROW_LIST, SHELL_MENU_NONE, GTAV_NATIVE_SHELL_ACTION_CYCLE_BODYGUARD_ARMOR,
+     nullptr, 0},
     {"Invincible Guards", SHELL_ROW_TOGGLE, SHELL_MENU_NONE,
      GTAV_NATIVE_SHELL_ACTION_TOGGLE_BODYGUARD_INVINCIBLE, nullptr, 0},
     {"Weapon", SHELL_ROW_LIST, SHELL_MENU_NONE, GTAV_NATIVE_SHELL_ACTION_CYCLE_BODYGUARD_WEAPON,
@@ -779,9 +900,63 @@ static const ShellItem kCompanionItems[] = {
     {"Map Blips", SHELL_ROW_TOGGLE, SHELL_MENU_NONE,
      GTAV_NATIVE_SHELL_ACTION_TOGGLE_BODYGUARD_BLIPS, nullptr, 0},
     {"Bring Bodyguards", SHELL_ROW_ACTION, SHELL_MENU_NONE,
-     GTAV_NATIVE_SHELL_ACTION_BRING_BODYGUARDS, "Needs main-thread hook", 0},
+     GTAV_NATIVE_SHELL_ACTION_BRING_BODYGUARDS, nullptr, 0},
     {"Dismiss Bodyguards", SHELL_ROW_ACTION, SHELL_MENU_NONE,
-     GTAV_NATIVE_SHELL_ACTION_DISMISS_BODYGUARDS, "Needs main-thread hook", 0},
+     GTAV_NATIVE_SHELL_ACTION_DISMISS_BODYGUARDS, nullptr, 0},
+};
+
+// Vehicles > Garage: which of the 10 saved-vehicle slots Save/Spawn act on (pure worker-side
+// selection), then the two slot actions. Save Current Vehicle is worker-direct (getters); Spawn
+// Saved Vehicle allocates a vehicle so it locks until the game-thread hook is live, like the spawn
+// rows.
+static const ShellItem kVehicleGarageItems[] = {
+    {"Garage Slot", SHELL_ROW_LIST, SHELL_MENU_NONE,
+     GTAV_NATIVE_SHELL_ACTION_CYCLE_SAVED_VEHICLE_SLOT, nullptr, 0},
+    {"Save Current Vehicle", SHELL_ROW_ACTION, SHELL_MENU_NONE,
+     GTAV_NATIVE_SHELL_ACTION_SAVE_VEHICLE, nullptr, 0},
+    {"Spawn Saved Vehicle", SHELL_ROW_ACTION, SHELL_MENU_NONE,
+     GTAV_NATIVE_SHELL_ACTION_SPAWN_SAVED_VEHICLE, nullptr, 0},
+};
+
+// Vehicles > Spawn Options: plain toggles read when the spawn job creates a vehicle (from the
+// browser, the garage or a custom pack).
+static const ShellItem kVehicleSpawnOptionsItems[] = {
+    {"Spawn Maxed", SHELL_ROW_TOGGLE, SHELL_MENU_NONE, GTAV_NATIVE_SHELL_ACTION_TOGGLE_SPAWN_MAXED,
+     nullptr, 0},
+    {"Spawn Upgraded", SHELL_ROW_TOGGLE, SHELL_MENU_NONE,
+     GTAV_NATIVE_SHELL_ACTION_TOGGLE_SPAWN_UPGRADED, nullptr, 0},
+    {"Spawn Invincible", SHELL_ROW_TOGGLE, SHELL_MENU_NONE,
+     GTAV_NATIVE_SHELL_ACTION_TOGGLE_SPAWN_INVINCIBLE, nullptr, 0},
+    {"Preserve Speed", SHELL_ROW_TOGGLE, SHELL_MENU_NONE,
+     GTAV_NATIVE_SHELL_ACTION_TOGGLE_SPAWN_PRESERVE_SPEED, nullptr, 0},
+    {"Replace Previous", SHELL_ROW_TOGGLE, SHELL_MENU_NONE,
+     GTAV_NATIVE_SHELL_ACTION_TOGGLE_SPAWN_REPLACE_PREVIOUS, nullptr, 0},
+    {"Aircraft In Flight", SHELL_ROW_TOGGLE, SHELL_MENU_NONE,
+     GTAV_NATIVE_SHELL_ACTION_TOGGLE_SPAWN_AIRCRAFT_IN_FLIGHT, nullptr, 0},
+};
+
+// Vehicles > Handling: performance / driving. Rocket Boost is a game-thread one-shot (locks until
+// the hook is live); Fly / Hover is a LIST cycler backed by volatile mode state (fly.inc) that
+// self-refuses until the frame hook is live. Cruise Control lives under Autopilot.
+static const ShellItem kVehicleHandlingItems[] = {
+    {"Nitro (hold Horn)", SHELL_ROW_TOGGLE, SHELL_MENU_NONE, GTAV_NATIVE_SHELL_ACTION_TOGGLE_NITRO,
+     nullptr, 0},
+    {"Nitro Power", SHELL_ROW_LIST, SHELL_MENU_NONE, GTAV_NATIVE_SHELL_ACTION_CYCLE_NITRO_POWER,
+     nullptr, 0},
+    {"Launch Boost", SHELL_ROW_ACTION, SHELL_MENU_NONE, GTAV_NATIVE_SHELL_ACTION_LAUNCH_BOOST,
+     nullptr, 0},
+    {"Rocket Boost", SHELL_ROW_ACTION, SHELL_MENU_NONE,
+     GTAV_NATIVE_SHELL_ACTION_VEHICLE_ROCKET_BOOST, nullptr, 0},
+    {"Super Brake", SHELL_ROW_TOGGLE, SHELL_MENU_NONE, GTAV_NATIVE_SHELL_ACTION_TOGGLE_SUPER_BRAKE,
+     nullptr, 0},
+    {"Drift Mode", SHELL_ROW_TOGGLE, SHELL_MENU_NONE, GTAV_NATIVE_SHELL_ACTION_TOGGLE_DRIFT_MODE,
+     nullptr, 0},
+    {"Stick to Ground", SHELL_ROW_TOGGLE, SHELL_MENU_NONE,
+     GTAV_NATIVE_SHELL_ACTION_TOGGLE_STICK_TO_GROUND, nullptr, 0},
+    {"Slippery Roads", SHELL_ROW_TOGGLE, SHELL_MENU_NONE, GTAV_NATIVE_SHELL_ACTION_TOGGLE_SLIPPERY,
+     nullptr, 0},
+    {"Fly / Hover", SHELL_ROW_LIST, SHELL_MENU_NONE, GTAV_NATIVE_SHELL_ACTION_CYCLE_VEHICLE_FLY,
+     nullptr, 0},
 };
 
 // Vehicle autopilot (self-driving). Cyclers + Stop only set worker-side state; the drive
@@ -893,13 +1068,13 @@ static const ShellItem kEffectsItems[] = {
 // frame hook is live).
 static const ShellItem kPedControlItems[] = {
     {"Everyone Attacks Me", SHELL_ROW_ACTION, SHELL_MENU_NONE,
-     GTAV_NATIVE_SHELL_ACTION_PEDS_ATTACK_PLAYER, "Needs main-thread hook", 0},
+     GTAV_NATIVE_SHELL_ACTION_PEDS_ATTACK_PLAYER, nullptr, 0},
     {"Everyone Flees", SHELL_ROW_ACTION, SHELL_MENU_NONE, GTAV_NATIVE_SHELL_ACTION_PEDS_FLEE_PLAYER,
-     "Needs main-thread hook", 0},
-    {"Calm Peds", SHELL_ROW_ACTION, SHELL_MENU_NONE, GTAV_NATIVE_SHELL_ACTION_PEDS_STOP,
-     "Needs main-thread hook", 0},
+     nullptr, 0},
+    {"Calm Peds", SHELL_ROW_ACTION, SHELL_MENU_NONE, GTAV_NATIVE_SHELL_ACTION_PEDS_STOP, nullptr,
+     0},
     {"Ragdoll Nearby", SHELL_ROW_ACTION, SHELL_MENU_NONE, GTAV_NATIVE_SHELL_ACTION_RAGDOLL_NEARBY,
-     "Needs main-thread hook", 0},
+     nullptr, 0},
 };
 
 // HUD overlay submenu: master switch + per-element toggles. The overlay is drawn by
@@ -909,6 +1084,8 @@ static const ShellItem kHudItems[] = {
      0},
     {"Speedometer", SHELL_ROW_TOGGLE, SHELL_MENU_NONE, GTAV_NATIVE_SHELL_ACTION_TOGGLE_HUD_SPEEDO,
      nullptr, 0},
+    {"Speedo Layout", SHELL_ROW_LIST, SHELL_MENU_NONE,
+     GTAV_NATIVE_SHELL_ACTION_CYCLE_SPEEDOMETER_LAYOUT, nullptr, 0},
     {"Coordinates", SHELL_ROW_TOGGLE, SHELL_MENU_NONE, GTAV_NATIVE_SHELL_ACTION_TOGGLE_HUD_COORDS,
      nullptr, 0},
     {"FPS Readout", SHELL_ROW_TOGGLE, SHELL_MENU_NONE, GTAV_NATIVE_SHELL_ACTION_TOGGLE_HUD_FPS,

@@ -305,7 +305,7 @@ enum {
   // Ped browser category filter (skin changer / spawn ped / bodyguard). Re-filters the shared
   // ped catalog by category; owned in native_bridge.cpp like the vehicle-class filter (40).
   GTAV_NATIVE_SHELL_ACTION_CYCLE_PED_CATEGORY = 174,
-  // Object browser category filter (World > Spawn Object). Re-filters the object catalog by
+  // Object browser category filter (Spawn > Objects). Re-filters the object catalog by
   // category; owned in native_bridge.cpp like the vehicle-class / ped-category filters.
   GTAV_NATIVE_SHELL_ACTION_CYCLE_OBJECT_CATEGORY = 175,
   // Object spawn-placement controls (feature-layer list cyclers; they tune file-local state
@@ -337,7 +337,7 @@ enum {
   GTAV_NATIVE_SHELL_ACTION_START_SCENARIO = 186,
   GTAV_NATIVE_SHELL_ACTION_STOP_SCENARIO = 187,
   GTAV_NATIVE_SHELL_ACTION_CYCLE_SCENARIO_CATEGORY = 188,
-  // World > Spawn Object > interactive placement. MOVE_LAST_OBJECT enters a controller-driven
+  // Spawn > Objects > interactive placement. MOVE_LAST_OBJECT enters a controller-driven
   // move/reorient mode for the most-recently-spawned object: it closes the menu and the
   // game-thread driver (object_move.inc) repositions the prop until Cross commits / Circle
   // reverts. TOGGLE_AUTO_EDIT_OBJECT (a saved display toggle) makes a spawn auto-enter that
@@ -387,7 +387,7 @@ enum {
   // equipped weapon (GET_CURRENT_PED_WEAPON -> SET_PED_WEAPON_TINT_INDEX). Worker-direct
   // modify-existing weapon-field setter (NOT the give/remove weapon-manager lane).
   GTAV_NATIVE_SHELL_ACTION_CYCLE_WEAPON_TINT = 212,
-  // World > Spawned Entities > Save/Load Map (Spooner-lite). SAVE_MAP captures the live spawned
+  // Spawn > Spawned Entities > Save/Load Map (Spooner-lite). SAVE_MAP captures the live spawned
   // rosters (kind + model + transform) to /data/GTAVMenu/custom/maps/active.map.cfg,
   // worker-direct (getters + file).
   // LOAD_MAP reads the file and kicks off the streaming re-spawn; LOAD_MAP_STEP is the per-entity
@@ -443,7 +443,7 @@ enum {
   // small owned explosion at each unarmed/melee impact (reuses the explosive-ammo machinery).
   // Refuses until the hook is live, like Explosive/Fire Ammo.
   GTAV_NATIVE_SHELL_ACTION_TOGGLE_EXPLOSIVE_MELEE = 228,
-  // --- Menyoo parity depth (World > Spawned Entities) ---
+  // --- Menyoo parity depth (Spawn > Spawned Entities) ---
   // Act on the most-recently spawned/selected entity in the menu's roster. DUPLICATE re-spawns the
   // same model nearby (reuses the spawn lane). ATTACH/DETACH bind it to the player.
   // CYCLE_ENTITY_ALPHA fades it (SET_ENTITY_ALPHA). All but the alpha cycler touch entity managers
@@ -490,16 +490,107 @@ enum {
   // Cancel an in-progress versioned/legacy map load. The worker clears the published load claim;
   // any already-created entities remain roster-owned and can be removed with Clear Spawned.
   GTAV_NATIVE_SHELL_ACTION_CANCEL_MAP_LOAD = 250,
-  // Report whether the custom-asset probe file is readable from inside GTA, through the loader's
-  // sandbox mount and through /data. Worker-direct file reads only.
-  GTAV_NATIVE_SHELL_ACTION_PROBE_CUSTOM_MOUNT = 251,
-  // Experimental game-thread job: mount the custom root as the engine device prefix gtavmenu:/
-  // and read the probe's size through it (GTAV_MENU_ENABLE_CUSTOM_DEVICE builds only).
-  GTAV_NATIVE_SHELL_ACTION_MOUNT_CUSTOM_DEVICE = 252,
+  // 251 was PROBE_CUSTOM_MOUNT (retired in-game custom-root probe); reserved, never reuse.
+  // 252 was MOUNT_CUSTOM_DEVICE (retired P1 gtavmenu:/ device mount); reserved, never reuse.
+  GTAV_NATIVE_SHELL_ACTION_TOGGLE_SPAWN_PRESERVE_SPEED = 253,
+  GTAV_NATIVE_SHELL_ACTION_TOGGLE_SPAWN_REPLACE_PREVIOUS = 254,
+  GTAV_NATIVE_SHELL_ACTION_TOGGLE_SPAWN_AIRCRAFT_IN_FLIGHT = 255,
+  GTAV_NATIVE_SHELL_ACTION_CYCLE_POPULATION_DENSITY = 256,
+  GTAV_NATIVE_SHELL_ACTION_SPAWN_CROWD = 257,
+  GTAV_NATIVE_SHELL_ACTION_TOGGLE_MAINTAIN_CROWD = 258,
+  GTAV_NATIVE_SHELL_ACTION_CYCLE_SPEEDOMETER_LAYOUT = 259,
+  GTAV_NATIVE_SHELL_ACTION_CYCLE_LANGUAGE = 260,
+  // 261-263 were the retired P1 stock-texture admission/inspection/request; reserved, never reuse.
+  // 264-265 were the retired DLC-route census and effective dlclist capture; reserved, never reuse.
+  // CUSTOM_STREAM=1 host-debug texture card for the last requested pack card. SHOW (operator
+  // param 0) checks the dict is loaded and resolves, then the worker draws the sprite and keeps
+  // the resident dict touched (internal param 1). RELEASE (operator param 0) hides the card; once
+  // every draw list that referenced it has drained, the worker queues the release (internal 1).
+  GTAV_NATIVE_SHELL_ACTION_SHOW_PACK_CARD = 266,
+  GTAV_NATIVE_SHELL_ACTION_RELEASE_PACK_CARD = 267,
+  // 268-269 were the retired P1 loose stream-entry and read probes; reserved, never reuse.
+  // CUSTOM_STREAM=1 runtime pack lane (resources/pack.cfg of the active pack): register the pack's
+  // archive through the engine memory device the way the game's own changeset code does
+  // (AddImageToList + LoadImage), then request one card's texture dictionary (param = card index).
+  GTAV_NATIVE_SHELL_ACTION_REGISTER_PACK = 270,
+  GTAV_NATIVE_SHELL_ACTION_REQUEST_PACK_CARD = 271,
+  // Read-only streaming-info words of the registered archive and its members.
+  GTAV_NATIVE_SHELL_ACTION_INSPECT_PACK = 272,
+  // Request only the registered archive's own streamable so its TOC is re-parsed (no member).
+  GTAV_NATIVE_SHELL_ACTION_LOAD_PACK_ARCHIVE = 273,
+  // Load one of the pack's data files (param = data row) through its data-file mounter, once.
+  GTAV_NATIVE_SHELL_ACTION_LOAD_PACK_DATA = 274,
+  // Parse the queued data row through the parser pump once its read completed (retry until ready).
+  GTAV_NATIVE_SHELL_ACTION_PUMP_PACK_DATA = 275,
+  // Request one of the pack's archetype definitions (.ptyp, param = typ row) via DLC_ITYP_REQUEST.
+  GTAV_NATIVE_SHELL_ACTION_LOAD_PACK_TYP = 276,
+  // Request one of the pack's map-data members (.pmap, param = map row) keep-resident, then finish
+  // its activation (initialised bit, box-streamer state, IPL enable) once it has loaded.
+  GTAV_NATIVE_SHELL_ACTION_LOAD_PACK_MAP = 277,
+  GTAV_NATIVE_SHELL_ACTION_FINISH_PACK_MAP = 278,
+  // Add the pack's text labels (e.g. vehicle gameNames) to the merged text map, once.
+  GTAV_NATIVE_SHELL_ACTION_ADD_PACK_LABELS = 279,
+  // Custom Packs page: load the active pack in one press (worker-side state machine over 270-279).
+  GTAV_NATIVE_SHELL_ACTION_PACK_AUTOLOAD = 280,
+  // Custom Packs page: teleport to a pack map row's declared place (param = map row), or to a
+  // descriptor `place` row (param = 0x100 + place row).
+  GTAV_NATIVE_SHELL_ACTION_TELEPORT_PACK_MAP = 281,
+  // Custom Packs page: add/remove an installed pack (param = page order) in packs/active.
+  GTAV_NATIVE_SHELL_ACTION_TOGGLE_PACK_ACTIVE = 282,
+  // Request one of the pack's static collision bounds (.pbn, param = bounds row) keep-resident;
+  // repeated calls confirm the composite root, its box and its physics instances.
+  GTAV_NATIVE_SHELL_ACTION_LOAD_PACK_BOUNDS = 283,
+  // Weapon Browser "Category" selector (All / each weapon category / Custom). Handled in the bridge
+  // like the other browser selectors: stepping it re-filters the weapon rows below it.
+  GTAV_NATIVE_SHELL_ACTION_CYCLE_WEAPON_CATEGORY = 284,
+  // Custom Packs page: apply a pack timecycle modifier (descriptor `spawn timecycle` row, param =
+  // joaat of its name) at full strength, or clear it when it is the applied one. Game thread.
+  GTAV_NATIVE_SHELL_ACTION_APPLY_PACK_TIMECYCLE = 285,
+  // Custom Packs page: play a pack particle effect once at the player (descriptor `spawn ptfx
+  // <asset>:<effect>` row, param = joaat of that model text). Requests the pack dictionary and
+  // re-queues itself (bounded) until it is loaded. Game thread.
+  GTAV_NATIVE_SHELL_ACTION_PLAY_PACK_PTFX = 286,
+  // Custom Packs page "Uninstall < id >" (pick then apply): param 1/2 step the target installed
+  // pack, 0 removes it from packs/active and packs/installed and renames its pack.cfg to
+  // pack.cfg.uninstalled (files stay). Worker side, behind the menu's two-press confirm.
+  GTAV_NATIVE_SHELL_ACTION_UNINSTALL_PACK = 287,
+  // Custom Packs page: toggle a pack weapon component (descriptor `spawn component
+  // <weapon>:<component>` row, param = joaat of that model text) on that weapon, giving and
+  // equipping the weapon first when it is not the current one. Game thread.
+  GTAV_NATIVE_SHELL_ACTION_TOGGLE_PACK_COMPONENT = 288,
+  // One-press load stage after the maps: hide the stock map entities of a descriptor `hide` row
+  // (param = merged hide row) with CREATE_MODEL_HIDE for the session; param 0xffff (host
+  // `pack-unhide`) removes every applied row with REMOVE_MODEL_HIDE. Game thread.
+  GTAV_NATIVE_SHELL_ACTION_PACK_HIDE = 289,
+  // Host `menu-ctl.sh export-templates`: read one allow-listed retail file (param = row of
+  // custom_retail_export.inc, the vehicle converter's encrypted templates) through the game's
+  // common.rpf packfile on the main thread, then write the plaintext to
+  // /data/gtavmenu/custom/exports/<name> on the worker (temp + rename). No arbitrary paths.
+  GTAV_NATIVE_SHELL_ACTION_EXPORT_RETAIL_FILE = 290,
+  // Custom Packs > Manage Packs "Revert overrides": put every stock member the loaded packs
+  // override back on its stock archive (handle + overlay node). All or nothing: refuses while any
+  // target is loaded, requested or referenced. Game thread, behind the menu's two-press confirm.
+  GTAV_NATIVE_SHELL_ACTION_REVERT_PACK_OVERRIDES = 291,
+  // Vehicles > Spawn Options "Spawn Upgraded" (a toggle): new vehicles get Spawn Maxed's
+  // performance and the top part of every visual slot their mod kit has (lsc.inc).
+  GTAV_NATIVE_SHELL_ACTION_TOGGLE_SPAWN_UPGRADED = 292,
+  // LS Customs "Part Type" (list_kinds.def SETTING): one of the kit slots the current car has parts
+  // for (every SET_VEHICLE_MOD slot 0..49 but the toggle mods); "Part" (CHOICE): stage one of that
+  // slot's parts, Cross fits it. Worker-safe like the per-slot mod rows.
+  GTAV_NATIVE_SHELL_ACTION_CYCLE_KIT_SLOT = 293,
+  GTAV_NATIVE_SHELL_ACTION_CYCLE_KIT_PART = 294,
+  // Weapons > Attachments "Component" (list_kinds.def CHOICE): one of the components the equipped
+  // weapon's meta lists (a pack weapon's own weapons.meta, else the Attachments table); Cross fits
+  // or removes it on the game thread (weapon_components.inc). Worker-staged like the tint row.
+  GTAV_NATIVE_SHELL_ACTION_CYCLE_WEAPON_COMPONENT = 295,
   // Sentinel: one past the highest action id, for iterating the action space (e.g. the
   // list-value push loop in menu.c). Not a dispatchable action.
   GTAV_NATIVE_SHELL_ACTION_COUNT,
 };
+
+void gtav_native_bridge_set_speedometer_layout(uint32_t layout);
+uint32_t gtav_native_bridge_speedometer_layout(void);
+void gtav_native_bridge_set_language(uint32_t id);
 
 enum {
   GTAV_NATIVE_CANARY_DRAW_RECT = 1u << 0,
@@ -620,26 +711,27 @@ void gtav_native_bridge_tick(uint64_t worker_tick, int visible);
 void gtav_native_bridge_next(void);
 void gtav_native_bridge_prev(void);
 // Page the cursor by one visible window (kShellVisibleRows), clamped at the ends with no
-// wrap. page(dir<0)=up, dir>=0=down. L1/R1 map to these for fast traversal of long lists.
+// wrap. page(dir<0)=up, dir>=0=down. Reached from the touchpad flick and the mailbox.
 void gtav_native_bridge_page(int dir);
 void gtav_native_bridge_page_prev(void);
 void gtav_native_bridge_page_next(void);
-// L1/R1 page, but roll into the previous/next sibling submenu when already at the list edge on a
-// child screen (the "page to the edge, then flip tabs" idiom). dir<0 = prev, dir>=0 = next.
+// Page, but roll into the previous/next sibling submenu when already at the list edge on a child
+// screen (the "page to the edge, then flip tabs" idiom). dir<0 = prev, dir>=0 = next. The
+// PAGE_PREV/PAGE_NEXT command (touchpad flick, mailbox).
 void gtav_native_bridge_page_or_sibling(int dir);
-// Seek the cursor to the previous/next first-letter boundary in the list (L3 / R3). dir<0 = prev.
+// Seek the cursor to the previous/next first-letter boundary in the list (mailbox letter_prev /
+// letter_next; no controller button). dir<0 = prev.
 void gtav_native_bridge_letter_jump(int dir);
-// Jump the cursor to the first / last row (Triangle / Square).
+// Jump the cursor to the first / last selectable row of the page (L1 / R1 while the menu is open),
+// skipping heading/info rows like next/prev; an all-info page falls back to its first / last row.
 void gtav_native_bridge_home(void);
 void gtav_native_bridge_end(void);
-// 1 when the selected row is a value cycler that should fast-step on a page button (a
-// SHELL_ROW_LIST that is not the vehicle-class filter). Lets the page dispatch coarse-step a
-// long cycler (paint/livery) instead of paging the cursor.
-int gtav_native_bridge_selected_faststeppable(void);
 uint32_t gtav_native_bridge_activate(void);
 // D-pad Left/Right: adjust the selected list-row value (returns its action with the
 // direction encoded in last_action_param: 2 = left/prev, 1 = right/next) without moving
-// the cursor; returns NONE on non-list rows. adjust(dir<0)=left, dir>=0=right.
+// the cursor. On a toggle row Left sets OFF and Right sets ON: the row action (param = the row's
+// param, like Cross) is returned only when the state has to flip, NONE otherwise. On action and
+// submenu rows Left is Back. adjust(dir<0)=left, dir>=0=right.
 uint32_t gtav_native_bridge_adjust(int dir);
 uint32_t gtav_native_bridge_left(void);
 uint32_t gtav_native_bridge_right(void);
@@ -650,6 +742,9 @@ void gtav_native_bridge_pin_selected(void);
 // this to allow Left/Right auto-repeat only on cyclers -- on other rows Left is a one-shot
 // Back, so repeating it would walk the user out of the menu.
 int gtav_native_bridge_selected_is_cycler(void);
+// 1 when the currently-selected row is a toggle (SHELL_ROW_TOGGLE): its Left/Right Off/On step
+// confirms with a toast like Cross does.
+int gtav_native_bridge_selected_is_toggle(void);
 // Parameter of the item that produced the last activate/adjust. Vehicle spawn rows emit
 // model joaat hashes; list rows emit direction (2 = left/prev, 1 = right/next).
 uint32_t gtav_native_bridge_last_action_param(void);
@@ -657,6 +752,22 @@ uint32_t gtav_native_bridge_last_action_param(void);
 void gtav_native_bridge_set_feature_toggles(uint64_t mask);
 // Push the current display value for a SHELL_ROW_LIST cycler (e.g. weather/time).
 void gtav_native_bridge_set_list_value(uint32_t action, const char* value);
+// A pick-then-apply row whose staged value was not applied reverts when the cursor leaves it
+// (another row or menu, Back, menu closed). Returns 1 once that happened, with the action, the
+// step direction to replay (2 = prev, 1 = next) and the step count that undo the pick; 0 otherwise.
+int gtav_native_bridge_take_staged_revert(uint32_t* action, uint32_t* param, uint32_t* steps);
+// How a list row behaves (include/gtavmenu/list_kinds.def): CHOICE rows stage on Left/Right and
+// apply on Cross; SETTING rows apply on Left/Right and ignore Cross; SETTING_TOAST rows are
+// SETTING rows whose step also shows the feature's toast; SETTING_APPLY rows apply on Left/Right
+// and Cross applies the shown value again (it can differ from the game's). Unlisted actions read
+// as CHOICE.
+enum {
+  GTAV_LIST_KIND_CHOICE = 0,
+  GTAV_LIST_KIND_SETTING = 1,
+  GTAV_LIST_KIND_SETTING_TOAST = 2,
+  GTAV_LIST_KIND_SETTING_APPLY = 3,
+};
+uint32_t gtav_native_bridge_list_kind(uint32_t action);
 // List-value store diagnostics. capacity() is the compile-time slot count; saturated()
 // returns 1 once set_list_value() has had to drop a write (distinct cyclers > capacity) --
 // a health signal that should stay 0 in a correctly-sized build.

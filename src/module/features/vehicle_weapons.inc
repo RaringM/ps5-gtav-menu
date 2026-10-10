@@ -198,9 +198,11 @@ static uint32_t give_weapon_single(uint32_t hash) {
     return failed(action, "no valid player ped (be in active gameplay)");
   }
   int ammo = 250;
+  int stock = 0;
   for (uint32_t i = 0; i < gtav_weapon_catalog_count; ++i) {
     if (gtav_weapon_catalog[i].hash == hash) {
       ammo = gtav_weapon_catalog[i].ammo;
+      stock = 1;
       break;
     }
   }
@@ -209,8 +211,24 @@ static uint32_t give_weapon_single(uint32_t hash) {
   // weapon (force=1) so the swap is visible without scrolling the weapon wheel.
   invoke_void(g_n.give_weapon_to_ped, ped, hash, ammo, 0, 1);
   if (g_n.set_current_ped_weapon) invoke_void(g_n.set_current_ped_weapon, ped, hash, 1);
+  const char* given = "weapon given";
+#if GTAV_MENU_ENABLE_CUSTOM_PACKS
+  if (!stock && g_n.get_current_ped_weapon) {
+    // Pack weapon: klog what the ped now holds (its model is in the pack's load-time
+    // "pack data N weapon ... model=" klog line), then its wheel slot (weapon_components.inc).
+    uint32_t current = 0u;
+    invoke_return<int>(g_n.get_current_ped_weapon, ped, &current, 1);
+    char line[GTAV_FEATURE_MESSAGE_LEN];
+    snprintf(line, sizeof(line), "GTAVMenu pack weapon given 0x%08x current=0x%08x",
+             (unsigned)hash, (unsigned)current);
+    gtav_worker_klog(line);
+    given = weapon_given_note(hash);
+  }
+#else
+  (void)stock;
+#endif
   gtav_weapon_stage = 0;
-  return ok(action, "weapon given");
+  return ok(action, given);
 }
 
 static uint32_t remove_weapons() {
@@ -234,10 +252,20 @@ static uint32_t remove_weapons() {
 }
 
 // Give Max Ammo: top up ammo to the per-weapon maximum for the weapons the player carries,
-// distinct from Give Weapon Pack (which dumps the whole catalog). We iterate the weapon catalog
-// and, for each, read GET_MAX_AMMO (int* out-param) then SET_PED_AMMO -- both are no-ops for a
-// weapon the ped does not own, so this only tops up carried weapons. Ped weapon-inventory natives
+// distinct from Give Weapon Pack (which dumps the whole catalog). We iterate the weapon catalog,
+// then the weapon in hand and the loaded packs' weapons, and, for each, read GET_MAX_AMMO (int*
+// out-param) then SET_PED_AMMO -- both are no-ops for a weapon the ped does not own, so this only
+// tops up carried weapons. Ped weapon-inventory natives
 // run on the game/script thread (gated like GIVE_WEAPON), never worker-direct.
+// GET_MAX_AMMO (int* out-param) then SET_PED_AMMO for one weapon. Returns the max (0 when the ped
+// does not own the weapon: nothing is set). Game thread.
+[[gnu::noinline]] static int top_up_ammo(int ped, uint32_t hash) {
+  int max_ammo = 0;
+  invoke_void(g_n.get_max_ammo, ped, hash, &max_ammo);
+  if (max_ammo > 0) invoke_void(g_n.set_ped_ammo, ped, hash, max_ammo);
+  return max_ammo;
+}
+
 static uint32_t give_max_ammo() {
   const uint32_t action = GTAV_NATIVE_SHELL_ACTION_GIVE_MAX_AMMO;
   if (!g_n.set_ped_ammo || !g_n.get_max_ammo || !g_n.player_ped_id) {
@@ -248,11 +276,10 @@ static uint32_t give_max_ammo() {
   for (uint32_t i = 0; i < gtav_weapon_catalog_count; ++i) {
     uint32_t hash = gtav_weapon_catalog[i].hash;
     if (!hash) continue;
-    int max_ammo = 0;
     // GET_MAX_AMMO(ped, weaponHash, int* out) -> out is the weapon type's max; 0 if not owned.
-    invoke_void(g_n.get_max_ammo, ped, hash, &max_ammo);
-    if (max_ammo > 0) invoke_void(g_n.set_ped_ammo, ped, hash, max_ammo);
+    top_up_ammo(ped, hash);
   }
+  give_max_ammo_extra(ped);  // the weapon in hand and the pack weapons (weapon_components.inc)
   return ok(action, "max ammo given");
 }
 

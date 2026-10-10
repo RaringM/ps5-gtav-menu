@@ -13,7 +13,7 @@ volatile uint32_t gtav_ped_spawn_stage = 0;
 volatile uint32_t gtav_object_spawn_stage = 0;
 }
 
-// --- Object spawn placement (World > Spawn Object cyclers) ---
+// --- Object spawn placement (Spawn > Objects cyclers) ---
 // These file-local statics hold the placement settings the object-spawner rows tune; the
 // spawn job reads them when it creates the prop. All worker-safe (pure state); the cyclers
 // follow the standard stage(1/2)/apply(0) convention -- staging is enough because the spawn
@@ -160,6 +160,27 @@ static uint32_t spawn_ped_model_hash(uint32_t model, int allow_block) {
   return ok(action, "spawned ped (wandering)");
 }
 
+// The loaded pack spawn row declaring `model` (custom_pack_autoload.inc; a stub without the pack
+// lane): its pack id and model name, and whether the packs are loaded.
+static int scene_pack_model(uint32_t model, const char** pack_id, const char** name, int* ready);
+
+// A placement event for the hardware check: a status event and, in pack-lane builds (the worker
+// klog is linked with it), a "GTAVMenu pack ..." klog / pack-notes line. `format` starts "pack ".
+static void placement_note(const char* format, ...) __attribute__((format(printf, 1, 2)));
+static void placement_note(const char* format, ...) {
+  char text[160];
+  va_list args;
+  va_start(args, format);
+  vsnprintf(text, sizeof(text), format, args);
+  va_end(args);
+  gtav_status_event(GTAV_MENU_EVENT_NATIVE_SHELL, text);
+#if GTAV_MENU_ENABLE_CUSTOM_PACKS
+  char line[sizeof(text) + 16];
+  snprintf(line, sizeof(line), "GTAVMenu %s", text);
+  gtav_worker_klog(line);
+#endif
+}
+
 static uint32_t spawn_object_model_hash(uint32_t model, int allow_block) {
   const uint32_t action = GTAV_NATIVE_SHELL_ACTION_SPAWN_OBJECT;
   gtav_object_spawn_stage = 1;
@@ -252,6 +273,16 @@ static uint32_t spawn_object_model_hash(uint32_t model, int allow_block) {
     g_object_move_consume_entry = 1;
   }
   gtav_object_spawn_stage = 0;
+  // A pack prop: its model name in the toast and a pack-notes line (Save Map stores the same name).
+  const char* pack_id = nullptr;
+  const char* name = nullptr;
+  if (scene_pack_model(model, &pack_id, &name, nullptr)) {
+    placement_note("pack object spawned model=0x%08x name=%s pack=%s handle=%d", (unsigned)model,
+                   name, pack_id, obj);
+    char msg[GTAV_FEATURE_MESSAGE_LEN];
+    snprintf(msg, sizeof(msg), "spawned %.60s", name);
+    return ok(action, msg);
+  }
   return ok(action, "spawned object");
 }
 

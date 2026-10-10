@@ -50,6 +50,33 @@ static int stage_step(uint32_t* idx, uint32_t count, uint32_t param) {
   return 1;
 }
 
+// Pick-then-apply for the live mode rows (Fly, Vehicle Fly / Hover, Autopilot Mode, Gun Toolkit;
+// CHOICE in list_kinds.def). Their game-thread drivers read a live mode int, so stepping it
+// directly engaged every mode on the way (Off -> On -> Fast). Left/Right now move `pick`; Cross
+// copies it to the live mode. `seen` is the live mode the pick last agreed with: when something
+// else changes the live mode (Stop Autopilot, the autopilot auto-off, Disable All, a teleport
+// reset) the pick follows it instead of showing a stale value. Worker-only.
+struct ModePick {
+  uint32_t pick;
+  int seen;
+};
+static uint32_t mode_pick_sync(ModePick* p, int live) {
+  if (live != p->seen) {
+    p->seen = live;
+    p->pick = (uint32_t)live;
+  }
+  return p->pick;
+}
+// Same contract as stage_step: Left/Right (param 1/2) step the pick and return 1; Cross (param 0)
+// commits the pick to *live and returns 0 so the caller runs its apply path.
+static int mode_pick_step(ModePick* p, volatile int* live, uint32_t count, uint32_t param) {
+  mode_pick_sync(p, *live);
+  if (stage_step(&p->pick, count, param)) return 1;
+  *live = (int)(p->pick % count);
+  p->seen = *live;
+  return 0;
+}
+
 // List cyclers use a STAGE/APPLY model so Left/Right only PICK a value and Select
 // (Cross) APPLIES it. param: 1 = stage next, 2 = stage prev, 0 = apply current.
 // Staging just advances the index (the menu re-reads gtav_features_value_label to

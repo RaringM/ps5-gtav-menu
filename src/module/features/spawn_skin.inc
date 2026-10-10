@@ -166,7 +166,8 @@ static uint32_t spawn_vehicle_model_hash(uint32_t model, int allow_block) {
   }
 #endif
   if (!g_n.create_vehicle || !g_n.request_model || !g_n.has_model_loaded || !g_n.player_ped_id ||
-      !g_n.get_entity_coords) {
+      !g_n.get_entity_coords || !g_n.get_vehicle_ped_is_in || !g_n.set_ped_into_vehicle ||
+      !g_n.delete_entity) {
     gtav_spawn_stage = 0;
     return direct_spawn_result(GTAV_FEATURE_RESULT_UNAVAILABLE, "missing vehicle spawn natives");
   }
@@ -195,11 +196,37 @@ static uint32_t spawn_vehicle_model_hash(uint32_t model, int allow_block) {
                                "no valid player ped (be in active gameplay)");
   }
   gtav_spawn_stage = 3;
-  Vec3 pos = invoke_vector(g_n.get_entity_coords, ped, 1);
+  const int previous_menu_vehicle = g_last_spawned_vehicle;
+  int previous_owned = 0;
+  if (previous_menu_vehicle > 0 && roster_handle_alive(previous_menu_vehicle)) {
+    for (int i = 0; i < g_spawned_vehicle_count; ++i) {
+      if (g_spawned_vehicle_roster[i] == previous_menu_vehicle) {
+        previous_owned = 1;
+        break;
+      }
+    }
+  }
+  int occupied = invoke_return<int>(g_n.get_vehicle_ped_is_in, ped, 0);
+  if (occupied < 0) occupied = 0;
+  const int anchor = occupied ? occupied : ped;
+  Vec3 pos = invoke_vector(g_n.get_entity_coords, anchor, 1);
+  float speed = occupied && g_spawn_preserve_speed && g_n.get_entity_speed
+      ? invoke_return<float>(g_n.get_entity_speed, occupied) : 0.0f;
+  if (!__builtin_isfinite(speed) || speed < 0.0f) speed = 0.0f;
+  int cls = g_n.get_vehicle_class_from_name ? invoke_return<int>(g_n.get_vehicle_class_from_name, model) : -1;
+  const int airborne = g_spawn_aircraft_in_flight && (cls == 15 || cls == 16);
   float sx = pos.x + f32_from_bits(0x40a00000u);  // 5.0f
   float sy = pos.y;
   float sz = pos.z + f32_from_bits(0x3f800000u);  // 1.0f
-  float heading = f32_from_bits(0x00000000u);
+  // Keep a foreign vehicle intact and avoid creating its replacement inside it.
+  if (occupied && occupied == previous_menu_vehicle && previous_owned &&
+      g_spawn_replace_previous)
+    sx = pos.x;
+  float heading = g_n.get_entity_heading ? invoke_return<float>(g_n.get_entity_heading, anchor) : 0.0f;
+  if (airborne) {
+    sz = pos.z + 60.0f;
+    if (speed < 55.0f) speed = 55.0f;
+  }
   gtav_spawn_stage = 4;
 
   const int worker = allow_block;
@@ -216,11 +243,33 @@ static uint32_t spawn_vehicle_model_hash(uint32_t model, int allow_block) {
 
   if (g_n.set_entity_as_mission_entity)
     invoke_void_ctx(worker, g_n.set_entity_as_mission_entity, vehicle, 1, 1);
-  if (g_n.set_vehicle_on_ground_properly)
+  if (!airborne && g_n.set_vehicle_on_ground_properly)
     invoke_void_ctx(worker, g_n.set_vehicle_on_ground_properly, vehicle);
   if (g_n.set_vehicle_engine_on)
     invoke_void_ctx(worker, g_n.set_vehicle_engine_on, vehicle, 1, 1, 0);
-  if (g_n.set_ped_into_vehicle) invoke_void_ctx(worker, g_n.set_ped_into_vehicle, ped, vehicle, -1);
+  apply_spawn_vehicle_defaults(worker, vehicle);
+  invoke_void_ctx(worker, g_n.set_ped_into_vehicle, ped, vehicle, -1);
+  const int seated = invoke_return_ctx<int>(worker, g_n.get_vehicle_ped_is_in, ped, 0) == vehicle;
+  if (!seated) {
+    invoke_void_ctx(worker, g_n.delete_entity, &vehicle);
+    if (g_n.set_model_as_no_longer_needed)
+      invoke_void_ctx(worker, g_n.set_model_as_no_longer_needed, model);
+    gtav_spawn_stage = 0;
+    return direct_spawn_result(GTAV_FEATURE_RESULT_FAILED, "vehicle seat transfer failed");
+  }
+  if (g_n.set_vehicle_forward_speed && speed > 0.0f)
+    invoke_void_ctx(worker, g_n.set_vehicle_forward_speed, vehicle, speed);
+  // The roster is the authority: world and mission vehicles are never eligible.
+  if (g_spawn_replace_previous && previous_owned && previous_menu_vehicle != vehicle &&
+      g_n.delete_entity) {
+    for (int i = 0; i < g_spawned_vehicle_count; ++i) {
+      if (g_spawned_vehicle_roster[i] != previous_menu_vehicle) continue;
+      int owned = previous_menu_vehicle;
+      invoke_void_ctx(worker, g_n.delete_entity, &owned);
+      g_spawned_vehicle_roster[i] = 0;
+      break;
+    }
+  }
   // Re-stamp mission-entity ownership AFTER seating. MP-only models (e.g. Apocalypse Bruiser)
   // were getting reclaimed by the population/streaming manager shortly after spawn, ejecting
   // the player; claiming the vehicle as a mission entity again once the ped is in it makes the
@@ -229,10 +278,7 @@ static uint32_t spawn_vehicle_model_hash(uint32_t model, int allow_block) {
   // fuller fix (SET_VEHICLE_HAS_BEEN_OWNED_BY_PLAYER / population suppression) needs new natives.
   if (g_n.set_entity_as_mission_entity)
     invoke_void_ctx(worker, g_n.set_entity_as_mission_entity, vehicle, 1, 1);
-  // Spawner defaults: Spawn Maxed / Spawn Invincible. Applied on this same game-thread spawn
-  // context so the mods/invincibility land on the new handle before the model is released; a
-  // no-op when both toggles are off.
-  apply_spawn_vehicle_defaults(worker, vehicle);
+
   // Release the model LAST, after the vehicle exists, is owned, and the ped is seated, so the
   // streamer never frees it out from under the seat assignment.
   if (g_n.set_model_as_no_longer_needed)
@@ -349,7 +395,7 @@ typedef struct ModelStreamJob {
 #if GTAV_MENU_ENABLE_MODEL_STREAM_OWNER_CENSUS && GTAV_MENU_ENABLE_FRAME_HOOK
 static GtavScriptHandlerCensus g_sh_census;
 
-// Published for research/tools/live/peek_frame_hook.py. Exported (external linkage) like gtav_spawn_stage so
+// Published for a host-side debug reader. Exported (external linkage) like gtav_spawn_stage so
 // --gc-sections cannot drop them and llvm-nm can find them in the mapped module.
 extern "C" {
 volatile uint64_t gtav_sh_fires = 0;

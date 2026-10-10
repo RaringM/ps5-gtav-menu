@@ -24,6 +24,9 @@ FILE_ROOTS = {
     "TEXTFILE_METAFILE": "CExtraTextMetaFile",
 }
 NUMERIC_KINDS = {"modkit-id", "light-setting", "siren-setting"}
+NAMESPACE_MAX_RECORDS = 4096
+_KIND = re.compile(r"[a-z][a-z0-9-]{0,63}\Z")
+_REQUIREMENTS = {"pack-required", "local-or-stock"}
 
 
 def parse_xml(data: bytes, limits: Limits) -> ET.Element:
@@ -188,6 +191,141 @@ def definition_key(record: dict) -> tuple[str, int]:
     return kind, int(name) if kind in NUMERIC_KINDS else joaat(name)
 
 
+def _namespace_record(record: object, *, reference: bool) -> dict:
+    """Copy the bounded identity fields used by the offline namespace pass.
+
+    The input can contain parser-specific observations, but none of those
+    fields become namespace authority.  This keeps the pass reusable for
+    vehicle and map candidates without claiming to understand their complete
+    metadata or target registration semantics.
+    """
+
+    if type(record) is not dict:
+        raise AssetError("namespace records must be objects")
+    kind = record.get("kind")
+    if type(kind) is not str or not _KIND.fullmatch(kind):
+        raise AssetError("namespace kind is invalid")
+    name = record.get("name")
+    if type(name) is not str:
+        raise AssetError("namespace name is invalid")
+    name = identifier(name, kind)
+    source = record.get("source")
+    if (
+        type(source) is not str
+        or not 0 < len(source) <= 4096
+        or not source.isascii()
+        or any(ord(char) < 32 or ord(char) == 127 for char in source)
+    ):
+        raise AssetError("namespace source is invalid")
+    result = {"kind": kind, "name": name, "source": source}
+    field = record.get("field")
+    if field is not None:
+        if (
+            type(field) is not str
+            or not 0 < len(field) <= 128
+            or not field.isascii()
+            or any(ord(char) < 32 or ord(char) == 127 for char in field)
+        ):
+            raise AssetError("namespace field is invalid")
+        result["field"] = field
+    if reference:
+        requirement = record.get("requirement")
+        if requirement not in _REQUIREMENTS:
+            raise AssetError("namespace reference requirement is invalid")
+        result["requirement"] = requirement
+    return result
+
+
+def namespace_preflight(definitions: list[dict], references: list[dict]) -> dict:
+    """Report pack-local identity collisions and selected reference bindings.
+
+    This is deliberately a namespace-only host check.  A passing local report
+    does not establish stock-name availability, metadata completeness, DLC
+    registration, native resource validity, or runtime compatibility.
+    """
+
+    if type(definitions) is not list or type(references) is not list:
+        raise AssetError("namespace definitions and references must be lists")
+    if len(definitions) + len(references) > NAMESPACE_MAX_RECORDS:
+        raise AssetError("namespace record count exceeds inspection limit")
+    normalized_definitions = [_namespace_record(record, reference=False) for record in definitions]
+    normalized_references = [_namespace_record(record, reference=True) for record in references]
+
+    def sort_key(record: dict) -> tuple:
+        kind, identity = definition_key(record)
+        return (kind, identity, record["name"].casefold(), record["name"], record["source"], record.get("field", ""))
+
+    normalized_definitions.sort(key=sort_key)
+    normalized_references.sort(key=lambda record: (*sort_key(record), record["requirement"]))
+    by_identity: dict[tuple[str, int], list[dict]] = defaultdict(list)
+    for record in normalized_definitions:
+        by_identity[definition_key(record)].append(record)
+
+    collisions = []
+    for (kind, identity), records in sorted(by_identity.items()):
+        if len(records) < 2:
+            continue
+        folded_names = {record["name"].casefold() for record in records}
+        collisions.append(
+            {
+                "kind": kind,
+                "identity": str(identity) if kind in NUMERIC_KINDS else f"0x{identity:08x}",
+                "classification": "duplicate-definition" if len(folded_names) == 1 else "identity-collision",
+                "definitions": records,
+            }
+        )
+
+    resolved_references = []
+    for reference in normalized_references:
+        matches = by_identity.get(definition_key(reference), [])
+        exact = [candidate for candidate in matches if candidate["name"].casefold() == reference["name"].casefold()]
+        row = dict(reference)
+        if len(matches) == 1 and len(exact) == 1:
+            row.update(status="local-candidate", target=exact[0]["source"])
+        elif matches:
+            row["status"] = "ambiguous-local"
+        elif reference["requirement"] == "pack-required":
+            row["status"] = "missing-pack-asset"
+        else:
+            row["status"] = "external-unverified"
+        resolved_references.append(row)
+
+    pack_required_resolved = all(
+        row["status"] == "local-candidate" for row in resolved_references if row["requirement"] == "pack-required"
+    )
+    ambiguous_references = any(row["status"] == "ambiguous-local" for row in resolved_references)
+    has_definitions = bool(normalized_definitions)
+    return {
+        "kind": "gtavmenu-offline-asset-namespace-preflight",
+        "schemaVersion": 1,
+        "coverage": "selected-observed-definitions-and-references",
+        "definitions": normalized_definitions,
+        "references": resolved_references,
+        "collisions": collisions,
+        "qualification": {
+            "observedDefinitionSetNonempty": has_definitions,
+            "definitionNamespaceUnambiguous": not collisions,
+            "packRequiredReferencesResolved": pack_required_resolved,
+            "localNamespacePreflightPassed": (
+                has_definitions and not collisions and pack_required_resolved and not ambiguous_references
+            ),
+            "completeDependencyClosure": False,
+            "stockNamespaceChecked": False,
+            "metadataSemanticsValidated": False,
+            "ps5RegistrationQualified": False,
+            "runtimeEnabled": False,
+            "activationEnabled": False,
+            "hardwareQualified": False,
+        },
+        "unreviewedAreas": [
+            "stock definitions and numeric-ID conflicts",
+            "metadata fields outside the selected reference subset",
+            "resource-internal material, fragment, physics and map dependencies",
+            "DLC declaration, registration, load order and streaming lifetime",
+        ],
+    }
+
+
 def dependency_report(files: list[dict]) -> dict:
     """Locate selected declarations within each setup-defined pack boundary.
 
@@ -227,6 +365,7 @@ def dependency_report(files: list[dict]) -> dict:
             "declarations": [],
             "definitions": [],
             "references": [],
+            "namespacePreflight": namespace_preflight([], []),
             "activationValidated": False,
             "stockConflictsChecked": False,
         }
@@ -329,6 +468,7 @@ def dependency_report(files: list[dict]) -> dict:
                 reference["status"] = (
                     "missing-pack-asset" if reference["requirement"] == "pack-required" else "external-unverified"
                 )
+        pack["namespacePreflight"] = namespace_preflight(pack["definitions"], pack["references"])
     # Pack-local lookup must not conceal possible collisions when several
     # add-ons are inspected together. These are candidates, not a reviewed
     # model of the target's global registries; no IDs are rewritten here.

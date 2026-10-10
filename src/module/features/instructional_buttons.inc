@@ -137,27 +137,55 @@ static void instr_push_text_param(const char* s) {
   invoke_void_ctx(0, g_n.end_text_command_scaleform_string);
 }
 
-// Build one SET_DATA_SLOT: slot index, the glyph, then the verb label. Primary glyph source is the
-// control id via GET_CONTROL_INSTRUCTIONAL_BUTTONS_STRING (handles X/O swap; pushed as the documented
-// PLAYER_NAME control-string param). Some controls (the d-pad directions, R3) return an empty string
-// on Enhanced -- then fall back to the `~INPUT_*~` token pushed through the text path, which the
-// Scaleform resolves to the same glyph. Either way the label is a text param after it.
-static void instr_set_data_slot(int slot, int control, int control2, const char* glyph_token,
-                                const char* label) {
-  char glyph[96];
-  instr_copy_glyph(control, glyph, sizeof(glyph));
-  if (control2 >= 0) {
-    char glyph2[48];
-    instr_copy_glyph(control2, glyph2, sizeof(glyph2));
-    const size_t n = strnlen(glyph, sizeof(glyph));
-    snprintf(glyph + n, sizeof(glyph) - n, "%s", glyph2);  // two glyphs in one slot (e.g. L1 R1)
+// Copy the `index`-th "~INPUT_*~" token out of a fallback string that may hold two back to back
+// ("~INPUT_FRONTEND_LB~~INPUT_FRONTEND_RB~"), so each button gets its own fallback. Empty when the
+// string has no such token.
+static void instr_token_at(const char* tokens, int index, char* dst, size_t cap) {
+  dst[0] = '\0';
+  if (!tokens) return;
+  const char* p = tokens;
+  for (int i = 0; *p == '~'; ++i) {
+    const char* close = strchr(p + 1, '~');
+    if (!close) return;
+    if (i == index) {
+      const size_t n = (size_t)(close - p) + 1u;
+      if (n >= cap) return;
+      memcpy(dst, p, n);
+      dst[n] = '\0';
+      return;
+    }
+    p = close + 1;
   }
-  invoke_return_ctx<int>(0, g_n.begin_scaleform_movie_method, g_instr_handle, "SET_DATA_SLOT");
-  invoke_void_ctx(0, g_n.scaleform_movie_method_add_param_int, slot);
+}
+
+// Push one button param: the control's glyph string via GET_CONTROL_INSTRUCTIONAL_BUTTONS_STRING
+// (handles X/O swap; pushed as the documented PLAYER_NAME control-string param). Some controls
+// (the d-pad directions, R3) return an empty string on Enhanced -- then fall back to that button's
+// own `~INPUT_*~` token pushed through the text path, which the Scaleform resolves to the same
+// glyph.
+static void instr_push_button(int control, const char* fallback_token) {
+  char glyph[48];
+  instr_copy_glyph(control, glyph, sizeof(glyph));
   if (glyph[0]) {
     invoke_void_ctx(0, g_n.scaleform_movie_method_add_param_player_name_string, (const char*)glyph);
   } else {
-    instr_push_text_param(glyph_token);  // control id had no glyph -> try the ~INPUT_*~ token
+    instr_push_text_param(fallback_token);
+  }
+}
+
+// Build one SET_DATA_SLOT(slot, btn1[, btn2], label). A two-control slot (d-pad Left/Right, LB+RB,
+// LT+RT) pushes ONE param per button, each resolved separately with its own fallback: joining both
+// glyph strings into one param gave the movie an invalid button id, so no glyph was drawn at all.
+static void instr_set_data_slot(int slot, int control, int control2, const char* glyph_token,
+                                const char* label) {
+  char token[48];
+  invoke_return_ctx<int>(0, g_n.begin_scaleform_movie_method, g_instr_handle, "SET_DATA_SLOT");
+  invoke_void_ctx(0, g_n.scaleform_movie_method_add_param_int, slot);
+  instr_token_at(glyph_token, 0, token, sizeof(token));
+  instr_push_button(control, token[0] ? token : glyph_token);
+  if (control2 >= 0) {
+    instr_token_at(glyph_token, 1, token, sizeof(token));
+    instr_push_button(control2, token);
   }
   instr_push_text_param(label);
   invoke_void_ctx(0, g_n.end_scaleform_movie_method);

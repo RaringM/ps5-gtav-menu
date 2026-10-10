@@ -2,8 +2,10 @@
 """Inventory or import exact resources from large PC RPF7 add-on packs.
 
 The importer reads archive tables through bounded file windows, so multi-gigabyte
-packs do not need to fit in memory. Imported files are source fixtures for later
-conversion; they are never marked loadable or copied to a console by this tool.
+packs do not need to fit in memory. Imports publish atomically and can be replayed
+from the original archive to verify every fixture byte. Imported files are source
+fixtures for later conversion; they are never marked loadable or copied to a
+console by this tool.
 """
 
 from __future__ import annotations
@@ -14,12 +16,14 @@ import json
 import os
 import re
 import stat
+import tempfile
 import xml.etree.ElementTree as ET
 from collections import Counter
 from dataclasses import replace
 from pathlib import Path, PurePosixPath
 
 from gtavmenu_tools import asset_formats, asset_metadata, asset_textures, hashes
+from gtavmenu_tools import custom_pack_schema as package_io
 from gtavmenu_tools.asset_formats import (
     AssetError,
     Limits,
@@ -39,6 +43,7 @@ MAX_TABLE_BYTES = 64 * 1024 * 1024
 MAX_SELECTED_BYTES = 256 * 1024 * 1024
 MAX_SELECTION_TOTAL = 512 * 1024 * 1024
 MAX_METADATA_BYTES = 4 * 1024 * 1024
+MAX_REPORT_BYTES = 64 * 1024 * 1024
 MAX_ENTRIES = 100_000
 MAX_DEPTH = 8
 MODEL_RE = re.compile(r"[a-z0-9_]{1,64}\Z")
@@ -325,14 +330,21 @@ def selected_blob(window: RpfWindow, member: RpfMember) -> tuple[bytes, dict]:
     return blob, record
 
 
-def output_path_for_chain(root: Path, chain: str) -> Path:
+def output_name_for_chain(chain: str) -> str:
     parts = []
     for segment in chain.split("!/"):
         parts.extend(PurePosixPath(segment).parts)
-    output = root.joinpath("resources", *parts)
-    if not output.resolve().is_relative_to(root.resolve()):
-        raise AssetError("selected member output escapes the fixture directory")
-    return output
+    output = PurePosixPath("resources", *parts)
+    if output.is_absolute() or any(part in ("", ".", "..") for part in output.parts):
+        raise AssetError("selected member output is not a safe relative fixture path")
+    return output.as_posix()
+
+
+def canonical_report(report: dict) -> bytes:
+    try:
+        return (json.dumps(report, indent=2, sort_keys=True, allow_nan=False) + "\n").encode("utf-8")
+    except (TypeError, ValueError, UnicodeEncodeError, RecursionError) as exc:
+        raise AssetError(f"fixture report is not canonical JSON: {exc}") from exc
 
 
 def write_atomic(path: Path, blob: bytes) -> None:
@@ -384,8 +396,14 @@ def unique_item(
     *,
     attribute: bool = False,
     required: bool = False,
+    fold_case: bool = False,
 ) -> tuple[str, bytes, ET.Element] | None:
     candidates, aliases = matching_items(roots, root_tag, xpath, field, value, attribute=attribute)
+    if fold_case and not candidates and len(aliases) == 1:
+        # Model, handling and layout names are case-insensitive joaat keys in the engine: the Skyline
+        # add-on names "Skyline" (vehicles.meta) for skyline.yft and handling "SKYLINE" for handlingId
+        # "Skyline". Exactly one other spelling is accepted; two or more still refuse.
+        candidates, aliases = matching_items(roots, root_tag, xpath, field, aliases[0], attribute=attribute)
     if len(candidates) != 1:
         if not candidates and not aliases and not required:
             return None
@@ -427,6 +445,7 @@ def select_vehicle_metadata(
         "modelName",
         model,
         required=True,
+        fold_case=True,
     )
     assert vehicle_match is not None
     vehicle = vehicle_match[2]
@@ -441,6 +460,7 @@ def select_vehicle_metadata(
         "modelName",
         model,
         required=True,
+        fold_case=True,
     )
     assert variation_match is not None
     variation = variation_match[2]
@@ -476,13 +496,15 @@ def select_vehicle_metadata(
         (
             "handling",
             handling_name,
-            unique_item(roots, "CHandlingDataMgr", "./HandlingData/Item", "handlingName", handling_name),
+            unique_item(
+                roots, "CHandlingDataMgr", "./HandlingData/Item", "handlingName", handling_name, fold_case=True
+            ),
             dependencies["handling"],
         ),
         (
             "layout",
             layout_name,
-            unique_item(roots, "CVehicleMetadataMgr", "./VehicleLayoutInfos/Item", "Name", layout_name),
+            unique_item(roots, "CVehicleMetadataMgr", "./VehicleLayoutInfos/Item", "Name", layout_name, fold_case=True),
             dependencies["layout"],
         ),
         (
@@ -559,9 +581,99 @@ def select_vehicle_metadata(
     return report, fragments
 
 
-def import_selection(path: Path, chains: list[str], output_dir: Path, operation: str, model: str | None) -> dict:
-    if output_dir.exists() or output_dir.is_symlink():
-        raise AssetError("output directory already exists; choose a new fixture directory")
+def _add_fixture_file(files: dict[str, bytes], name: str, blob: bytes) -> None:
+    relative = PurePosixPath(name)
+    if (
+        type(blob) is not bytes
+        or relative.is_absolute()
+        or str(relative) != name
+        or any(part in ("", ".", "..") for part in relative.parts)
+    ):
+        raise AssetError("fixture output contains an invalid path or non-byte value")
+    if name in files:
+        raise AssetError(f"fixture outputs collide at {name}")
+    files[name] = blob
+
+
+def mod_kit_chains(model: str, chains: list[str], kit_parts: frozenset[str] = frozenset()) -> list[str]:
+    """Mod-kit fragments of a vehicle, sorted: <model>_<part>.yft inside a vehiclemods/ archive, plus any
+    .yft in an archive (not the vehicle's own) whose name the vehicle's carcols kit lists (kit_parts,
+    lowercase model names): packs name parts freely (vans123: laf_*, raptor_* in tuning_mods.rpf)."""
+    part = re.compile(re.escape(model) + r"_[a-z0-9_]+\.yft")
+    own = {f"{model}.yft", f"{model}_hi.yft"}
+    found = []
+    for chain in chains:
+        container, _, name = chain.rpartition("!/")
+        if not container or name in own:
+            continue
+        if ("vehiclemods/" in container and part.fullmatch(name)) or (
+            name.lower().endswith(".yft") and name[:-4].lower() in kit_parts
+        ):
+            found.append(chain)
+    return sorted(found)
+
+
+def kit_part_names(model: str, root: RpfWindow) -> frozenset[str]:
+    """Lowercase part model names (visibleMods and linkMods) of the kits the model's variation names."""
+    roots = []
+    for member in root.members():
+        if PurePosixPath(member.name).suffix.lower() in (".xml", ".meta"):
+            roots.append(asset_metadata.parse_xml(root.read_member(member, MAX_METADATA_BYTES), LIMITS))
+    kits = set()
+    for tree in roots:
+        if tree.tag == "CVehicleModelInfoVariation":
+            for item in tree.findall("./variationData/Item"):
+                if (item.findtext("modelName") or "").strip().casefold() == model:
+                    kits |= {(kit.text or "").strip().casefold() for kit in item.findall("./kits/Item")}
+    names = set()
+    for tree in roots:
+        if tree.tag == "CVehicleModelInfoVarGlobal":
+            for kit in tree.findall("./Kits/Item"):
+                if (kit.findtext("kitName") or "").strip().casefold() in kits:
+                    for mod in (*kit.findall("./visibleMods/Item"), *kit.findall("./linkMods/Item")):
+                        names.add((mod.findtext("modelName") or "").strip().lower())
+    return frozenset(names - {""})
+
+
+def txd_parent_names(model: str, root: RpfWindow) -> list[str]:
+    """Lowercase texture dictionaries on the model's txdRelationships parent chain (vehicles.meta), nearest
+    first: the Dominator GTX names tfdominator -> vehicles_tfdominator_interior (shipped beside the car)
+    -> vehicles_sup1_interior. Which of them the archive ships is decided by the caller."""
+    txd, pairs = None, {}
+    for member in root.members():
+        if PurePosixPath(member.name).suffix.lower() not in (".xml", ".meta"):
+            continue
+        tree = asset_metadata.parse_xml(root.read_member(member, MAX_METADATA_BYTES), LIMITS)
+        if tree.tag != "CVehicleModelInfo__InitDataList":
+            continue
+        for item in tree.findall("./InitDatas/Item"):
+            if (item.findtext("modelName") or "").strip().casefold() == model:
+                txd = (item.findtext("txdName") or "").strip().lower()
+        for item in tree.findall("./txdRelationships/Item"):
+            child = (item.findtext("child") or "").strip().lower()
+            pairs.setdefault(child, (item.findtext("parent") or "").strip().lower())
+    start, chain = txd, []
+    while txd in pairs and pairs[txd] and pairs[txd] not in (start, *chain) and len(chain) < 16:
+        txd = pairs[txd]
+        chain.append(txd)
+    return chain
+
+
+def build_selection(
+    path: Path, chains: list[str], operation: str, model: str | None, mod_kit: bool = False
+) -> tuple[dict, dict[str, bytes]]:
+    if operation not in ("extract", "vehicle") or (operation == "extract") != (model is None):
+        raise AssetError("fixture operation/model scope is invalid")
+    if type(chains) is not list or any(type(chain) is not str for chain in chains):
+        raise AssetError("fixture member selection must be a list of exact names")
+    if operation == "extract" and not 1 <= len(chains) <= MAX_ENTRIES:
+        raise AssetError("extract fixture needs one to 100000 selected members")
+    if operation == "vehicle" and chains:
+        raise AssetError("vehicle fixture derives its required member selection from the model")
+    if mod_kit and operation != "vehicle":
+        raise AssetError("mod-kit parts are only selected beside a vehicle")
+    if model is not None and (type(model) is not str or not MODEL_RE.fullmatch(model)):
+        raise AssetError("model must be a lowercase ASCII asset identifier")
     source = RpfSource(path)
     try:
         root = RpfWindow(source, 0, source.before.st_size, "")
@@ -570,15 +682,36 @@ def import_selection(path: Path, chains: list[str], output_dir: Path, operation:
             required = (f"{model}.yft", f"{model}_hi.yft", f"{model}.ytd")
             found: list[str] = []
             for name in required:
-                matches = [chain_name(window, member) for window, member in entries if member.name == name]
+                # Archive member names are case-insensitive in the engine (Prowler: x64/vehicles.rpf/Prowler.yft
+                # for model prowler); the chain keeps the archive's spelling, two spellings still refuse.
+                matches = [chain_name(window, member) for window, member in entries if member.name.lower() == name]
                 if len(matches) != 1:
-                    raise AssetError(f"vehicle requires one exact {name}; found {len(matches)}")
+                    raise AssetError(f"vehicle requires one {name} (any letter case); found {len(matches)}")
                 found.extend(matches)
+            # Texture dictionaries on the car's txd parent chain that the mod ships (the Dominator GTX's
+            # vehicles_tfdominator_interior.ytd holds its interior textures); retail parents stay external.
+            for parent in txd_parent_names(model, root):
+                matches = [
+                    chain_name(window, member) for window, member in entries if member.name.lower() == f"{parent}.ytd"
+                ]
+                if len(matches) > 1:
+                    raise AssetError(f"vehicle texture parent {parent}.ytd appears {len(matches)} times")
+                found.extend(matches)
+            parts = []
+            if mod_kit:
+                names = [chain_name(window, member) for window, member in entries]
+                parts = mod_kit_chains(model, names, kit_part_names(model, root))
+                if not parts:
+                    raise AssetError(f"vehicle {model} has no vehiclemods/{model}_*.yft or kit-listed parts")
+                found.extend(parts)
             chains = found
         selected = resolve_chains(entries, chains)
         prepared = []
         total = 0
         for window, member in selected:
+            # A part with graphics pages carries its own texture dictionary (the Dominator GTX's 19 livery parts,
+            # KoRn a45_livery1..5): it is imported as is; the vehicle converter moves those textures into the car's
+            # .ptd (its embedded-texture repair step) and leaves out a part whose dictionary is malformed.
             blob, record = selected_blob(window, member)
             total += len(blob)
             if total > MAX_SELECTION_TOTAL:
@@ -608,6 +741,7 @@ def import_selection(path: Path, chains: list[str], output_dir: Path, operation:
             operation=operation,
             model=model,
             modelHash=f"0x{hashes.joaat(model):08x}" if model else None,
+            **({"modKit": True} if mod_kit else {}),
             resources=[row for _, _, row in prepared],
             metadata=[row for _, _, row in metadata],
             metadataSelection=metadata_selection,
@@ -622,32 +756,214 @@ def import_selection(path: Path, chains: list[str], output_dir: Path, operation:
         )
         report["qualification"]["selectedMemberIdentityVerified"] = True
         source.assert_unchanged()
-
-        output_dir.mkdir(parents=True)
+        files: dict[str, bytes] = {}
         for chain, blob, _ in prepared:
-            write_atomic(output_path_for_chain(output_dir, chain), blob)
+            _add_fixture_file(files, output_name_for_chain(chain), blob)
         for name, blob, _ in metadata:
-            write_atomic(output_dir / "metadata" / PurePosixPath(name), blob)
+            _add_fixture_file(files, PurePosixPath("metadata", name).as_posix(), blob)
         for name, blob in derived_metadata:
-            write_atomic(output_dir / PurePosixPath(name), blob)
-        manifest = (json.dumps(report, indent=2, sort_keys=True) + "\n").encode("utf-8")
-        write_atomic(output_dir / "manifest.json", manifest)
-        if (
-            any((output_path_for_chain(output_dir, chain)).read_bytes() != blob for chain, blob, _ in prepared)
-            or any((output_dir / "metadata" / PurePosixPath(name)).read_bytes() != blob for name, blob, _ in metadata)
-            or any((output_dir / PurePosixPath(name)).read_bytes() != blob for name, blob in derived_metadata)
-            or (output_dir / "manifest.json").read_bytes() != manifest
-        ):
-            raise AssetError("fixture output readback differs")
-        return report
+            _add_fixture_file(files, PurePosixPath(name).as_posix(), blob)
+        manifest = canonical_report(report)
+        if len(manifest) > MAX_REPORT_BYTES:
+            raise AssetError("fixture manifest exceeds the 64 MiB verification bound")
+        _add_fixture_file(files, "manifest.json", manifest)
+        return report, files
     finally:
         source.close()
+
+
+def _read_fixture_file(path: Path, maximum: int) -> bytes:
+    if type(maximum) is not int or maximum < 0:
+        raise AssetError("fixture file byte bound is invalid")
+    try:
+        fd = os.open(path, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_NONBLOCK", 0))
+    except OSError as exc:
+        raise AssetError(f"cannot open fixture regular file: {path}") from exc
+    with os.fdopen(fd, "rb") as stream:
+        before = os.fstat(stream.fileno())
+        if not stat.S_ISREG(before.st_mode) or before.st_size > maximum:
+            raise AssetError(f"fixture file is special or exceeds {maximum} bytes: {path}")
+        blob = stream.read(maximum + 1)
+        after = os.fstat(stream.fileno())
+    try:
+        current = path.stat(follow_symlinks=False)
+    except OSError as exc:
+        raise AssetError(f"fixture file changed while being read: {path}") from exc
+
+    def identity(row: os.stat_result) -> tuple[int, int, int, int]:
+        return (row.st_dev, row.st_ino, row.st_size, row.st_mtime_ns)
+
+    if len(blob) != before.st_size or identity(before) != identity(after) or identity(before) != identity(current):
+        raise AssetError(f"fixture file changed while being read: {path}")
+    return blob
+
+
+def _fixture_directories(files: set[str]) -> set[str]:
+    result = set()
+    for name in files:
+        parent = PurePosixPath(name).parent
+        while str(parent) != ".":
+            result.add(parent.as_posix())
+            parent = parent.parent
+    return result
+
+
+def verify_fixture_files(fixture: Path, expected: dict[str, bytes]) -> None:
+    if fixture.is_symlink() or not fixture.is_dir():
+        raise AssetError("fixture must be a real non-symlink directory")
+    expected_files = set(expected)
+    expected_dirs = _fixture_directories(expected_files)
+    found_files: set[str] = set()
+    found_dirs: set[str] = set()
+    for path in fixture.rglob("*"):
+        if path.is_symlink():
+            raise AssetError(f"fixture contains a symlink: {path}")
+        relative = path.relative_to(fixture).as_posix()
+        if path.is_file():
+            if relative not in expected_files:
+                raise AssetError(f"fixture tree differs: unexpected file {relative}")
+            found_files.add(relative)
+        elif path.is_dir():
+            if relative not in expected_dirs:
+                raise AssetError(f"fixture tree differs: unexpected directory {relative}")
+            found_dirs.add(relative)
+        else:
+            raise AssetError(f"fixture contains a special file: {path}")
+    if found_files != expected_files or found_dirs != expected_dirs:
+        raise AssetError(f"fixture tree differs: files={sorted(found_files)}, dirs={sorted(found_dirs)}")
+    for relative, blob in expected.items():
+        if _read_fixture_file(fixture / PurePosixPath(relative), len(blob)) != blob:
+            raise AssetError(f"fixture byte identity differs: {relative}")
+
+
+def publish_fixture(output_dir: Path, files: dict[str, bytes]) -> None:
+    # Pin fixture publication to the strict loose-package publisher's native
+    # no-replace promotion and owned-staging cleanup contract. The schemas are
+    # separate; no package/runtime qualification is inherited here.
+    package_io._encoded_publication_path(output_dir)
+    if output_dir.exists() or output_dir.is_symlink():
+        raise AssetError("output directory already exists; choose a new fixture directory")
+    output_dir.parent.mkdir(parents=True, exist_ok=True)
+    temporary = Path(tempfile.mkdtemp(prefix=".gtavmenu-pc-fixture-", suffix=".tmp", dir=output_dir.parent))
+    identity = None
+    try:
+        created = temporary.lstat()
+        identity = (created.st_dev, created.st_ino)
+        for directory in sorted(_fixture_directories(set(files)), key=lambda value: (value.count("/"), value)):
+            (temporary / PurePosixPath(directory)).mkdir()
+        for relative, blob in files.items():
+            with (temporary / PurePosixPath(relative)).open("xb") as stream:
+                stream.write(blob)
+        verify_fixture_files(temporary, files)
+        package_io._rename_directory_noreplace(temporary, output_dir)
+    except BaseException as exc:
+        if identity is None:
+            exc.add_note(f"Could not establish fixture staging ownership; retained staging: {temporary}")
+            raise
+        try:
+            package_io._cleanup_staging(temporary, identity)
+        except BaseException as cleanup_error:
+            exc.add_note(f"Could not clean fixture staging {temporary}: {cleanup_error}")
+        raise
+
+
+def import_selection(
+    path: Path, chains: list[str], output_dir: Path, operation: str, model: str | None, mod_kit: bool = False
+) -> dict:
+    if output_dir.exists() or output_dir.is_symlink():
+        raise AssetError("output directory already exists; choose a new fixture directory")
+    report, files = build_selection(path, chains, operation, model, mod_kit)
+    publish_fixture(output_dir, files)
+    return report
+
+
+def load_fixture_manifest(fixture: Path) -> tuple[dict, bytes]:
+    if fixture.is_symlink() or not fixture.is_dir():
+        raise AssetError("fixture must be a real non-symlink directory")
+    blob = _read_fixture_file(fixture / "manifest.json", MAX_REPORT_BYTES)
+    if not blob:
+        raise AssetError("fixture manifest is empty")
+    try:
+        report = json.loads(blob)
+    except (UnicodeDecodeError, ValueError, RecursionError) as exc:
+        raise AssetError(f"fixture manifest is not valid UTF-8 JSON: {exc}") from exc
+    if type(report) is not dict:
+        raise AssetError("fixture manifest root must be an object")
+    if canonical_report(report) != blob:
+        raise AssetError("fixture manifest must use canonical sorted JSON")
+    return report, blob
+
+
+def _replay_request(report: dict) -> tuple[list[str], str, str | None, bool]:
+    if type(report.get("schemaVersion")) is not int or report["schemaVersion"] != 1:
+        raise AssetError("unsupported PC asset fixture schema version")
+    if report.get("kind") != "gtavmenu-pc-asset-import":
+        raise AssetError("unsupported PC asset fixture kind")
+    operation = report.get("operation")
+    if operation == "extract":
+        if report.get("model") is not None:
+            raise AssetError("extract fixture cannot declare a vehicle model")
+        resources = report.get("resources")
+        if type(resources) is not list or not 1 <= len(resources) <= MAX_ENTRIES:
+            raise AssetError("extract fixture needs a bounded nonempty resource list")
+        chains = []
+        for row in resources:
+            member = row.get("member") if type(row) is dict else None
+            if type(member) is not str:
+                raise AssetError("extract fixture resource member is invalid")
+            chains.append(member)
+        return chains, operation, None, False
+    if operation == "vehicle":
+        model = report.get("model")
+        if type(model) is not str or not MODEL_RE.fullmatch(model):
+            raise AssetError("vehicle fixture model is invalid")
+        mod_kit = report.get("modKit", False)
+        if mod_kit is not True and "modKit" in report:
+            raise AssetError("vehicle fixture mod-kit flag is invalid")
+        return [], operation, model, mod_kit
+    raise AssetError("fixture operation is unsupported")
+
+
+def verify_import_fixture(source: Path, fixture: Path) -> dict:
+    stored, stored_blob = load_fixture_manifest(fixture)
+    chains, operation, model, mod_kit = _replay_request(stored)
+    fresh, expected = build_selection(source, chains, operation, model, mod_kit)
+    if expected["manifest.json"] != stored_blob:
+        raise AssetError("fixture manifest differs from a fresh source-archive replay")
+    verify_fixture_files(fixture, expected)
+    return {
+        "schemaVersion": 1,
+        "kind": "gtavmenu-pc-asset-import-verification",
+        "fixture": str(fixture),
+        "operation": operation,
+        "model": model,
+        "resourceCount": len(fresh["resources"]),
+        "metadataCount": len(fresh["metadata"]),
+        "fixtureFiles": len(expected),
+        "fixtureBytes": sum(map(len, expected.values())),
+        "verificationScope": "source-archive-replay-and-fixture-bytes",
+        "sourceArchiveIdentityVerified": True,
+        "sourceArchiveTablesReparsed": True,
+        "selectedMemberIdentityVerified": True,
+        "fixtureManifestReproduced": True,
+        "fixtureByteIdentityVerified": True,
+        "conversionPerformed": False,
+        "ps5ResourceLayoutsValidated": False,
+        "completeDependencyClosure": False,
+        "uploadAllowed": False,
+        "runtimeEnabled": False,
+        "liveTestReady": False,
+        "limitations": [
+            "Fresh replay verifies exact imported PC bytes and metadata fragments, not PC-to-PS5 conversion.",
+            "This verifier does not authorize packaging, upload, activation or runtime use.",
+        ],
+    }
 
 
 def write_report(report: dict, output: Path) -> None:
     if output.exists() or output.is_symlink() or output.suffix.lower() != ".json":
         raise AssetError("inventory output must be a new JSON file")
-    write_atomic(output, (json.dumps(report, indent=2, sort_keys=True) + "\n").encode("utf-8"))
+    write_atomic(output, canonical_report(report))
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -664,6 +980,10 @@ def main(argv: list[str] | None = None) -> int:
     vehicle.add_argument("source", type=Path)
     vehicle.add_argument("--model", required=True)
     vehicle.add_argument("--output-dir", type=Path, required=True)
+    vehicle.add_argument("--mod-kit", action="store_true", help="also import vehiclemods/<model>_*.yft parts")
+    verify = commands.add_parser("verify", help="replay an import from its original RPF and compare every fixture byte")
+    verify.add_argument("source", type=Path)
+    verify.add_argument("--fixture", type=Path, required=True)
     args = parser.parse_args(argv)
     try:
         if args.command == "inventory":
@@ -673,10 +993,12 @@ def main(argv: list[str] | None = None) -> int:
         elif args.command == "extract":
             report = import_selection(args.source, args.member, args.output_dir, "extract", None)
             print(json.dumps({"resources": len(report["resources"]), "bytes": report["outputBytes"]}, sort_keys=True))
+        elif args.command == "verify":
+            print(json.dumps(verify_import_fixture(args.source, args.fixture), sort_keys=True))
         else:
             if not MODEL_RE.fullmatch(args.model):
                 raise AssetError("model must be a lowercase ASCII asset identifier")
-            report = import_selection(args.source, [], args.output_dir, "vehicle", args.model)
+            report = import_selection(args.source, [], args.output_dir, "vehicle", args.model, args.mod_kit)
             print(
                 json.dumps(
                     {

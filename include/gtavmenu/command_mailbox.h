@@ -61,15 +61,16 @@ enum {
   // bound action id is read via gtav_pad_input_last_hotkey_action(); the menu dispatches it
   // like a normal shell action. Pad-only (never produced by the mailbox/file paths).
   GTAV_MENU_COMMAND_HOTKEY = 21,
-  // Page the cursor up/down by one visible window (L1/R1). On a value cycler these instead
-  // fast-step the value by several steps. Suppressed from the game while the menu is visible.
+  // Page the cursor up/down by one visible window (touchpad flick, mailbox), rolling into the
+  // sibling submenu at the list edge.
   GTAV_MENU_COMMAND_PAGE_PREV = 22,
   GTAV_MENU_COMMAND_PAGE_NEXT = 23,
-  // Jump the cursor to the first / last row (Triangle / Square).
+  // Jump the cursor to the first / last selectable row of the page (L1 / R1 while the menu is
+  // open; heading rows are skipped). Suppressed from the game while the menu is visible.
   GTAV_MENU_COMMAND_HOME = 24,
   GTAV_MENU_COMMAND_END = 25,
-  // Seek the cursor to the previous / next first-letter boundary in the list (L3 / R3). Turns a
-  // 1000-item alphabetical catalog scroll into a handful of presses. Suppressed from the game.
+  // Seek the cursor to the previous / next first-letter boundary in the list (mailbox only; no
+  // controller button). Turns a 1000-item alphabetical catalog scroll into a handful of presses.
   GTAV_MENU_COMMAND_LETTER_PREV = 26,
   GTAV_MENU_COMMAND_LETTER_NEXT = 27,
   // Collapse straight to the root menu (Circle held past the hold threshold). A plain Circle tap
@@ -89,6 +90,10 @@ enum {
   GTAV_MENU_COMMAND_RENDER_BANK_CONTROL = 36,
   GTAV_MENU_COMMAND_RENDER_PHASE_SLOT = 37,
   GTAV_MENU_COMMAND_RENDER_PHASE_CONTROL = 38,
+  // Test/dev: like ACTIVATE_ACTION, with a parameter. argument = action id | (param << 32),
+  // routed through handle_shell_action_param(action, param). Used by runtime-pack card/data
+  // selection and spawn-by-model-hash (SPAWN_VEHICLE takes the model hash as its parameter).
+  GTAV_MENU_COMMAND_ACTIVATE_ACTION_PARAM = 39,
 };
 
 enum {

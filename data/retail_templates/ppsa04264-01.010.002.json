@@ -1,0 +1,1863 @@
+{
+  "kind": "gtavmenu-retail-templates",
+  "schemaVersion": 1,
+  "target": "ppsa04264-01.010.002",
+  "titleId": "PPSA04264",
+  "consoleSource": "ftp://<PS5_HOST>:2121/mnt/sandbox/PPSA04264_000/app0",
+  "note": "Retail inputs for the public asset converters and pack authoring tools. Names, offsets, sizes, table flags and SHA-256 only; no retail bytes. Encrypted inputs use the fixed export-templates allow-list on the user's game.",
+  "templates": [
+    {
+      "cache": "corpus/tornado6.pft",
+      "archive": "update/ps5/dlcpacks/patchDay18NG/dlc.rpf",
+      "archiveBytes": 4407296,
+      "member": "ps5/levels/gta5/vehicles.rpf/tornado6.pft",
+      "transform": "rsc7",
+      "storedOffset": 1229312,
+      "storedBytes": 1072312,
+      "flags": [
+        "0xa11e0223",
+        "0xb0122080"
+      ],
+      "bytes": 1072312,
+      "sha256": "120996dd9ba11eee19b13f21808ad8637959754e4bf2a3086416bdcc086d1ed8",
+      "required": "always",
+      "usedBy": "convert_pc_vehicle.py --native-reference (native geometry reference)"
+    },
+    {
+      "cache": "corpus/tornado6.ptd",
+      "archive": "update/ps5/dlcpacks/patchDay18NG/dlc.rpf",
+      "archiveBytes": 4407296,
+      "member": "ps5/levels/gta5/vehicles.rpf/tornado6.ptd",
+      "transform": "rsc7",
+      "storedOffset": 2301952,
+      "storedBytes": 319237,
+      "flags": [
+        "0x00020000",
+        "0x500003e1"
+      ],
+      "bytes": 319237,
+      "sha256": "8e8ea88871352cffcd85aa97fe7c07ff443cea8b9d4c9dd6c28626fe0ed435ee",
+      "required": "always",
+      "usedBy": "convert_pc_ytd_writer.py BC1/BC3 texture metadata"
+    },
+    {
+      "cache": "corpus/banshee-a.pft",
+      "archive": "prosperoe.rpf",
+      "archiveBytes": 2052179968,
+      "member": "levels/gta5/vehicles.rpf/banshee.pft",
+      "transform": "rsc7",
+      "storedOffset": 43657728,
+      "storedBytes": 704385,
+      "flags": [
+        "0xa01420d2",
+        "0xb00c1100"
+      ],
+      "bytes": 704385,
+      "sha256": "cca19838de4b45c69dca9dada667d6e822b5c25ca85445dc3c0f50ce8e449eb2",
+      "required": "always",
+      "usedBy": "convert_pc_vehicle.py --shader-reference"
+    },
+    {
+      "cache": "corpus/banshee-a.ptd",
+      "archive": "prosperoe.rpf",
+      "archiveBytes": 2052179968,
+      "member": "levels/gta5/vehicles.rpf/banshee.ptd",
+      "transform": "rsc7",
+      "storedOffset": 44362240,
+      "storedBytes": 138354,
+      "flags": [
+        "0x00020000",
+        "0x500000b0"
+      ],
+      "bytes": 138354,
+      "sha256": "848808b699cce61448c2a4986b78693cbdefdabb6e0020159f34f1d5d72bc8d8",
+      "required": "always",
+      "usedBy": "convert_pc_ytd_writer.py BC5 texture metadata"
+    },
+    {
+      "cache": "corpus/decal-schema-a.pft",
+      "archive": "prosperoe.rpf",
+      "archiveBytes": 2052179968,
+      "member": "levels/gta5/vehicles.rpf/airbus.pft",
+      "transform": "rsc7",
+      "storedOffset": 9184768,
+      "storedBytes": 984314,
+      "flags": [
+        "0xa0120423",
+        "0xb0020c00"
+      ],
+      "bytes": 984314,
+      "sha256": "0d09a2fa24a48a809678b2d9fdd2ef76e07fe9baf6b8c7098fc50fe19e3e3f1f",
+      "required": "always",
+      "usedBy": "convert_pc_vehicle.py --shader-reference (decal schema)"
+    },
+    {
+      "cache": "corpus/vehshare-a.ptd",
+      "archive": "prosperoe.rpf",
+      "archiveBytes": 2052179968,
+      "member": "levels/gta5/vehicles.rpf/vehshare.ptd",
+      "transform": "rsc7",
+      "storedOffset": 711382016,
+      "storedBytes": 2761462,
+      "flags": [
+        "0x00020000",
+        "0x50003174"
+      ],
+      "bytes": 2761462,
+      "sha256": "6aaf11afa42d9bf65ba3af537aaf2ccaa7a6395aee897ea8f9cb04a6f8e7252f",
+      "required": "always",
+      "usedBy": "inspect_pc_drawable_materials.py --stock-native-resource (stock dictionary)"
+    },
+    {
+      "cache": "razor-shader-database-source-a/sga_prospero_final.awc",
+      "archive": "update/update2.rpf",
+      "archiveBytes": 529686528,
+      "member": "common/shaders/fxdb/sga_prospero_final.awc",
+      "transform": "copy",
+      "storedOffset": 3357184,
+      "storedBytes": 43362971,
+      "flags": [
+        "0x0295aa9b",
+        "0x00000000"
+      ],
+      "bytes": 43362971,
+      "sha256": "8f91ce58fc0245940ca3d79da00b65fe5f152f6785f02e080d2ee8e3e03bde9c",
+      "required": "always",
+      "usedBy": "convert_pc_vehicle.py --shader-database"
+    },
+    {
+      "cache": "razor-shader-database-source-a/sga_prospero_final_init.awc",
+      "archive": "update/update2.rpf",
+      "archiveBytes": 529686528,
+      "member": "common/shaders/fxdb/sga_prospero_final_init.awc",
+      "transform": "copy",
+      "storedOffset": 46720512,
+      "storedBytes": 538382,
+      "flags": [
+        "0x0008370e",
+        "0x00000000"
+      ],
+      "bytes": 538382,
+      "sha256": "4d7e3d18c8ed9b3f13fc8325488bb3fb1d78127ae3e4ba1b29fa1d7b180a6f5c",
+      "required": "always",
+      "usedBy": "convert_pc_vehicle.py --shader-database"
+    },
+    {
+      "cache": "retail-metas/vehiclelayouts-common.meta",
+      "archive": "common.rpf",
+      "archiveBytes": 18843648,
+      "member": "data/ai/vehiclelayouts.meta",
+      "transform": "decrypt-inflate",
+      "storedOffset": 3414528,
+      "storedBytes": 55185,
+      "flags": [
+        "0x0018fa4b",
+        "0x00000001"
+      ],
+      "bytes": 1636939,
+      "sha256": "4287f7b517a2aa7021866a52b5b500cb231472bba1f66408693c5cfbf145e23d",
+      "required": "never (reference: update.rpf's copy overrides it in game)",
+      "usedBy": "none (the converter reads update.rpf's copy)"
+    },
+    {
+      "cache": "retail-metas/vehiclelayouts.meta",
+      "archive": "update/update.rpf",
+      "archiveBytes": 3018098688,
+      "member": "common/data/ai/vehiclelayouts.meta",
+      "transform": "decrypt-inflate",
+      "storedOffset": 1971712,
+      "storedBytes": 65538,
+      "flags": [
+        "0x001ebbda",
+        "0x00000001"
+      ],
+      "bytes": 2014170,
+      "sha256": "ae780f5470b4ffd2aa8636f764f70eeccebf482742d59e88b00f12ec30e6c099",
+      "required": "when the mod ships vehiclelayouts.meta",
+      "usedBy": "convert_vehicle.py --retail-layouts (prepare_vehicle_layouts.py)"
+    },
+    {
+      "cache": "shader-carriers/id1_10_vfx_01.pdr",
+      "archive": "prosperoj.rpf",
+      "archiveBytes": 1575600128,
+      "member": "levels/gta5/_citye/indust_01/id1_10.rpf/id1_10_vfx_01.pdr",
+      "transform": "rsc7",
+      "storedOffset": 705366528,
+      "storedBytes": 716,
+      "flags": [
+        "0x90020000",
+        "0xf0020000"
+      ],
+      "bytes": 716,
+      "sha256": "40c79a217175bd7daf0682b28606a7c72305c04e0851f1fe2ae45bae0f9159c1",
+      "required": "for convert-model, convert-mlo --models",
+      "usedBy": "convert_pc_map_models.py --template/--shader-template (map building shader carriers)"
+    },
+    {
+      "cache": "shader-carriers/sc1_01_bb_empty_slod.pdr",
+      "archive": "prosperok.rpf",
+      "archiveBytes": 1767989248,
+      "member": "levels/gta5/_citye/scentral_01/sc1_01.rpf/sc1_01_bb_empty_slod.pdr",
+      "transform": "rsc7",
+      "storedOffset": 904061440,
+      "storedBytes": 740,
+      "flags": [
+        "0x90020000",
+        "0xf0020000"
+      ],
+      "bytes": 740,
+      "sha256": "01194058ad21b6f7b85c6c6bc74ad783733eed98b4893716533f27317d644f8e",
+      "required": "for convert-model, convert-mlo --models",
+      "usedBy": "convert_pc_map_models.py --template/--shader-template (map building shader carriers)"
+    },
+    {
+      "cache": "shader-carriers/ch1_09b_shacks_smoke.pdr",
+      "archive": "prosperon.rpf",
+      "archiveBytes": 1383757824,
+      "member": "levels/gta5/_hills/cityhills_01/ch1_09b.rpf/ch1_09b_shacks_smoke.pdr",
+      "transform": "rsc7",
+      "storedOffset": 837017600,
+      "storedBytes": 740,
+      "flags": [
+        "0x90020000",
+        "0xf0020000"
+      ],
+      "bytes": 740,
+      "sha256": "ba93f71eee03e0859d54a8c0fd91463b4cf51425100f45f7b99c364d6ed9d178",
+      "required": "for convert-model, convert-mlo --models",
+      "usedBy": "convert_pc_map_models.py --template/--shader-template (map building shader carriers)"
+    },
+    {
+      "cache": "shader-carriers/po1_09_brig_det_08.pdr",
+      "archive": "prosperok.rpf",
+      "archiveBytes": 1767989248,
+      "member": "levels/gta5/_citye/port_01/po1_09.rpf/po1_09_brig_det_08.pdr",
+      "transform": "rsc7",
+      "storedOffset": 548853248,
+      "storedBytes": 796,
+      "flags": [
+        "0x90020000",
+        "0xf0020000"
+      ],
+      "bytes": 796,
+      "sha256": "c8e80db959a6f92849bca25e10b24a916ebeef2f03fb0eff1cb32d18a3cc70b2",
+      "required": "for convert-model, convert-mlo --models",
+      "usedBy": "convert_pc_map_models.py --template/--shader-template (map building shader carriers)"
+    },
+    {
+      "cache": "shader-carriers/dt1_05_hc_remove_slod.pdr",
+      "archive": "prosperoi.rpf",
+      "archiveBytes": 1340196864,
+      "member": "levels/gta5/_citye/downtown_01/dt1_05.rpf/dt1_05_hc_remove_slod.pdr",
+      "transform": "rsc7",
+      "storedOffset": 106728448,
+      "storedBytes": 897,
+      "flags": [
+        "0x90020000",
+        "0xf0020000"
+      ],
+      "bytes": 897,
+      "sha256": "7e01136a9240ab61f674ba79bb51a74cbadc91228d9a51188fd714e7a4e59e68",
+      "required": "for convert-model, convert-mlo --models",
+      "usedBy": "convert_pc_map_models.py --template/--shader-template (map building shader carriers)"
+    },
+    {
+      "cache": "shader-carriers/dt1_tc_ces2.pdr",
+      "archive": "prosperoi.rpf",
+      "archiveBytes": 1340196864,
+      "member": "levels/gta5/_citye/downtown_01/dt1_tc.rpf/dt1_tc_ces2.pdr",
+      "transform": "rsc7",
+      "storedOffset": 619728384,
+      "storedBytes": 545,
+      "flags": [
+        "0x90020000",
+        "0xf0020000"
+      ],
+      "bytes": 545,
+      "sha256": "135fa790340f42d07f72b48d1fcc21e5232dec3eed6772a62970a77a4f08f11c",
+      "required": "for convert-model, convert-mlo --models",
+      "usedBy": "convert_pc_map_models.py --template/--shader-template (map building shader carriers)"
+    },
+    {
+      "cache": "shader-carriers/kt1_08_furgrass_00.pdr",
+      "archive": "prosperol.rpf",
+      "archiveBytes": 1987596288,
+      "member": "levels/gta5/_cityw/koreatown_01/kt1_08.rpf/kt1_08_furgrass_00.pdr",
+      "transform": "rsc7",
+      "storedOffset": 1790262272,
+      "storedBytes": 978,
+      "flags": [
+        "0x90020000",
+        "0xf0020000"
+      ],
+      "bytes": 978,
+      "sha256": "5716b53d651cc99e63b12511f0e461c0bae8fe1b80bab56f40be3f754644e4e1",
+      "required": "for convert-model, convert-mlo --models",
+      "usedBy": "convert_pc_map_models.py --template/--shader-template (map building shader carriers)"
+    },
+    {
+      "cache": "shader-carriers/ch3_01_d48zxc.pdr",
+      "archive": "prosperop.rpf",
+      "archiveBytes": 1285648384,
+      "member": "levels/gta5/_hills/cityhills_03/ch3_01.rpf/ch3_01_d48zxc.pdr",
+      "transform": "rsc7",
+      "storedOffset": 30684672,
+      "storedBytes": 1145,
+      "flags": [
+        "0x90020000",
+        "0xf0020000"
+      ],
+      "bytes": 1145,
+      "sha256": "27982f736e61e55201d8008f06c5697721302452a45f25e9aee4070481120c5e",
+      "required": "for convert-model, convert-mlo --models",
+      "usedBy": "convert_pc_map_models.py --template/--shader-template (map building shader carriers)"
+    },
+    {
+      "cache": "shader-carriers/id2_rd_r6_05_o.pdr",
+      "archive": "prosperoj.rpf",
+      "archiveBytes": 1575600128,
+      "member": "levels/gta5/_citye/indust_02/id2_rd.rpf/id2_rd_r6_05_o.pdr",
+      "transform": "rsc7",
+      "storedOffset": 1529667584,
+      "storedBytes": 667,
+      "flags": [
+        "0x90020000",
+        "0xf0020000"
+      ],
+      "bytes": 667,
+      "sha256": "ec6f6d1b9e00651af431ba292b5f4f7d6efdf5cdf48943622d0e11ce00dd8c98",
+      "required": "for convert-model, convert-mlo --models",
+      "usedBy": "convert_pc_map_models.py --template/--shader-template (map building shader carriers)"
+    },
+    {
+      "cache": "shader-carriers/po1_09_gg_pomwires_1.pdr",
+      "archive": "prosperok.rpf",
+      "archiveBytes": 1767989248,
+      "member": "levels/gta5/_citye/port_01/po1_09.rpf/po1_09_gg_pomwires_1.pdr",
+      "transform": "rsc7",
+      "storedOffset": 564039680,
+      "storedBytes": 66298,
+      "flags": [
+        "0x90000080",
+        "0xf0000070"
+      ],
+      "bytes": 66298,
+      "sha256": "8a94bf6034953ac24650b419c2eb2dfe90fb9cac5e5a6745e29a4aedf990b864",
+      "required": "for convert-model, convert-mlo --models",
+      "usedBy": "convert_pc_map_models.py --template/--shader-template (map building shader carriers)"
+    },
+    {
+      "cache": "shader-carriers/po1_06_build159.pdr",
+      "archive": "prosperok.rpf",
+      "archiveBytes": 1767989248,
+      "member": "levels/gta5/_citye/port_01/po1_06.rpf/po1_06_build159.pdr",
+      "transform": "rsc7",
+      "storedOffset": 336684032,
+      "storedBytes": 904,
+      "flags": [
+        "0x90020000",
+        "0xf0020000"
+      ],
+      "bytes": 904,
+      "sha256": "8be3cdf26fe9fddee5d2bc12f7da6b1fafd28a88f69c571f6d196c97a4b659dc",
+      "required": "for convert-model, convert-mlo --models",
+      "usedBy": "convert_pc_map_models.py --template/--shader-template (map building shader carriers)"
+    },
+    {
+      "cache": "shader-carriers/id1_10_ground_o.pdr",
+      "archive": "prosperoj.rpf",
+      "archiveBytes": 1575600128,
+      "member": "levels/gta5/_citye/indust_01/id1_10.rpf/id1_10_ground_o.pdr",
+      "transform": "rsc7",
+      "storedOffset": 701336576,
+      "storedBytes": 26357,
+      "flags": [
+        "0x90060080",
+        "0xf0020080"
+      ],
+      "bytes": 26357,
+      "sha256": "f8f2fa15bd5fa454f6e017b65f0caed52dfdf715e25b3fd73b6acaab8b09b064",
+      "required": "for convert-model, convert-mlo --models",
+      "usedBy": "convert_pc_map_models.py --template/--shader-template (map building shader carriers)"
+    },
+    {
+      "cache": "shader-carriers/hw1_02_bld2_glass.pdr",
+      "archive": "prosperoj.rpf",
+      "archiveBytes": 1575600128,
+      "member": "levels/gta5/_citye/hollywood_01/hw1_02.rpf/hw1_02_bld2_glass.pdr",
+      "transform": "rsc7",
+      "storedOffset": 73884672,
+      "storedBytes": 1359,
+      "flags": [
+        "0x90020000",
+        "0xf0020000"
+      ],
+      "bytes": 1359,
+      "sha256": "da4d4286a5e8920629a9b882595be9da438b10580b3bd653566ec418d3c11336",
+      "required": "for convert-model, convert-mlo --models",
+      "usedBy": "convert_pc_map_models.py --template/--shader-template (map building shader carriers)"
+    },
+    {
+      "cache": "shader-carriers/hw1_01_doorblock.pdr",
+      "archive": "prosperoj.rpf",
+      "archiveBytes": 1575600128,
+      "member": "levels/gta5/_citye/hollywood_01/hw1_01.rpf/hw1_01_doorblock.pdr",
+      "transform": "rsc7",
+      "storedOffset": 38141440,
+      "storedBytes": 704,
+      "flags": [
+        "0x90020000",
+        "0xf0020000"
+      ],
+      "bytes": 704,
+      "sha256": "3859a5bf48dcb1424c7ef822e327a91ca453dcd379299dea0bfd29cd4495a2c6",
+      "required": "for convert-model, convert-mlo --models",
+      "usedBy": "convert_pc_map_models.py --template/--shader-template (map building shader carriers)"
+    },
+    {
+      "cache": "shader-carriers/ch1_09_water2b.pdr",
+      "archive": "prosperon.rpf",
+      "archiveBytes": 1383757824,
+      "member": "levels/gta5/_hills/cityhills_01/ch1_09.rpf/ch1_09_water2b.pdr",
+      "transform": "rsc7",
+      "storedOffset": 783414272,
+      "storedBytes": 669,
+      "flags": [
+        "0x90020000",
+        "0xf0020000"
+      ],
+      "bytes": 669,
+      "sha256": "34140c421a820526295aca9c587dfcdb18e366af4abb4305ca1f70dacb160df6",
+      "required": "for convert-model, convert-mlo --models",
+      "usedBy": "convert_pc_map_models.py --template/--shader-template (map building shader carriers)"
+    },
+    {
+      "cache": "shader-carriers/po1_08_ju5_det.pdr",
+      "archive": "prosperok.rpf",
+      "archiveBytes": 1767989248,
+      "member": "levels/gta5/_citye/port_01/po1_08.rpf/po1_08_ju5_det.pdr",
+      "transform": "rsc7",
+      "storedOffset": 484748800,
+      "storedBytes": 9102,
+      "flags": [
+        "0x90000080",
+        "0xf0020100"
+      ],
+      "bytes": 9102,
+      "sha256": "9a4de044be173fd299faf1067e1f812148e042d00fb5919658343bb86f7f9a22",
+      "required": "for convert-model, convert-mlo --models",
+      "usedBy": "convert_pc_map_models.py --template/--shader-template (map building shader carriers)"
+    },
+    {
+      "cache": "shader-carriers/dt1_08_indust2_dt1.pdr",
+      "archive": "prosperoi.rpf",
+      "archiveBytes": 1340196864,
+      "member": "levels/gta5/_citye/downtown_01/dt1_08.rpf/dt1_08_indust2_dt1.pdr",
+      "transform": "rsc7",
+      "storedOffset": 188610560,
+      "storedBytes": 5234,
+      "flags": [
+        "0x90000800",
+        "0xf0020080"
+      ],
+      "bytes": 5234,
+      "sha256": "3c7ab78144e4031efc9af6de30978355ac0f9e8319a0f13ba003e9c3726141d5",
+      "required": "for convert-model, convert-mlo --models",
+      "usedBy": "convert_pc_map_models.py --template/--shader-template (map building shader carriers)"
+    },
+    {
+      "cache": "shader-carriers/dt1_09_billboards_lod.pdr",
+      "archive": "prosperoi.rpf",
+      "archiveBytes": 1340196864,
+      "member": "levels/gta5/_citye/downtown_01/dt1_09.rpf/dt1_09_billboards_lod.pdr",
+      "transform": "rsc7",
+      "storedOffset": 203447296,
+      "storedBytes": 813,
+      "flags": [
+        "0x90020000",
+        "0xf0020000"
+      ],
+      "bytes": 813,
+      "sha256": "ac726d6112461bfc35c4347ea3b3041fe3c9e157b2d640c33f2fda588b746cf6",
+      "required": "for convert-model, convert-mlo --models",
+      "usedBy": "convert_pc_map_models.py --template/--shader-template (map building shader carriers)"
+    },
+    {
+      "cache": "shader-carriers/bt1_05_flyntgrnd_01.pdr",
+      "archive": "prosperol.rpf",
+      "archiveBytes": 1987596288,
+      "member": "levels/gta5/_citye/sunset/bt1_05.rpf/bt1_05_flyntgrnd_01.pdr",
+      "transform": "rsc7",
+      "storedOffset": 72038400,
+      "storedBytes": 2785940,
+      "flags": [
+        "0x910c10b2",
+        "0xf0261b13"
+      ],
+      "bytes": 2785940,
+      "sha256": "9edc70758b963ec48c55e6a4bd9ea05fdf50e061938fca134fd98fb18bb9a117",
+      "required": "for convert-model, convert-mlo --models",
+      "usedBy": "convert_pc_map_models.py --template/--shader-template (map building shader carriers)"
+    },
+    {
+      "cache": "shader-carriers/ch3_03_ss_cb.pdr",
+      "archive": "prosperop.rpf",
+      "archiveBytes": 1285648384,
+      "member": "levels/gta5/_hills/cityhills_03/ch3_03.rpf/ch3_03_ss_cb.pdr",
+      "transform": "rsc7",
+      "storedOffset": 165970432,
+      "storedBytes": 403900,
+      "flags": [
+        "0x900e02a0",
+        "0xf0022012"
+      ],
+      "bytes": 403900,
+      "sha256": "c6091d82c6d4a1244830a80a49101ba48bd9db3db11800e0b39f51ab2e5a2782",
+      "required": "for convert-model, convert-mlo --models",
+      "usedBy": "convert_pc_map_models.py --template/--shader-template (map building shader carriers)"
+    },
+    {
+      "cache": "shader-carriers-interior/v_5_windemovly7.pdr",
+      "archive": "prosperoh.rpf",
+      "archiveBytes": 1159593984,
+      "member": "levels/gta5/interiors/v_int_5.rpf/v_5_windemovly7.pdr",
+      "transform": "rsc7",
+      "storedOffset": 599265280,
+      "storedBytes": 618,
+      "flags": [
+        "0x90020000",
+        "0xf0020000"
+      ],
+      "bytes": 618,
+      "sha256": "785b6a3db99e4820e5a1d3d1f25e3ee7fc5678ae73108ef7a59c3b0267c1a2ce",
+      "required": "for convert-mlo --models",
+      "usedBy": "convert_pc_map_models.py --shader-template (interior shader carriers)"
+    },
+    {
+      "cache": "shader-carriers-interior/v_20_normalonly_7.pdr",
+      "archive": "prosperoh.rpf",
+      "archiveBytes": 1159593984,
+      "member": "levels/gta5/interiors/v_int_20.rpf/v_20_normalonly_7.pdr",
+      "transform": "rsc7",
+      "storedOffset": 165746176,
+      "storedBytes": 798,
+      "flags": [
+        "0x90020000",
+        "0xf0020000"
+      ],
+      "bytes": 798,
+      "sha256": "5a8467261eddab544f68e76614b89ebba758da86817e56bd1b5c1395c2a61524",
+      "required": "for convert-mlo --models",
+      "usedBy": "convert_pc_map_models.py --shader-template (interior shader carriers)"
+    },
+    {
+      "cache": "shader-carriers-interior/sc1_03_247_em_dum_slod.pdr",
+      "archive": "prosperok.rpf",
+      "archiveBytes": 1767989248,
+      "member": "levels/gta5/_citye/scentral_01/sc1_03.rpf/sc1_03_247_em_dum_slod.pdr",
+      "transform": "rsc7",
+      "storedOffset": 935599104,
+      "storedBytes": 638,
+      "flags": [
+        "0x90020000",
+        "0xf0020000"
+      ],
+      "bytes": 638,
+      "sha256": "0b41cddee5936ee351a38b4b74d1a12ec3714a145d0a3cd501cf002afd3bf8a9",
+      "required": "for convert-mlo --models",
+      "usedBy": "convert_pc_map_models.py --shader-template (interior shader carriers)"
+    },
+    {
+      "cache": "shader-carriers-interior/prop_coral_kelp_01.pdr",
+      "archive": "prosperoi.rpf",
+      "archiveBytes": 1340196864,
+      "member": "levels/gta5/props/vegetation/v_crops.rpf/prop_coral_kelp_01.pdr",
+      "transform": "rsc7",
+      "storedOffset": 1061740032,
+      "storedBytes": 1885,
+      "flags": [
+        "0x90020000",
+        "0xf0020000"
+      ],
+      "bytes": 1885,
+      "sha256": "95ec0b896a612624117734eb835d0909d85512a8f7abbeec015e1c03a67bb3df",
+      "required": "for convert-mlo --models",
+      "usedBy": "convert_pc_map_models.py --shader-template (interior shader carriers)"
+    },
+    {
+      "cache": "shader-carriers-interior/v_40_hospitalglass003.pdr",
+      "archive": "prosperoh.rpf",
+      "archiveBytes": 1159593984,
+      "member": "levels/gta5/interiors/v_int_40.rpf/v_40_hospitalglass003.pdr",
+      "transform": "rsc7",
+      "storedOffset": 499823104,
+      "storedBytes": 766,
+      "flags": [
+        "0x90020000",
+        "0xf0020000"
+      ],
+      "bytes": 766,
+      "sha256": "153ec67913e8101994f49ba1c4529aff0011710893c867d55fa8f970ca64eac5",
+      "required": "for convert-mlo --models",
+      "usedBy": "convert_pc_map_models.py --shader-template (interior shader carriers)"
+    },
+    {
+      "cache": "shader-carriers-interior/v_44_g_kitche_mirror.pdr",
+      "archive": "prosperoh.rpf",
+      "archiveBytes": 1159593984,
+      "member": "levels/gta5/interiors/v_int_44.rpf/v_44_g_kitche_mirror.pdr",
+      "transform": "rsc7",
+      "storedOffset": 517553152,
+      "storedBytes": 762,
+      "flags": [
+        "0x90020000",
+        "0xf0020000"
+      ],
+      "bytes": 762,
+      "sha256": "e0e67d86e41765ae34f17263e7b95a7b66840560238ac2d0772a78ff16bdaa41",
+      "required": "for convert-mlo --models",
+      "usedBy": "convert_pc_map_models.py --shader-template (interior shader carriers)"
+    },
+    {
+      "cache": "shader-carriers-interior/v_33_cur_of3_blin001.pdr",
+      "archive": "prosperoh.rpf",
+      "archiveBytes": 1159593984,
+      "member": "levels/gta5/interiors/v_int_33.rpf/v_33_cur_of3_blin001.pdr",
+      "transform": "rsc7",
+      "storedOffset": 416404992,
+      "storedBytes": 1843,
+      "flags": [
+        "0x90020000",
+        "0xf0020000"
+      ],
+      "bytes": 1843,
+      "sha256": "91175de53174d03a6ba435533d539e8946c701c2f32649fbd324b3f1ec225af9",
+      "required": "for convert-mlo --models",
+      "usedBy": "convert_pc_map_models.py --shader-template (interior shader carriers)"
+    },
+    {
+      "cache": "shader-carriers-interior/v_5_decalshadows9.pdr",
+      "archive": "prosperoh.rpf",
+      "archiveBytes": 1159593984,
+      "member": "levels/gta5/interiors/v_int_5.rpf/v_5_decalshadows9.pdr",
+      "transform": "rsc7",
+      "storedOffset": 598418944,
+      "storedBytes": 608,
+      "flags": [
+        "0x90020000",
+        "0xf0020000"
+      ],
+      "bytes": 608,
+      "sha256": "87708d2977f395b49c6c224ef8d1263619cda53513c575ead833c0a8feb728ab",
+      "required": "for convert-mlo --models",
+      "usedBy": "convert_pc_map_models.py --shader-template (interior shader carriers)"
+    },
+    {
+      "cache": "shader-carriers-interior/v_73screen_b.pdr",
+      "archive": "prosperoh.rpf",
+      "archiveBytes": 1159593984,
+      "member": "levels/gta5/interiors/v_int_73.rpf/v_73screen_b.pdr",
+      "transform": "rsc7",
+      "storedOffset": 862120960,
+      "storedBytes": 790,
+      "flags": [
+        "0x90020000",
+        "0xf0020000"
+      ],
+      "bytes": 790,
+      "sha256": "e9f56bd372d140827cd680f26c445a53870d7cfc25d3bdaf2cc8a3ebb548c90c",
+      "required": "for convert-mlo --models",
+      "usedBy": "convert_pc_map_models.py --shader-template (interior shader carriers)"
+    },
+    {
+      "cache": "shader-carriers-interior/prop_cabinet_01b.pdr",
+      "archive": "prosperoc.rpf",
+      "archiveBytes": 1810663424,
+      "member": "levels/gta5/props/commercial/v_office.rpf/prop_cabinet_01b.pdr",
+      "transform": "rsc7",
+      "storedOffset": 1468428800,
+      "storedBytes": 2334,
+      "flags": [
+        "0x90040000",
+        "0xf0020000"
+      ],
+      "bytes": 2334,
+      "sha256": "da1a167f060733cec7259fe5c05cc3330053473b6a42d3cbb47be7b82c263fa5",
+      "required": "for convert-mlo --models",
+      "usedBy": "convert_pc_map_models.py --shader-template (interior shader carriers)"
+    },
+    {
+      "cache": "shader-carriers-interior/v_21_glass.pdr",
+      "archive": "prosperoh.rpf",
+      "archiveBytes": 1159593984,
+      "member": "levels/gta5/interiors/v_int_21.rpf/v_21_glass.pdr",
+      "transform": "rsc7",
+      "storedOffset": 172713984,
+      "storedBytes": 5978,
+      "flags": [
+        "0x90000080",
+        "0xf0020000"
+      ],
+      "bytes": 5978,
+      "sha256": "365e19f0d184da1ebe57e16bf72efbdfca7af5a726d7e341c554b4c38746f999",
+      "required": "for convert-mlo --models",
+      "usedBy": "convert_pc_map_models.py --shader-template (interior shader carriers)"
+    },
+    {
+      "cache": "shader-carriers-interior/v_51_mirror2.pdr",
+      "archive": "prosperoh.rpf",
+      "archiveBytes": 1159593984,
+      "member": "levels/gta5/interiors/v_int_51.rpf/v_51_mirror2.pdr",
+      "transform": "rsc7",
+      "storedOffset": 616475648,
+      "storedBytes": 678,
+      "flags": [
+        "0x90020000",
+        "0xf0020000"
+      ],
+      "bytes": 678,
+      "sha256": "c5640b435057ee5623e2ac41ee7a08c56e89ef78fc0905058395f0866ac97844",
+      "required": "for convert-mlo --models",
+      "usedBy": "convert_pc_map_models.py --shader-template (interior shader carriers)"
+    },
+    {
+      "cache": "shader-carriers-interior/kt1_08_apt_01a_water.pdr",
+      "archive": "prosperol.rpf",
+      "archiveBytes": 1987596288,
+      "member": "levels/gta5/_cityw/koreatown_01/kt1_08.rpf/kt1_08_apt_01a_water.pdr",
+      "transform": "rsc7",
+      "storedOffset": 1786420736,
+      "storedBytes": 615,
+      "flags": [
+        "0x90020000",
+        "0xf0020000"
+      ],
+      "bytes": 615,
+      "sha256": "99202333b9229338ac1b44a0faa3823c72d70a5f10189e0e9af8c964b6b15125",
+      "required": "for convert-mlo --models",
+      "usedBy": "convert_pc_map_models.py --shader-template (interior shader carriers)"
+    },
+    {
+      "cache": "shader-carriers-interior/prop_tv_flat_01_screen.pdr",
+      "archive": "prosperoh.rpf",
+      "archiveBytes": 1159593984,
+      "member": "levels/gta5/props/residential/v_electrical.rpf/prop_tv_flat_01_screen.pdr",
+      "transform": "rsc7",
+      "storedOffset": 1017585664,
+      "storedBytes": 8967,
+      "flags": [
+        "0x90020000",
+        "0xf1000012"
+      ],
+      "bytes": 8967,
+      "sha256": "3bace7cd98f33e38b95ec6ac3db9fa4def867fc51dbd75a21b8d7b06d76f64ed",
+      "required": "for convert-mlo --models",
+      "usedBy": "convert_pc_map_models.py --shader-template (interior shader carriers)"
+    },
+    {
+      "cache": "typ-templates/v_int_22.ptyp",
+      "archive": "prosperoh.rpf",
+      "archiveBytes": 1159593984,
+      "member": "levels/gta5/interiors/v_int_22.rpf/v_int_22.ptyp",
+      "transform": "rsc7",
+      "storedOffset": 173547520,
+      "storedBytes": 7687,
+      "flags": [
+        "0x00040800",
+        "0x20000000"
+      ],
+      "bytes": 7687,
+      "sha256": "2992ab42972def55b12648630f82b12361ba005bfdceb622bd3a0f18c973f7e4",
+      "required": "for convert-model, convert-mlo",
+      "usedBy": "convert_pc_map_models.py / convert_pc_mlo.py --typ-template (typ schema)"
+    },
+    {
+      "cache": "map-templates/hei_dt1_02_impexpemproxy_c.pmap",
+      "archive": "update/update.rpf",
+      "archiveBytes": 3018098688,
+      "member": "dlc_patch/mpheist/ps5/levels/gta5/_citye/downtown_01/downtown_01_metadata.rpf/hei_dt1_02_impexpemproxy_c.pmap",
+      "transform": "rsc7",
+      "storedOffset": 365250560,
+      "storedBytes": 1040,
+      "flags": [
+        "0x00020000",
+        "0x20000000"
+      ],
+      "bytes": 1040,
+      "sha256": "d92149e3f71bce296a3c69b9a713f49d4f4cf2e3da3b442dd2a8ca919fba41b8",
+      "required": "for convert-map, convert-model --maps",
+      "usedBy": "convert_ymap.py --template (one-entity map)"
+    },
+    {
+      "cache": "map-templates/ch3_03_interior_v_gun2_milo_.pmap",
+      "archive": "prosperop.rpf",
+      "archiveBytes": 1285648384,
+      "member": "levels/gta5/_hills/cityhills_03/cityhills_03_metadata.rpf/ch3_03_interior_v_gun2_milo_.pmap",
+      "transform": "rsc7",
+      "storedOffset": 1281544704,
+      "storedBytes": 1130,
+      "flags": [
+        "0x00020000",
+        "0x20000000"
+      ],
+      "bytes": 1130,
+      "sha256": "b5223f1e1c66287c20f7386117e3b7aff817b8049174cc9e43d5a53bd67e67fa",
+      "required": "for convert-mlo",
+      "usedBy": "convert_pc_mlo.py --milo-template (interior placement)"
+    },
+    {
+      "cache": "peds/s_m_y_cop_01.pft",
+      "archive": "prosperoe.rpf",
+      "archiveBytes": 2052179968,
+      "member": "models/cdimages/componentpeds_s_m_y.rpf/s_m_y_cop_01.pft",
+      "transform": "rsc7",
+      "storedOffset": 1544871424,
+      "storedBytes": 12965,
+      "flags": [
+        "0xa00a0000",
+        "0xb0020000"
+      ],
+      "bytes": 12965,
+      "sha256": "a7cb24044589797b496f1244561f66d759b4718dafb65a3728af25f6c6f164ef",
+      "required": "for convert-ped",
+      "usedBy": "the converted ped's skeleton (the standard 98-bone rig)"
+    },
+    {
+      "cache": "peds/s_m_y_cop_01.pdd",
+      "archive": "prosperoe.rpf",
+      "archiveBytes": 2052179968,
+      "member": "models/cdimages/componentpeds_s_m_y.rpf/s_m_y_cop_01.pdd",
+      "transform": "rsc7",
+      "storedOffset": 1543963648,
+      "storedBytes": 907442,
+      "flags": [
+        "0x930e0a83",
+        "0xf00e0200"
+      ],
+      "bytes": 907442,
+      "sha256": "90e53cddc300652400d40fcaefd89b7129d92f1e9ae58e843663f5de3470ea0c",
+      "required": "for convert-ped",
+      "usedBy": "convert_pc_ped.py --pdd"
+    },
+    {
+      "cache": "peds/s_m_y_cop_01.pmt",
+      "archive": "prosperoe.rpf",
+      "archiveBytes": 2052179968,
+      "member": "models/cdimages/componentpeds_s_m_y.rpf/s_m_y_cop_01.pmt",
+      "transform": "rsc7",
+      "storedOffset": 1541413888,
+      "storedBytes": 1438,
+      "flags": [
+        "0x00020000",
+        "0x20000000"
+      ],
+      "bytes": 1438,
+      "sha256": "e2356ba5a4e610eb58b0f8af9d30bbaad90a4a95ffeaa804795f4843e433ab67",
+      "required": "for convert-ped",
+      "usedBy": "convert_pc_ped.py --retail-pmt"
+    },
+    {
+      "cache": "peds/s_m_y_cop_01.ptd",
+      "archive": "prosperoe.rpf",
+      "archiveBytes": 2052179968,
+      "member": "models/cdimages/componentpeds_s_m_y.rpf/s_m_y_cop_01.ptd",
+      "transform": "rsc7",
+      "storedOffset": 1541415424,
+      "storedBytes": 2547782,
+      "flags": [
+        "0x00020000",
+        "0x5014a004"
+      ],
+      "bytes": 2547782,
+      "sha256": "2b0d65bf1afebdffdf6d89b757e5c279da094bfe63086a79fab5ae0b01ef1090",
+      "required": "for convert-ped --variations retail",
+      "usedBy": "convert_pc_ped.py ped --base-ptd (the retail ped's textures)"
+    },
+    {
+      "cache": "peds/s_m_y_cop_01_p.pdd",
+      "archive": "prosperoe.rpf",
+      "archiveBytes": 2052179968,
+      "member": "models/cdimages/pedprops.rpf/s_m_y_cop_01_p.pdd",
+      "transform": "rsc7",
+      "storedOffset": 1796810752,
+      "storedBytes": 66378,
+      "flags": [
+        "0x90040060",
+        "0xf0060000"
+      ],
+      "bytes": 66378,
+      "sha256": "cc7b3e9778548e33cff6e07d347b0d2d436c09280b8c091cd3dc527144d113d1",
+      "required": "for convert-ped props",
+      "usedBy": "convert_pc_ped.py ped --props-pdd (prop templates, retail props)"
+    },
+    {
+      "cache": "peds/s_m_y_cop_01_p.ptd",
+      "archive": "prosperoe.rpf",
+      "archiveBytes": 2052179968,
+      "member": "models/cdimages/pedprops.rpf/s_m_y_cop_01_p.ptd",
+      "transform": "rsc7",
+      "storedOffset": 1796583424,
+      "storedBytes": 227307,
+      "flags": [
+        "0x00020000",
+        "0x50040042"
+      ],
+      "bytes": 227307,
+      "sha256": "0946a9247986b994de3d6404e50274cc9b42e423d41e175bbfbfe46b9f7d760a",
+      "required": "for convert-ped --variations retail",
+      "usedBy": "convert_pc_ped.py ped --props-ptd (retail prop textures)"
+    },
+    {
+      "cache": "peds/u_m_m_juggernaut_03.pdd",
+      "archive": "update/ps5/dlcpacks/mp2023_01/dlc.rpf",
+      "archiveBytes": 738064384,
+      "member": "ps5/models/cdimages/peds/mp2023_01.rpf/u_m_m_juggernaut_03.pdd",
+      "transform": "rsc7",
+      "storedOffset": 735627776,
+      "storedBytes": 767073,
+      "flags": [
+        "0x92040a62",
+        "0xf0062100"
+      ],
+      "bytes": 767073,
+      "sha256": "6ac5b37ee01a6e487dad9b4dd06c04685c76ad4f73f94f2d816a0ecfe915d733",
+      "required": "for convert-ped",
+      "usedBy": "convert_pc_ped.py ped --shader-carrier (ped_emissive schema)"
+    },
+    {
+      "cache": "weapons/w_pi_combatpistol.pdr",
+      "archive": "update/ps5/dlcpacks/patchDay8NG/dlc.rpf",
+      "archiveBytes": 303710208,
+      "member": "ps5/models/cdimages/weapons.rpf/w_pi_combatpistol.pdr",
+      "transform": "rsc7",
+      "storedOffset": 177304576,
+      "storedBytes": 26382,
+      "flags": [
+        "0x90020020",
+        "0xf0020000"
+      ],
+      "bytes": 26382,
+      "sha256": "49b7a64a6ae1d5b7559b81b3c55eeb28631875b752e0360d7fdf57b3093a96d8",
+      "required": "for convert-weapon (combat pistol)",
+      "usedBy": "convert_pc_drawable.py --template"
+    },
+    {
+      "cache": "weapons/w_pi_combatpistol_hi.pdr",
+      "archive": "update/ps5/dlcpacks/patchDay8NG/dlc.rpf",
+      "archiveBytes": 303710208,
+      "member": "ps5/models/cdimages/weapons.rpf/w_pi_combatpistol_hi.pdr",
+      "transform": "rsc7",
+      "storedOffset": 177331200,
+      "storedBytes": 157362,
+      "flags": [
+        "0x90000012",
+        "0xf0000800"
+      ],
+      "bytes": 157362,
+      "sha256": "aab4cf8c56902e9b365f24aa9b47af897f4e75f925ade9621a21890e73771fc3",
+      "required": "for convert-weapon (combat pistol)",
+      "usedBy": "convert_pc_drawable.py --template"
+    },
+    {
+      "cache": "weapons/w_pi_combatpistol_mag1.pdr",
+      "archive": "update/ps5/dlcpacks/patchDay8NG/dlc.rpf",
+      "archiveBytes": 303710208,
+      "member": "ps5/models/cdimages/weapons.rpf/w_pi_combatpistol_mag1.pdr",
+      "transform": "rsc7",
+      "storedOffset": 178594304,
+      "storedBytes": 2854,
+      "flags": [
+        "0x90020000",
+        "0xf0020000"
+      ],
+      "bytes": 2854,
+      "sha256": "a049f5128bb9d5f9aee36ee035380bb0f6f1364c5592ec3d24e325b02c5a94f2",
+      "required": "for convert-weapon (combat pistol)",
+      "usedBy": "convert_pc_drawable.py --template / --shader-template"
+    },
+    {
+      "cache": "weapons/w_pi_pistol.pdr",
+      "archive": "update/ps5/dlcpacks/patchDay8NG/dlc.rpf",
+      "archiveBytes": 303710208,
+      "member": "ps5/models/cdimages/weapons.rpf/w_pi_pistol.pdr",
+      "transform": "rsc7",
+      "storedOffset": 183414272,
+      "storedBytes": 27379,
+      "flags": [
+        "0x90020020",
+        "0xf0020000"
+      ],
+      "bytes": 27379,
+      "sha256": "7b35599c42fe727fcf520f2c7a8d938350e623ef1afff547839bce400b2152ac",
+      "required": "for convert-weapon (pistol)",
+      "usedBy": "convert_pc_drawable.py --template / --shader-template"
+    },
+    {
+      "cache": "weapons/w_pi_pistol_hi.pdr",
+      "archive": "update/ps5/dlcpacks/patchDay8NG/dlc.rpf",
+      "archiveBytes": 303710208,
+      "member": "ps5/models/cdimages/weapons.rpf/w_pi_pistol_hi.pdr",
+      "transform": "rsc7",
+      "storedOffset": 183822336,
+      "storedBytes": 139745,
+      "flags": [
+        "0x90000011",
+        "0xf0000080"
+      ],
+      "bytes": 139745,
+      "sha256": "8c67f9d015c6ef7457fd651cac8b473295953ce8b5bec0762f7954c04f3ab2af",
+      "required": "for convert-weapon (pistol)",
+      "usedBy": "convert_pc_drawable.py --template / --shader-template"
+    },
+    {
+      "cache": "weapons/w_pi_pistol_mag1.pdr",
+      "archive": "update/ps5/dlcpacks/patchDay8NG/dlc.rpf",
+      "archiveBytes": 303710208,
+      "member": "ps5/models/cdimages/weapons.rpf/w_pi_pistol_mag1.pdr",
+      "transform": "rsc7",
+      "storedOffset": 185680384,
+      "storedBytes": 1680,
+      "flags": [
+        "0x90020000",
+        "0xf0020000"
+      ],
+      "bytes": 1680,
+      "sha256": "949508f4fd8754b38268e1e1a1af99ce7e5fb8c58553eda72efb7d950b55ee71",
+      "required": "for convert-weapon (pistol)",
+      "usedBy": "convert_pc_drawable.py --template / --shader-template"
+    },
+    {
+      "cache": "weapons/w_sb_smg.pdr",
+      "archive": "update/ps5/dlcpacks/patchDay8NG/dlc.rpf",
+      "archiveBytes": 303710208,
+      "member": "ps5/models/cdimages/weapons.rpf/w_sb_smg.pdr",
+      "transform": "rsc7",
+      "storedOffset": 245740032,
+      "storedBytes": 47524,
+      "flags": [
+        "0x90020010",
+        "0xf0040000"
+      ],
+      "bytes": 47524,
+      "sha256": "c02694a3f7288200f83c3353745229ad922b467b9f555da4a749364b4e593f5a",
+      "required": "for convert-weapon (smg)",
+      "usedBy": "convert_pc_drawable.py --template / --shader-template"
+    },
+    {
+      "cache": "weapons/w_sb_smg_hi.pdr",
+      "archive": "update/ps5/dlcpacks/patchDay8NG/dlc.rpf",
+      "archiveBytes": 303710208,
+      "member": "ps5/models/cdimages/weapons.rpf/w_sb_smg_hi.pdr",
+      "transform": "rsc7",
+      "storedOffset": 247086592,
+      "storedBytes": 369201,
+      "flags": [
+        "0x900000b2",
+        "0xf0001800"
+      ],
+      "bytes": 369201,
+      "sha256": "2dc71f7ef5abbd05b02283af15b976c0db0986dc4aedb8e2f2892c77d6db56eb",
+      "required": "for convert-weapon (smg)",
+      "usedBy": "convert_pc_drawable.py --template / --shader-template"
+    },
+    {
+      "cache": "weapons/w_sb_smg_mag1.pdr",
+      "archive": "update/ps5/dlcpacks/patchDay8NG/dlc.rpf",
+      "archiveBytes": 303710208,
+      "member": "ps5/models/cdimages/weapons.rpf/w_sb_smg_mag1.pdr",
+      "transform": "rsc7",
+      "storedOffset": 252526592,
+      "storedBytes": 2180,
+      "flags": [
+        "0x90020000",
+        "0xf0020000"
+      ],
+      "bytes": 2180,
+      "sha256": "f5b190aaff7f7ebc81a74195891f972b75e86cacd9a862fb1e738e6888ab41eb",
+      "required": "for convert-weapon (smg)",
+      "usedBy": "convert_pc_drawable.py --template / --shader-template"
+    },
+    {
+      "cache": "weapons/w_ar_carbinerifle.pdr",
+      "archive": "update/ps5/dlcpacks/patchDay8NG/dlc.rpf",
+      "archiveBytes": 303710208,
+      "member": "ps5/models/cdimages/weapons.rpf/w_ar_carbinerifle.pdr",
+      "transform": "rsc7",
+      "storedOffset": 54103040,
+      "storedBytes": 92988,
+      "flags": [
+        "0x90000011",
+        "0xf0000080"
+      ],
+      "bytes": 92988,
+      "sha256": "a3bda95f5836f74b043f009d9377204b5435c01f2915fac3a804741e172d29e5",
+      "required": "for convert-weapon (rifle)",
+      "usedBy": "convert_pc_drawable.py --template / --shader-template"
+    },
+    {
+      "cache": "weapons/w_ar_carbinerifle_hi.pdr",
+      "archive": "update/ps5/dlcpacks/patchDay8NG/dlc.rpf",
+      "archiveBytes": 303710208,
+      "member": "ps5/models/cdimages/weapons.rpf/w_ar_carbinerifle_hi.pdr",
+      "transform": "rsc7",
+      "storedOffset": 55510016,
+      "storedBytes": 534979,
+      "flags": [
+        "0x90000072",
+        "0xf0022000"
+      ],
+      "bytes": 534979,
+      "sha256": "eb1637550a160cfcbf34601f4ffe8b3c3f4c0b67fa99ccc42369687c44e2d070",
+      "required": "for convert-weapon (rifle)",
+      "usedBy": "convert_pc_drawable.py --template / --shader-template"
+    },
+    {
+      "cache": "weapons/w_ar_carbinerifle_mag1.pdr",
+      "archive": "update/ps5/dlcpacks/patchDay8NG/dlc.rpf",
+      "archiveBytes": 303710208,
+      "member": "ps5/models/cdimages/weapons.rpf/w_ar_carbinerifle_mag1.pdr",
+      "transform": "rsc7",
+      "storedOffset": 61077504,
+      "storedBytes": 9954,
+      "flags": [
+        "0x90000080",
+        "0xf0020000"
+      ],
+      "bytes": 9954,
+      "sha256": "50796a6d3cacc4e08a015f1e145eb1628cfdd0aa534522b696dd9381e98b041c",
+      "required": "for convert-weapon (rifle)",
+      "usedBy": "convert_pc_drawable.py --template / --shader-template"
+    },
+    {
+      "cache": "weapons/w_ar_assaultrifle.pdr",
+      "archive": "update/ps5/dlcpacks/patchDay8NG/dlc.rpf",
+      "archiveBytes": 303710208,
+      "member": "ps5/models/cdimages/weapons.rpf/w_ar_assaultrifle.pdr",
+      "transform": "rsc7",
+      "storedOffset": 36320256,
+      "storedBytes": 57042,
+      "flags": [
+        "0x90020090",
+        "0xf0000800"
+      ],
+      "bytes": 57042,
+      "sha256": "b4d77ec09fab46718b8e4248a9b054b9b9038de34f9221016f99f43a55ca8532",
+      "required": "for convert-weapon (rifle)",
+      "usedBy": "convert_pc_drawable.py --template / --shader-template"
+    },
+    {
+      "cache": "weapons/w_ar_assaultrifle_hi.pdr",
+      "archive": "update/ps5/dlcpacks/patchDay8NG/dlc.rpf",
+      "archiveBytes": 303710208,
+      "member": "ps5/models/cdimages/weapons.rpf/w_ar_assaultrifle_hi.pdr",
+      "transform": "rsc7",
+      "storedOffset": 38140928,
+      "storedBytes": 304119,
+      "flags": [
+        "0x90000032",
+        "0xf0001000"
+      ],
+      "bytes": 304119,
+      "sha256": "349d99908b6ce900384a4e19950a0d8103bae6edfcdaa1a7bf1d7a457a8569c7",
+      "required": "for convert-weapon (rifle)",
+      "usedBy": "convert_pc_drawable.py --template / --shader-template"
+    },
+    {
+      "cache": "weapons/w_ar_assaultrifle_mag1.pdr",
+      "archive": "update/ps5/dlcpacks/patchDay8NG/dlc.rpf",
+      "archiveBytes": 303710208,
+      "member": "ps5/models/cdimages/weapons.rpf/w_ar_assaultrifle_mag1.pdr",
+      "transform": "rsc7",
+      "storedOffset": 44350976,
+      "storedBytes": 14542,
+      "flags": [
+        "0x90000020",
+        "0xf0020000"
+      ],
+      "bytes": 14542,
+      "sha256": "a04fa1e5c98629064721241d68e2023838feccc8bae79bc9a963587a361e5010",
+      "required": "for convert-weapon (rifle)",
+      "usedBy": "convert_pc_drawable.py --template / --shader-template"
+    },
+    {
+      "cache": "weapons/w_sg_pumpshotgun.pdr",
+      "archive": "update/ps5/dlcpacks/patchDay8NG/dlc.rpf",
+      "archiveBytes": 303710208,
+      "member": "ps5/models/cdimages/weapons.rpf/w_sg_pumpshotgun.pdr",
+      "transform": "rsc7",
+      "storedOffset": 269309952,
+      "storedBytes": 50654,
+      "flags": [
+        "0x90040010",
+        "0xf0040000"
+      ],
+      "bytes": 50654,
+      "sha256": "c04b03d1ba67e6957f578e05e1a60e8561134972adb446f77e77c7550c972d21",
+      "required": "for convert-weapon (shotgun)",
+      "usedBy": "convert_pc_drawable.py --template / --shader-template"
+    },
+    {
+      "cache": "weapons/w_sg_pumpshotgun_hi.pdr",
+      "archive": "update/ps5/dlcpacks/patchDay8NG/dlc.rpf",
+      "archiveBytes": 303710208,
+      "member": "ps5/models/cdimages/weapons.rpf/w_sg_pumpshotgun_hi.pdr",
+      "transform": "rsc7",
+      "storedOffset": 269360640,
+      "storedBytes": 205157,
+      "flags": [
+        "0x90000131",
+        "0xf0020800"
+      ],
+      "bytes": 205157,
+      "sha256": "9ea5807160325dff11f27914248e69ab63255a0e7b1344b04cbc220ea2c4f536",
+      "required": "for convert-weapon (shotgun)",
+      "usedBy": "convert_pc_drawable.py --template / --shader-template"
+    },
+    {
+      "cache": "weapons/w_sr_sniperrifle.pdr",
+      "archive": "update/ps5/dlcpacks/patchDay8NG/dlc.rpf",
+      "archiveBytes": 303710208,
+      "member": "ps5/models/cdimages/weapons.rpf/w_sr_sniperrifle.pdr",
+      "transform": "rsc7",
+      "storedOffset": 297600000,
+      "storedBytes": 69443,
+      "flags": [
+        "0x90000011",
+        "0xf0000800"
+      ],
+      "bytes": 69443,
+      "sha256": "cb334ba9aef1437a1c54ac69bf56c9fb57a1629b798a766d445b3a181fd7cae0",
+      "required": "for convert-weapon (sniper)",
+      "usedBy": "convert_pc_drawable.py --template / --shader-template"
+    },
+    {
+      "cache": "weapons/w_sr_sniperrifle_hi.pdr",
+      "archive": "update/ps5/dlcpacks/patchDay8NG/dlc.rpf",
+      "archiveBytes": 303710208,
+      "member": "ps5/models/cdimages/weapons.rpf/w_sr_sniperrifle_hi.pdr",
+      "transform": "rsc7",
+      "storedOffset": 298356736,
+      "storedBytes": 515927,
+      "flags": [
+        "0x90000072",
+        "0xf0002800"
+      ],
+      "bytes": 515927,
+      "sha256": "246e0eea62bb127a108efd7ff57b7cb9afc7fc33e7398ee4e8c97811832174af",
+      "required": "for convert-weapon (sniper)",
+      "usedBy": "convert_pc_drawable.py --template / --shader-template"
+    },
+    {
+      "cache": "weapons/w_sr_sniperrifle_mag1.pdr",
+      "archive": "update/ps5/dlcpacks/patchDay8NG/dlc.rpf",
+      "archiveBytes": 303710208,
+      "member": "ps5/models/cdimages/weapons.rpf/w_sr_sniperrifle_mag1.pdr",
+      "transform": "rsc7",
+      "storedOffset": 301569536,
+      "storedBytes": 1536,
+      "flags": [
+        "0x90020000",
+        "0xf0020000"
+      ],
+      "bytes": 1536,
+      "sha256": "95d3f293493800d109e255b45032fd5eb868de805fd4b49d22c5f4f4e052d5de",
+      "required": "for convert-weapon (sniper)",
+      "usedBy": "convert_pc_drawable.py --template / --shader-template"
+    },
+    {
+      "cache": "weapons/w_lr_rpg.pdr",
+      "archive": "update/ps5/dlcpacks/patchDay8NG/dlc.rpf",
+      "archiveBytes": 303710208,
+      "member": "ps5/models/cdimages/weapons.rpf/w_lr_rpg.pdr",
+      "transform": "rsc7",
+      "storedOffset": 113359872,
+      "storedBytes": 60810,
+      "flags": [
+        "0x90000011",
+        "0xf0000800"
+      ],
+      "bytes": 60810,
+      "sha256": "1aff46fd7f26dfc8cd32a5bad52f50f6d734db68431dc0b375b5f0448b3ef1d6",
+      "required": "for convert-weapon (heavy)",
+      "usedBy": "convert_pc_drawable.py --template / --shader-template"
+    },
+    {
+      "cache": "weapons/w_lr_rpg_hi.pdr",
+      "archive": "update/ps5/dlcpacks/patchDay8NG/dlc.rpf",
+      "archiveBytes": 303710208,
+      "member": "ps5/models/cdimages/weapons.rpf/w_lr_rpg_hi.pdr",
+      "transform": "rsc7",
+      "storedOffset": 114712064,
+      "storedBytes": 315304,
+      "flags": [
+        "0x90000032",
+        "0xf0021000"
+      ],
+      "bytes": 315304,
+      "sha256": "922b28444516b2cef4d36e9c600e947dfa901f059be1661f3a95352bad741272",
+      "required": "for convert-weapon (heavy)",
+      "usedBy": "convert_pc_drawable.py --template / --shader-template"
+    },
+    {
+      "cache": "weapons/w_mg_minigun.pdr",
+      "archive": "update/ps5/dlcpacks/patchDay8NG/dlc.rpf",
+      "archiveBytes": 303710208,
+      "member": "ps5/models/cdimages/weapons.rpf/w_mg_minigun.pdr",
+      "transform": "rsc7",
+      "storedOffset": 169667072,
+      "storedBytes": 56752,
+      "flags": [
+        "0x90000011",
+        "0xf0000800"
+      ],
+      "bytes": 56752,
+      "sha256": "4691e5484edbfe283dfe9fcc94ed20988d3b6367eb54432ec3f96db89f523873",
+      "required": "for convert-weapon (heavy)",
+      "usedBy": "convert_pc_drawable.py --template / --shader-template"
+    },
+    {
+      "cache": "weapons/w_mg_minigun_hi.pdr",
+      "archive": "update/ps5/dlcpacks/patchDay8NG/dlc.rpf",
+      "archiveBytes": 303710208,
+      "member": "ps5/models/cdimages/weapons.rpf/w_mg_minigun_hi.pdr",
+      "transform": "rsc7",
+      "storedOffset": 170981888,
+      "storedBytes": 114256,
+      "flags": [
+        "0x90001091",
+        "0xf0020080"
+      ],
+      "bytes": 114256,
+      "sha256": "339e1324e6e0de92148bc63b8f4b41ac064fc660c078d0fda0aef95395c19127",
+      "required": "for convert-weapon (heavy)",
+      "usedBy": "convert_pc_drawable.py --template / --shader-template"
+    },
+    {
+      "cache": "weapons/w_me_knife_01.pdr",
+      "archive": "update/ps5/dlcpacks/patchDay3NG/dlc.rpf",
+      "archiveBytes": 1414559744,
+      "member": "ps5/models/cdimages/weapons.rpf/w_me_knife_01.pdr",
+      "transform": "rsc7",
+      "storedOffset": 1296001024,
+      "storedBytes": 78013,
+      "flags": [
+        "0x90000011",
+        "0xf0020000"
+      ],
+      "bytes": 78013,
+      "sha256": "ac8b372dccbb2a41144cc1a390ba7bbed4fd14afc9b90ec737da02d08b564392",
+      "required": "for convert-weapon (melee)",
+      "usedBy": "convert_pc_drawable.py --template / --shader-template"
+    },
+    {
+      "cache": "weapons/w_ex_grenadefrag.pdr",
+      "archive": "update/ps5/dlcpacks/patchDay8NG/dlc.rpf",
+      "archiveBytes": 303710208,
+      "member": "ps5/models/cdimages/weapons.rpf/w_ex_grenadefrag.pdr",
+      "transform": "rsc7",
+      "storedOffset": 93143040,
+      "storedBytes": 22317,
+      "flags": [
+        "0x90000020",
+        "0xf0020000"
+      ],
+      "bytes": 22317,
+      "sha256": "2c55bcffbf4b22487b22e6d851cdf606d4c99c2d99df96044764e258d69e88bd",
+      "required": "for convert-weapon (throwable)",
+      "usedBy": "convert_pc_drawable.py --template / --shader-template"
+    },
+    {
+      "cache": "weapons/w_ex_grenadefrag_hi.pdr",
+      "archive": "update/ps5/dlcpacks/patchDay8NG/dlc.rpf",
+      "archiveBytes": 303710208,
+      "member": "ps5/models/cdimages/weapons.rpf/w_ex_grenadefrag_hi.pdr",
+      "transform": "rsc7",
+      "storedOffset": 93517824,
+      "storedBytes": 169192,
+      "flags": [
+        "0x90000012",
+        "0xf0020800"
+      ],
+      "bytes": 169192,
+      "sha256": "f023f3f57c477d4e740d497bfec459f35962a706b2e5f6a38e7f0266bd2e5ebf",
+      "required": "for convert-weapon (throwable)",
+      "usedBy": "convert_pc_drawable.py --template / --shader-template"
+    },
+    {
+      "cache": "weapons/w_me_bat.pdr",
+      "archive": "update/ps5/dlcpacks/patchDay3NG/dlc.rpf",
+      "archiveBytes": 1414559744,
+      "member": "ps5/models/cdimages/weapons.rpf/w_me_bat.pdr",
+      "transform": "rsc7",
+      "storedOffset": 1285654016,
+      "storedBytes": 42916,
+      "flags": [
+        "0x90000010",
+        "0xf0000800"
+      ],
+      "bytes": 42916,
+      "sha256": "bd9265130892b20ba3614f26a2e2b8ae08503b519fe7498c2c95fcd6ff84f377",
+      "required": "for convert-weapon (melee)",
+      "usedBy": "convert_pc_drawable.py --template / --shader-template"
+    },
+    {
+      "cache": "weapons/w_at_ar_afgrip.pdr",
+      "archive": "update/ps5/dlcpacks/patchDay8NG/dlc.rpf",
+      "archiveBytes": 303710208,
+      "member": "ps5/models/cdimages/weapons.rpf/w_at_ar_afgrip.pdr",
+      "transform": "rsc7",
+      "storedOffset": 78284800,
+      "storedBytes": 12400,
+      "flags": [
+        "0x90020080",
+        "0xf0020000"
+      ],
+      "bytes": 12400,
+      "sha256": "34da7918c41c74476022bd6e90923d6996f5da206a464728c30a56e4edb0f54f",
+      "required": "for convert-weapon (attachment)",
+      "usedBy": "convert_pc_drawable.py --template / --shader-template"
+    },
+    {
+      "cache": "weapons/w_at_ar_afgrip_hi.pdr",
+      "archive": "update/ps5/dlcpacks/patchDay8NG/dlc.rpf",
+      "archiveBytes": 303710208,
+      "member": "ps5/models/cdimages/weapons.rpf/w_at_ar_afgrip_hi.pdr",
+      "transform": "rsc7",
+      "storedOffset": 78297600,
+      "storedBytes": 13757,
+      "flags": [
+        "0x90020080",
+        "0xf0020000"
+      ],
+      "bytes": 13757,
+      "sha256": "b9e003669f6d1c6e49bdfe1746fc86934344ca6d9edca4c682cd32c5433ca10b",
+      "required": "for convert-weapon (attachment)",
+      "usedBy": "convert_pc_drawable.py --template / --shader-template"
+    },
+    {
+      "cache": "weapons/w_at_ar_supp.pdr",
+      "archive": "update/ps5/dlcpacks/patchDay8NG/dlc.rpf",
+      "archiveBytes": 303710208,
+      "member": "ps5/models/cdimages/weapons.rpf/w_at_ar_supp.pdr",
+      "transform": "rsc7",
+      "storedOffset": 79253504,
+      "storedBytes": 12669,
+      "flags": [
+        "0x90020080",
+        "0xf0020000"
+      ],
+      "bytes": 12669,
+      "sha256": "d18dc42bd0dd4781eefb139def1e9e02c9617bc4d38f6851d286bcd895e0ce57",
+      "required": "for convert-weapon (attachment)",
+      "usedBy": "convert_pc_drawable.py --template / --shader-template"
+    },
+    {
+      "cache": "weapons/w_at_ar_supp_hi.pdr",
+      "archive": "update/ps5/dlcpacks/patchDay8NG/dlc.rpf",
+      "archiveBytes": 303710208,
+      "member": "ps5/models/cdimages/weapons.rpf/w_at_ar_supp_hi.pdr",
+      "transform": "rsc7",
+      "storedOffset": 79471104,
+      "storedBytes": 21224,
+      "flags": [
+        "0x90000020",
+        "0xf0020000"
+      ],
+      "bytes": 21224,
+      "sha256": "b9477557d10f787b9f87ce87117e3eb5698b4cb251b214cb649d77c766ccdd2d",
+      "required": "for convert-weapon (attachment)",
+      "usedBy": "convert_pc_drawable.py --template / --shader-template"
+    },
+    {
+      "cache": "weapons/w_at_scope_medium.pdr",
+      "archive": "update/ps5/dlcpacks/patchDay8NG/dlc.rpf",
+      "archiveBytes": 303710208,
+      "member": "ps5/models/cdimages/weapons.rpf/w_at_scope_medium.pdr",
+      "transform": "rsc7",
+      "storedOffset": 84426752,
+      "storedBytes": 37587,
+      "flags": [
+        "0x90000010",
+        "0xf0020000"
+      ],
+      "bytes": 37587,
+      "sha256": "5638a26aec82d7511fe00f3345bd39a572a45c6bbb5f28aca3bff395deb1fc96",
+      "required": "for convert-weapon (attachment)",
+      "usedBy": "convert_pc_drawable.py --template / --shader-template"
+    },
+    {
+      "cache": "weapons/w_at_scope_medium_hi.pdr",
+      "archive": "update/ps5/dlcpacks/patchDay8NG/dlc.rpf",
+      "archiveBytes": 303710208,
+      "member": "ps5/models/cdimages/weapons.rpf/w_at_scope_medium_hi.pdr",
+      "transform": "rsc7",
+      "storedOffset": 84635136,
+      "storedBytes": 120807,
+      "flags": [
+        "0x91000011",
+        "0xf0000800"
+      ],
+      "bytes": 120807,
+      "sha256": "93732f2e16139eb4ca9c2ca0173bd53729ee7886e6346cf991bbd391476a7b23",
+      "required": "for convert-weapon (attachment)",
+      "usedBy": "convert_pc_drawable.py --template / --shader-template"
+    },
+    {
+      "cache": "corpus/vigero.pft",
+      "archive": "prosperoe.rpf",
+      "archiveBytes": 2052179968,
+      "member": "levels/gta5/vehicles.rpf/vigero.pft",
+      "transform": "rsc7",
+      "storedOffset": 720244736,
+      "storedBytes": 539722,
+      "flags": [
+        "0xa10a20b2",
+        "0xb00c0100"
+      ],
+      "bytes": 539722,
+      "sha256": "e2771d0e25300eb60055cd5eeac8097ffa494a6a532e0b44a1dc775578f5a555",
+      "required": "always",
+      "usedBy": "convert_pc_vehicle.py --shader-reference (supplementary: vehicle_paint2, vehicle_interior)"
+    },
+    {
+      "cache": "corpus/trailersmall.pft",
+      "archive": "prosperoe.rpf",
+      "archiveBytes": 2052179968,
+      "member": "levels/gta5/vehicles.rpf/trailersmall.pft",
+      "transform": "rsc7",
+      "storedOffset": 644255744,
+      "storedBytes": 438975,
+      "flags": [
+        "0xa1121912",
+        "0xb00c0880"
+      ],
+      "bytes": 438975,
+      "sha256": "50f915e8b8e045e4b8a6959417721f4a0334b8a44a9fcdb0de18ae4a01a8b989",
+      "required": "always",
+      "usedBy": "convert_pc_vehicle.py --shader-reference (supplementary: default)"
+    },
+    {
+      "cache": "corpus/trailers3.pft",
+      "archive": "prosperoe.rpf",
+      "archiveBytes": 2052179968,
+      "member": "levels/gta5/vehicles.rpf/trailers3.pft",
+      "transform": "rsc7",
+      "storedOffset": 643520512,
+      "storedBytes": 285466,
+      "flags": [
+        "0xa0102092",
+        "0xb00a1000"
+      ],
+      "bytes": 285466,
+      "sha256": "b9413a3af708d42992888fab9fbc5f08cbc2300c6d2b2ffd513859f50b368879",
+      "required": "always",
+      "usedBy": "convert_pc_vehicle.py --shader-reference (supplementary: vehicle_decal2)"
+    },
+    {
+      "cache": "corpus/buc2_dl_camo2.pft",
+      "archive": "update/ps5/dlcpacks/patchDay9NG/dlc.rpf",
+      "archiveBytes": 174252032,
+      "member": "ps5/levels/patchday9ng/vehiclemods/buccaneer2_mods.rpf/buc2_dl_camo2.pft",
+      "transform": "rsc7",
+      "storedOffset": 36848128,
+      "storedBytes": 31611,
+      "flags": [
+        "0xa0042800",
+        "0xb0040000"
+      ],
+      "bytes": 31611,
+      "sha256": "1c4c5b8324bcaf134f8cb791d0fcd7949d4875518fce6524bf820c4ee639c3f2",
+      "required": "always",
+      "usedBy": "convert_pc_vehicle.py --shader-reference (supplementary: vehicle_cloth)"
+    },
+    {
+      "cache": "corpus/cheb_skirts.pft",
+      "archive": "update/ps5/dlcpacks/patch2025_01/dlc.rpf",
+      "archiveBytes": 571412480,
+      "member": "ps5/levels/patch2025_01/vehiclemods/cheburek_mods.rpf/cheb_skirts.pft",
+      "transform": "rsc7",
+      "storedOffset": 155832320,
+      "storedBytes": 26775,
+      "flags": [
+        "0xa0040820",
+        "0xb0040000"
+      ],
+      "bytes": 26775,
+      "sha256": "a8d720be5abfdf42b4481dbc6db0c7c14f128b0f49ff1d1d2d588a4961d1de7d",
+      "required": "always",
+      "usedBy": "convert_pc_vehicle.py --shader-reference (supplementary: vehicle_basic, vehicle_paint4)"
+    },
+    {
+      "cache": "wheels/wheel_loride_01.pdr",
+      "archive": "prosperoi.rpf",
+      "archiveBytes": 1340196864,
+      "member": "levels/gta5/vehiclemods/wheels_mods.rpf/wheel_loride_01.pdr",
+      "transform": "rsc7",
+      "storedOffset": 1280328192,
+      "storedBytes": 235196,
+      "flags": [
+        "0x92020012",
+        "0xf0000100"
+      ],
+      "bytes": 235196,
+      "sha256": "cb4577f91fd62e6ea6c0399e82e74091eae8adcd59d0a846a98692e33a75721d",
+      "required": "for convert-wheels",
+      "usedBy": "convert_pc_wheel.py (wheel template, vehicle_tire schema)"
+    },
+    {
+      "cache": "peds/comp_peds_generic.ptd",
+      "archive": "prosperoe.rpf",
+      "archiveBytes": 2052179968,
+      "member": "models/cdimages/componentpeds_comp_peds.rpf/comp_peds_generic.ptd",
+      "transform": "rsc7",
+      "storedOffset": 1022252544,
+      "storedBytes": 89741,
+      "flags": [
+        "0x00020000",
+        "0x50000030"
+      ],
+      "bytes": 89741,
+      "sha256": "c7d6dadb5a049d9e8feeede86d588b2a9437fa2de8488a42071a4dee0c5ec5cc",
+      "required": "for convert-ped (hair shaders)",
+      "usedBy": "convert_pc_ped.py ped --hair-noise packed (long_hair_noise)"
+    },
+    {
+      "cache": "peds/a_f_y_topless_01.pdd",
+      "archive": "prosperov.rpf",
+      "archiveBytes": 1955414016,
+      "member": "models/cdimages/componentpeds_a_f_y.rpf/a_f_y_topless_01.pdd",
+      "transform": "rsc7",
+      "storedOffset": 159471616,
+      "storedBytes": 696578,
+      "flags": [
+        "0x90000303",
+        "0xf0081180"
+      ],
+      "bytes": 696578,
+      "sha256": "f7ab5882b3a3cb7f5624a92d1b5dc8afe4a8ae672f349b9cf3d20298868854e5",
+      "required": "for convert-ped (female rig)",
+      "usedBy": "convert_pc_ped.py ped rig templates (female)"
+    },
+    {
+      "cache": "peds/a_f_y_topless_01.pft",
+      "archive": "prosperov.rpf",
+      "archiveBytes": 1955414016,
+      "member": "models/cdimages/componentpeds_a_f_y.rpf/a_f_y_topless_01.pft",
+      "transform": "rsc7",
+      "storedOffset": 160168448,
+      "storedBytes": 13376,
+      "flags": [
+        "0xa0060800",
+        "0xb0020000"
+      ],
+      "bytes": 13376,
+      "sha256": "07724e73714c61471d97c8b06ce9b96d6eb2b484ad71daec594f2b3c294cc3a7",
+      "required": "for convert-ped (female rig)",
+      "usedBy": "the converted ped's skeleton (the 100-bone female rig)"
+    },
+    {
+      "cache": "peds/a_f_y_topless_01.pmt",
+      "archive": "prosperov.rpf",
+      "archiveBytes": 1955414016,
+      "member": "models/cdimages/componentpeds_a_f_y.rpf/a_f_y_topless_01.pmt",
+      "transform": "rsc7",
+      "storedOffset": 160182272,
+      "storedBytes": 1332,
+      "flags": [
+        "0x00020000",
+        "0x20000000"
+      ],
+      "bytes": 1332,
+      "sha256": "206a3dba5db8eb3fd4f511f9f85b74d7373a8fca4a4f89536a29d15f28322947",
+      "required": "for convert-ped (female rig)",
+      "usedBy": "convert_pc_ped.py ped rig variation layout (female)"
+    },
+    {
+      "cache": "bounds-templates/hut05_closed_1.pbn",
+      "archive": "prosperom.rpf",
+      "archiveBytes": 1417533440,
+      "member": "levels/gta5/_cityw/venice_01/vb_35.rpf/hut05_closed_1.pbn",
+      "transform": "rsc7",
+      "storedOffset": 1106292224,
+      "storedBytes": 385,
+      "flags": [
+        "0x20020000",
+        "0xb0000000"
+      ],
+      "bytes": 385,
+      "sha256": "3f42f5d6313b285fe922670a45f2e6a6ebb5c8d5d6be8baa6d64051c869d2bb1",
+      "required": "for convert-bounds, convert-mapmod / convert-mlo collision rows",
+      "usedBy": "convert_pc_bounds.py --template (composite and BVH class tags)"
+    },
+    {
+      "cache": "bounds-templates/prop_dumpster_4b.pdr",
+      "archive": "update/ps5/dlcpacks/patchDay2bNG/dlc.rpf",
+      "archiveBytes": 23853056,
+      "member": "ps5/levels/gta5/props/roadside/v_bins.rpf/prop_dumpster_4b.pdr",
+      "transform": "rsc7",
+      "storedOffset": 17356288,
+      "storedBytes": 554537,
+      "flags": [
+        "0x90000010",
+        "0xf0000063"
+      ],
+      "bytes": 554537,
+      "sha256": "a8eee49d2c78b75a3e570cd9ccadd82aeaba08e249d7f1ca13a302e67a719814",
+      "required": "for convert-bounds, convert-mapmod / convert-mlo collision rows",
+      "usedBy": "convert_pc_bounds.py --template (box and geometry class tags); make_static_pbn.py --template"
+    },
+    {
+      "cache": "retail-audio/game.dat151.rel",
+      "archive": "update/update.rpf",
+      "archiveBytes": 3018098688,
+      "member": "ps5/audio/config/game.dat151.rel",
+      "transform": "decrypt-inflate",
+      "storedOffset": 1229177344,
+      "storedBytes": 601355,
+      "flags": [
+        "0x001fca70",
+        "0x00000001"
+      ],
+      "bytes": 2083440,
+      "sha256": "d275cfb6f4c29f4601cc32f3694de0321fbb132eabd8d23c4aa66c07d7381ea9",
+      "required": "for convert-vehicle audio checks (optional)",
+      "usedBy": "convert_vehicle.py --audio / --audio-engine (retail car sounds; make_audio_gamedata.py --source)"
+    },
+    {
+      "cache": "corpus/nemesis.pft",
+      "archive": "prosperoe.rpf",
+      "archiveBytes": 2052179968,
+      "member": "levels/gta5/vehicles.rpf/nemesis.pft",
+      "transform": "rsc7",
+      "storedOffset": 368448512,
+      "storedBytes": 887796,
+      "flags": [
+        "0xa30812a3",
+        "0xb00c1180"
+      ],
+      "bytes": 887796,
+      "sha256": "6c15295c12180febe3446686fce7114ec9affea2124099680b960a35584df086",
+      "required": "always",
+      "usedBy": "convert_pc_vehicle.py --shader-reference (supplementary: vehicle_basic)"
+    },
+    {
+      "cache": "corpus/armytrailer_hi.pft",
+      "archive": "prosperoe.rpf",
+      "archiveBytes": 2052179968,
+      "member": "levels/gta5/vehicles.rpf/armytrailer_hi.pft",
+      "transform": "rsc7",
+      "storedOffset": 22308864,
+      "storedBytes": 442675,
+      "flags": [
+        "0xa00c0152",
+        "0xb00208c0"
+      ],
+      "bytes": 442675,
+      "sha256": "5321d3c6fbbf1958ae920dedd50692b595aa19d3b538f09e4fa10671761922e5",
+      "required": "always",
+      "usedBy": "convert_pc_vehicle.py --shader-reference (supplementary: vehicle_paint4)"
+    },
+    {
+      "cache": "retail-metas/weapons.meta",
+      "archive": "common.rpf",
+      "archiveBytes": 18843648,
+      "member": "data/ai/weapons.meta",
+      "transform": "decrypt-inflate",
+      "storedOffset": 3505664,
+      "storedBytes": 31948,
+      "flags": [
+        "0x00104e79",
+        "0x00000001"
+      ],
+      "bytes": 1068665,
+      "sha256": "dac0a631e6ad69f52dc0a8f9e4966e51be6b76ebab5bc2262b2be1c3155ccd1b",
+      "required": "for convert-weapon",
+      "usedBy": "make_weapon_model_pack.py and menu-ctl.sh convert-weapon"
+    },
+    {
+      "cache": "retail-metas/weaponanimations.meta",
+      "archive": "common.rpf",
+      "archiveBytes": 18843648,
+      "member": "data/ai/weaponanimations.meta",
+      "transform": "decrypt-inflate",
+      "storedOffset": 3480576,
+      "storedBytes": 21562,
+      "flags": [
+        "0x000c1431",
+        "0x00000001"
+      ],
+      "bytes": 791601,
+      "sha256": "918855304a06ecb039a3eb5e9188c8968b53c1f4216be757805e42cb3138fc8a",
+      "required": "for convert-weapon",
+      "usedBy": "make_weapon_model_pack.py and menu-ctl.sh convert-weapon"
+    },
+    {
+      "cache": "retail-metas/weaponarchetypes.meta",
+      "archive": "common.rpf",
+      "archiveBytes": 18843648,
+      "member": "data/weaponarchetypes.meta",
+      "transform": "decrypt-inflate",
+      "storedOffset": 3911168,
+      "storedBytes": 1259,
+      "flags": [
+        "0x000039ea",
+        "0x00000001"
+      ],
+      "bytes": 14826,
+      "sha256": "9989a2ce1b5f44e01811800621d67131ee24d6a0b828406367687777d264cd82",
+      "required": "for convert-weapon",
+      "usedBy": "make_weapon_model_pack.py and menu-ctl.sh convert-weapon"
+    },
+    {
+      "cache": "retail-metas/weaponcomponents.meta",
+      "archive": "common.rpf",
+      "archiveBytes": 18843648,
+      "member": "data/ai/weaponcomponents.meta",
+      "transform": "decrypt-inflate",
+      "storedOffset": 3502592,
+      "storedBytes": 2633,
+      "flags": [
+        "0x0000afb1",
+        "0x00000001"
+      ],
+      "bytes": 44977,
+      "sha256": "5ea6e48e570a6c2cdcc35b58803bf20a0e8694023adb28661513e98ec28fdedc",
+      "required": "for convert-weapon",
+      "usedBy": "make_weapon_model_pack.py and menu-ctl.sh convert-weapon"
+    },
+    {
+      "cache": "retail-metas/timecycle_mods_4.xml",
+      "archive": "update/update.rpf",
+      "archiveBytes": 3018098688,
+      "member": "common/data/timecycle/timecycle_mods_4.xml",
+      "transform": "decrypt-inflate",
+      "storedOffset": 3536384,
+      "storedBytes": 27018,
+      "flags": [
+        "0x00090cd5",
+        "0x00000001"
+      ],
+      "bytes": 593109,
+      "sha256": "bd9fe37eb92275eaa9a11a2bcec861fee88112a1b046589830a7b80e4917b1f8",
+      "required": "for author-timecycle",
+      "usedBy": "author_runtime_pack.py"
+    },
+    {
+      "cache": "ptfx/scr_indep_fireworks.ppt",
+      "archive": "update/update.rpf",
+      "archiveBytes": 3018098688,
+      "member": "dlc_patch/mpindependence/ps5/data/effects/ptfx_g9.rpf/scr_indep_fireworks.ppt",
+      "transform": "rsc7",
+      "storedOffset": 1049221632,
+      "storedBytes": 30381,
+      "flags": [
+        "0x40260000",
+        "0x70000010"
+      ],
+      "bytes": 30381,
+      "sha256": "9fbf4363db14d18eec701c891b81b5a46d519876cd218084336d9d4b70c0c1e1",
+      "required": "for author-ptfx",
+      "usedBy": "author_runtime_pack.py"
+    }
+  ]
+}

@@ -66,6 +66,15 @@ void gtav_vlogf(GtavLogLevel level, GtavLogCategory category, const char* fmt, v
 // printf-style line log at INFO/GENERAL (newline appended). Back-compat alias.
 void gtav_logf(const char* fmt, ...);
 
+// Direct kernel-log sink for a narrowly scoped crash breadcrumb. Unlike the regular logger, this
+// does not touch the worker's shared log ring. Callers must supply their own complete tag/message.
+// The host implementation is inert; the console implementation appends a newline.
+void gtav_worker_klog(const char* message);
+// Worker thread only: write the last "GTAVMenu pack ..." klog lines (kept in memory by
+// gtav_worker_klog) to <custom root>/GTAV_PACK_NOTES_NAME when new ones arrived (custom_assets.h).
+// 0 = written or nothing new.
+int gtav_pack_notes_flush(void);
+
 #ifdef __cplusplus
 }
 #endif

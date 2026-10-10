@@ -1,0 +1,7520 @@
+{
+ "attribution": {
+  "CodeWalker": "https://github.com/dexyfex/CodeWalker/tree/485d56bec00262ed7fa472261cce7bbc6202b96e",
+  "SharpDX": "https://github.com/sharpdx/SharpDX/tree/8e5df9f17b1d328c595a9df5851dbb2537b55621",
+  "description": "Serialized field layouts, enumerations, arithmetic rules and reviewed target format constants; no reference source excerpts or executable data."
+ },
+ "contracts": {
+  "native": {
+   "constantDefaults": {
+    "arrayCountOffset": 2,
+    "defaultOffset": 10,
+    "destinationOffset": 4,
+    "primaryNameOffset": 6,
+    "secondaryNameOffset": 8,
+    "typeWidths": [
+     4,
+     4,
+     8,
+     12,
+     16,
+     4,
+     8,
+     12,
+     16,
+     4,
+     8,
+     12,
+     16,
+     64,
+     64
+    ]
+   },
+   "geometry": {
+    "geometryArray": {
+     "consumerCountOffset": 46,
+     "countBytes": 2,
+     "countOffset": 16,
+     "pointerOffset": 8,
+     "stride": 8
+    },
+    "geometryPrefix": {
+     "observationBytes": 24,
+     "resetFieldOffset": 20,
+     "stateOffset": 16
+    },
+    "slots": {
+     "arrayPointerOffset": 0,
+     "countBytes": 2,
+     "slots": [
+      {
+       "bindingsOffset": 16,
+       "countOffset": 8,
+       "drawableOffset": 80,
+       "slotOffset": 48,
+       "stride": 8
+      },
+      {
+       "bindingsOffset": 16,
+       "countOffset": 8,
+       "drawableOffset": 88,
+       "slotOffset": 56,
+       "stride": 8
+      },
+      {
+       "bindingsOffset": 16,
+       "countOffset": 8,
+       "drawableOffset": 96,
+       "slotOffset": 64,
+       "stride": 8
+      },
+      {
+       "bindingsOffset": 16,
+       "countOffset": 8,
+       "drawableOffset": 104,
+       "slotOffset": 72,
+       "stride": 8
+      }
+     ]
+    }
+   },
+   "material": {
+    "drawableShaderGroupOffset": 16,
+    "inlinePreset": 1835365473,
+    "parameterCache": {
+     "cacheCapacityOffset": 42,
+     "cacheCountOffset": 40,
+     "cachePointerOffset": 32
+    },
+    "runtimeWideSizeOffset": 52,
+    "serializedSizeOffset": 58
+   },
+   "mesh": {
+    "buffers": {
+     "countOffset": 8,
+     "dataOffset": 24,
+     "groups": [
+      {
+       "geometryOffsets": [
+        24,
+        32,
+        40,
+        48
+       ],
+       "group": 0
+      },
+      {
+       "geometryOffsets": [
+        56,
+        64,
+        72,
+        80
+       ],
+       "group": 1
+      }
+     ],
+     "observedBytes": 32,
+     "strideMask": 4095,
+     "strideOffset": 12
+    },
+    "formats": {
+     "declarationOffset": 56,
+     "formatMapper": {
+      "default": 16,
+      "mapping": {
+       "10": 3,
+       "11": 16,
+       "12": 16,
+       "13": 16,
+       "14": 15,
+       "15": 16,
+       "16": 5,
+       "17": 16,
+       "18": 16,
+       "19": 16,
+       "2": 7,
+       "20": 16,
+       "21": 16,
+       "22": 16,
+       "23": 16,
+       "24": 10,
+       "25": 16,
+       "26": 16,
+       "27": 16,
+       "28": 9,
+       "29": 16,
+       "3": 16,
+       "30": 8,
+       "31": 16,
+       "32": 16,
+       "33": 16,
+       "34": 1,
+       "35": 12,
+       "36": 16,
+       "37": 16,
+       "38": 14,
+       "39": 16,
+       "4": 16,
+       "40": 16,
+       "41": 4,
+       "42": 16,
+       "43": 16,
+       "44": 16,
+       "45": 16,
+       "46": 16,
+       "47": 16,
+       "48": 16,
+       "49": 13,
+       "5": 16,
+       "50": 16,
+       "51": 16,
+       "52": 16,
+       "53": 16,
+       "54": 0,
+       "55": 16,
+       "56": 11,
+       "6": 6,
+       "7": 16,
+       "8": 16,
+       "9": 16
+      }
+     },
+     "layout": {
+      "fields": [
+       {
+        "formatOffset": 260,
+        "index": 0,
+        "offsetField": 0
+       },
+       {
+        "formatOffset": 276,
+        "index": 1,
+        "offsetField": 64
+       },
+       {
+        "formatOffset": 277,
+        "index": 2,
+        "offsetField": 68
+       },
+       {
+        "formatOffset": 280,
+        "index": 3,
+        "offsetField": 80
+       },
+       {
+        "formatOffset": 281,
+        "index": 4,
+        "offsetField": 84
+       },
+       {
+        "formatOffset": 264,
+        "index": 5,
+        "offsetField": 16
+       },
+       {
+        "formatOffset": 284,
+        "index": 6,
+        "offsetField": 96
+       },
+       {
+        "formatOffset": 285,
+        "index": 7,
+        "offsetField": 100
+       },
+       {
+        "formatOffset": 288,
+        "index": 8,
+        "offsetField": 112
+       },
+       {
+        "formatOffset": 289,
+        "index": 9,
+        "offsetField": 116
+       },
+       {
+        "formatOffset": 290,
+        "index": 10,
+        "offsetField": 120
+       },
+       {
+        "formatOffset": 291,
+        "index": 11,
+        "offsetField": 124
+       },
+       {
+        "formatOffset": 292,
+        "index": 12,
+        "offsetField": 128
+       },
+       {
+        "formatOffset": 293,
+        "index": 13,
+        "offsetField": 132
+       },
+       {
+        "formatOffset": 294,
+        "index": 14,
+        "offsetField": 136
+       },
+       {
+        "formatOffset": 295,
+        "index": 15,
+        "offsetField": 140
+       },
+       {
+        "formatOffset": 268,
+        "index": 16,
+        "offsetField": 32
+       },
+       {
+        "formatOffset": 269,
+        "index": 17,
+        "offsetField": 36
+       },
+       {
+        "formatOffset": 272,
+        "index": 18,
+        "offsetField": 48
+       },
+       {
+        "formatOffset": 273,
+        "index": 19,
+        "offsetField": 52
+       }
+      ],
+      "modeMask": 1,
+      "modeOffset": 312,
+      "observedBytes": 316
+     }
+    }
+   },
+   "physics": {
+    "groupHierarchy": {
+     "countOffset": 80,
+     "firstOffset": 76,
+     "groupsOffset": 200
+    }
+   },
+   "resource": {
+    "info": {
+     "destinationBack": 8,
+     "extraCount": 10,
+     "extraSource": 2,
+     "graphicsCount": 9,
+     "graphicsSource": 1,
+     "packedStride": 8,
+     "pageMultiplier": 2,
+     "pageScale": 8,
+     "pageStride": 24,
+     "quantumShift": 13,
+     "recordLimitForObservation": 128,
+     "recordOrigin": 16,
+     "rootPointerOffset": 8,
+     "sizeOrigin": 32,
+     "systemCount": 8,
+     "tagInputBits": 32,
+     "tagXor": 31,
+     "zeroField": 11
+    },
+    "lengthMask": 72057594037927935,
+    "pages": {
+     "countOffsets": [
+      0,
+      1
+     ],
+     "destinationOffset": 24,
+     "flagOffsets": [
+      0,
+      4
+     ],
+     "observationBytes": 3096,
+     "recordLimitForObservation": 128,
+     "sizeOffset": 32,
+     "sourceBases": [
+      1342177280,
+      1610612736
+     ],
+     "sourceOffset": 16,
+     "stride": 24,
+     "zeroFields": [
+      {
+       "bytes": 1,
+       "offset": 2
+      },
+      {
+       "bytes": 8,
+       "offset": 8
+      },
+      {
+       "bytes": 8,
+       "offset": 3088
+      }
+     ]
+    },
+    "pointerDelta": {
+     "destinationOffset": 24,
+     "indexShift": 56,
+     "pageStride": 24,
+     "rootOffset": 0,
+     "sourceOffset": 16
+    },
+    "rootPlacement": {
+     "pageIndex": 0,
+     "sourceBase": 1342177280,
+     "sourceOffset": 0
+    },
+    "version": 171,
+    "versionGate": {
+     "gate": {
+      "graphicsShift": 28,
+      "graphicsWord": 12,
+      "recordBytes": 16,
+      "systemByte": 11,
+      "systemMask": 4294967280
+     }
+    }
+   },
+   "shaderDatabase": {
+    "blockShadowBytes": [
+     4,
+     8,
+     0,
+     0,
+     0,
+     0
+    ],
+    "blockStrides": [
+     4,
+     24,
+     4,
+     2,
+     1,
+     1
+    ],
+    "fixedBytes": [
+     72,
+     8
+    ],
+    "header": {
+     "magicHex": "53474432"
+    },
+    "parameters": {
+     "activeMask": 15,
+     "activeOffset": 6,
+     "constantKind": 3,
+     "constantSizeOffset": 14,
+     "hashOffset": 20,
+     "headerBytes": 8,
+     "kindMask": 3,
+     "kindShift": 4,
+     "memberCountOffset": 4,
+     "memberHashOffset": 16,
+     "memberStride": 24,
+     "membersOffset": 8,
+     "stride": 28
+    },
+    "pointerBytes": 8,
+    "programClasses": [
+     {
+      "hashBytes": 8,
+      "metadataBytes": 144,
+      "versionUpperBound": 67
+     },
+     {
+      "hashBytes": 8,
+      "metadataBytes": 144,
+      "versionUpperBound": 67
+     },
+     {
+      "hashBytes": 8,
+      "metadataBytes": 144,
+      "versionUpperBound": 67
+     },
+     {
+      "hashBytes": 8,
+      "metadataBytes": 144,
+      "versionUpperBound": 67
+     },
+     {
+      "hashBytes": 8,
+      "metadataBytes": 144,
+      "versionUpperBound": 67
+     },
+     {
+      "hashBytes": 8,
+      "metadataBytes": 144,
+      "versionUpperBound": 67
+     },
+     {
+      "hashBytes": 8,
+      "metadataBytes": 144,
+      "versionUpperBound": 67
+     },
+     {
+      "hashBytes": 8,
+      "metadataBytes": 144,
+      "versionUpperBound": 67
+     }
+    ],
+    "stateStrides": [
+     16,
+     24,
+     68,
+     36
+    ]
+   },
+   "skeleton": {
+    "boneBytes": 80,
+    "drawableSkeletonOffset": 24,
+    "pointerFields": {
+     "BoneTagsPointer": 16,
+     "BonesPointer": 32,
+     "ChildIndicesPointer": 64,
+     "ParentIndicesPointer": 56,
+     "TransformationsInvertedPointer": 40,
+     "TransformationsPointer": 48
+    }
+   },
+   "texturePolicies": {
+    "attributes": {
+     "countOffset": 3,
+     "defaultNameTag": 1030980892,
+     "relativeOffset": 16,
+     "stride": 8,
+     "tagMask": 4294967292,
+     "valueOffset": 4
+    },
+    "textureIndexMask": 63,
+    "textureIndexShift": 2
+   },
+   "textureReference": {
+    "fields": {
+     "Depth": 1,
+     "G9_Dimension": 1,
+     "G9_Flags": 2490368,
+     "G9_TileMode": 255,
+     "G9_UsageCount": 1,
+     "Levels": 1
+    },
+    "objectBytes": 80
+   }
+  },
+  "pc": {
+   "children": {
+    "child": {
+     "fields": {
+      "BoneTag": {
+       "bytes": 2,
+       "offset": 18
+      },
+      "DamagedMass": {
+       "bytes": 4,
+       "offset": 12
+      },
+      "Drawable1Pointer": {
+       "bytes": 8,
+       "offset": 160
+      },
+      "Drawable2Pointer": {
+       "bytes": 8,
+       "offset": 168
+      },
+      "EvtSetPointer": {
+       "bytes": 8,
+       "offset": 176
+      },
+      "GroupIndex": {
+       "bytes": 2,
+       "offset": 16
+      },
+      "PristineMass": {
+       "bytes": 4,
+       "offset": 8
+      },
+      "Unknown_04h": {
+       "bytes": 4,
+       "offset": 4
+      },
+      "Unknown_14h": {
+       "bytes": 4,
+       "offset": 20
+      },
+      "Unknown_18h": {
+       "bytes": 8,
+       "offset": 24
+      },
+      "Unknown_20h": {
+       "bytes": 8,
+       "offset": 32
+      },
+      "Unknown_28h": {
+       "bytes": 8,
+       "offset": 40
+      },
+      "Unknown_30h": {
+       "bytes": 8,
+       "offset": 48
+      },
+      "Unknown_38h": {
+       "bytes": 8,
+       "offset": 56
+      },
+      "Unknown_40h": {
+       "bytes": 8,
+       "offset": 64
+      },
+      "Unknown_48h": {
+       "bytes": 8,
+       "offset": 72
+      },
+      "Unknown_50h": {
+       "bytes": 8,
+       "offset": 80
+      },
+      "Unknown_58h": {
+       "bytes": 8,
+       "offset": 88
+      },
+      "Unknown_60h": {
+       "bytes": 8,
+       "offset": 96
+      },
+      "Unknown_68h": {
+       "bytes": 8,
+       "offset": 104
+      },
+      "Unknown_70h": {
+       "bytes": 8,
+       "offset": 112
+      },
+      "Unknown_78h": {
+       "bytes": 8,
+       "offset": 120
+      },
+      "Unknown_80h": {
+       "bytes": 8,
+       "offset": 128
+      },
+      "Unknown_88h": {
+       "bytes": 8,
+       "offset": 136
+      },
+      "Unknown_90h": {
+       "bytes": 8,
+       "offset": 144
+      },
+      "Unknown_98h": {
+       "bytes": 8,
+       "offset": 152
+      },
+      "Unknown_B8h": {
+       "bytes": 8,
+       "offset": 184
+      },
+      "Unknown_C0h": {
+       "bytes": 8,
+       "offset": 192
+      },
+      "Unknown_C8h": {
+       "bytes": 8,
+       "offset": 200
+      },
+      "Unknown_D0h": {
+       "bytes": 8,
+       "offset": 208
+      },
+      "Unknown_D8h": {
+       "bytes": 8,
+       "offset": 216
+      },
+      "Unknown_E0h": {
+       "bytes": 8,
+       "offset": 224
+      },
+      "Unknown_E8h": {
+       "bytes": 8,
+       "offset": 232
+      },
+      "Unknown_F0h": {
+       "bytes": 8,
+       "offset": 240
+      },
+      "Unknown_F8h": {
+       "bytes": 8,
+       "offset": 248
+      },
+      "VFT": {
+       "bytes": 4,
+       "offset": 0
+      }
+     },
+     "prefixBytes": 256
+    },
+    "physics": {
+     "classes": {
+      "FragPhysTypeChild": {
+       "bytes": 256
+      },
+      "FragPhysTypeGroup": {
+       "bytes": 176
+      },
+      "FragPhysicsLOD": {
+       "bytes": 304
+      },
+      "FragPhysicsLODGroup": {
+       "bytes": 48
+      },
+      "FragType": {
+       "bytes": 304
+      }
+     },
+     "layout": {
+      "child": {
+       "boneTag": 18,
+       "damagedMass": 12,
+       "drawable1Pointer": 160,
+       "drawable2Pointer": 168,
+       "eventSetPointer": 176,
+       "groupIndex": 16,
+       "pristineMass": 8
+      },
+      "fragmentPhysicsLodGroupPointer": 240,
+      "group": {
+       "childCount": 79,
+       "childGroupCount": 80,
+       "childGroupIndex": 76,
+       "childIndex": 78,
+       "damageHealth": 88,
+       "glassFlags": 83,
+       "glassWindowIndex": 82,
+       "mass": 68,
+       "minDamageForce": 84,
+       "parentIndex": 77,
+       "selectedObservationBytes": 92,
+       "strength": 16
+      },
+      "lod": {
+       "archetype1Pointer": 216,
+       "archetype2Pointer": 224,
+       "boundPointer": 232,
+       "childrenCount": 285,
+       "childrenCount2": 286,
+       "childrenInertiaTensorsPointer": 240,
+       "childrenPointer": 208,
+       "childrenUnknownFloatsPointer": 40,
+       "childrenUnknownVectorsPointer": 248,
+       "fragmentTransformsPointer": 256,
+       "groupNamesPointer": 192,
+       "groupsCount": 282,
+       "groupsPointer": 200,
+       "rootGroupsCount": 283,
+       "unknownData1Count": 280,
+       "unknownData1Pointer": 264,
+       "unknownData2Count": 281,
+       "unknownData2Pointer": 272
+      },
+      "lodGroupPointers": [
+       16,
+       24,
+       32
+      ]
+     },
+     "sourceSha256": "952e8c7f620639415c17898e617182845a63073995ebdfff45128ab8715e38b2"
+    },
+    "sourceSha256": "952e8c7f620639415c17898e617182845a63073995ebdfff45128ab8715e38b2"
+   },
+   "collision": {
+    "layouts": {
+     "BVH": {
+      "bytes": 128,
+      "fields": {
+       "BoundingBoxCenter": {
+        "bytes": 16,
+        "offset": 64,
+        "type": "Vector4"
+       },
+       "BoundingBoxMax": {
+        "bytes": 16,
+        "offset": 48,
+        "type": "Vector4"
+       },
+       "BoundingBoxMin": {
+        "bytes": 16,
+        "offset": 32,
+        "type": "Vector4"
+       },
+       "Nodes.EntriesCapacity": {
+        "bytes": 4,
+        "offset": 12,
+        "type": "UInt32"
+       },
+       "Nodes.EntriesCount": {
+        "bytes": 4,
+        "offset": 8,
+        "type": "UInt32"
+       },
+       "Nodes.EntriesPointer": {
+        "bytes": 8,
+        "offset": 0,
+        "type": "UInt64"
+       },
+       "Quantum": {
+        "bytes": 16,
+        "offset": 96,
+        "type": "Vector4"
+       },
+       "QuantumInverse": {
+        "bytes": 16,
+        "offset": 80,
+        "type": "Vector4"
+       },
+       "Trees.EntriesCapacity": {
+        "bytes": 2,
+        "offset": 122,
+        "type": "UInt16"
+       },
+       "Trees.EntriesCount": {
+        "bytes": 2,
+        "offset": 120,
+        "type": "UInt16"
+       },
+       "Trees.EntriesPointer": {
+        "bytes": 8,
+        "offset": 112,
+        "type": "UInt64"
+       },
+       "Trees.Padding": {
+        "bytes": 4,
+        "offset": 124,
+        "type": "UInt32"
+       },
+       "Unknown_10h": {
+        "bytes": 4,
+        "offset": 16,
+        "type": "UInt32"
+       },
+       "Unknown_14h": {
+        "bytes": 4,
+        "offset": 20,
+        "type": "UInt32"
+       },
+       "Unknown_18h": {
+        "bytes": 4,
+        "offset": 24,
+        "type": "UInt32"
+       },
+       "Unknown_1Ch": {
+        "bytes": 4,
+        "offset": 28,
+        "type": "UInt32"
+       }
+      }
+     },
+     "Box": {
+      "bytes": 112,
+      "fields": {
+       "BoxCenter": {
+        "bytes": 12,
+        "offset": 64,
+        "type": "Vector3"
+       },
+       "BoxMax": {
+        "bytes": 12,
+        "offset": 32,
+        "type": "Vector3"
+       },
+       "BoxMin": {
+        "bytes": 12,
+        "offset": 48,
+        "type": "Vector3"
+       },
+       "FilePagesInfoPointer": {
+        "bytes": 8,
+        "offset": 8,
+        "type": "UInt64"
+       },
+       "FileUnknown": {
+        "bytes": 4,
+        "offset": 4,
+        "type": "UInt32"
+       },
+       "FileVFT": {
+        "bytes": 4,
+        "offset": 0,
+        "type": "UInt32"
+       },
+       "Margin": {
+        "bytes": 4,
+        "offset": 44,
+        "type": "Single"
+       },
+       "MaterialColorIndex": {
+        "bytes": 1,
+        "offset": 93,
+        "type": "Byte"
+       },
+       "MaterialIndex": {
+        "bytes": 1,
+        "offset": 76,
+        "type": "Byte"
+       },
+       "PolyFlags": {
+        "bytes": 1,
+        "offset": 92,
+        "type": "Byte"
+       },
+       "ProceduralId": {
+        "bytes": 1,
+        "offset": 77,
+        "type": "Byte"
+       },
+       "RoomId_and_PedDensity": {
+        "bytes": 1,
+        "offset": 78,
+        "type": "Byte"
+       },
+       "SphereCenter": {
+        "bytes": 12,
+        "offset": 80,
+        "type": "Vector3"
+       },
+       "SphereRadius": {
+        "bytes": 4,
+        "offset": 20,
+        "type": "Single"
+       },
+       "Type": {
+        "bytes": 1,
+        "offset": 16,
+        "type": "Byte"
+       },
+       "UnkFlags": {
+        "bytes": 1,
+        "offset": 79,
+        "type": "Byte"
+       },
+       "Unknown_11h": {
+        "bytes": 1,
+        "offset": 17,
+        "type": "Byte"
+       },
+       "Unknown_12h": {
+        "bytes": 2,
+        "offset": 18,
+        "type": "UInt16"
+       },
+       "Unknown_18h": {
+        "bytes": 4,
+        "offset": 24,
+        "type": "UInt32"
+       },
+       "Unknown_1Ch": {
+        "bytes": 4,
+        "offset": 28,
+        "type": "UInt32"
+       },
+       "Unknown_3Ch": {
+        "bytes": 4,
+        "offset": 60,
+        "type": "UInt32"
+       },
+       "Unknown_5Eh": {
+        "bytes": 2,
+        "offset": 94,
+        "type": "UInt16"
+       },
+       "Unknown_60h": {
+        "bytes": 12,
+        "offset": 96,
+        "type": "Vector3"
+       },
+       "Volume": {
+        "bytes": 4,
+        "offset": 108,
+        "type": "Single"
+       }
+      }
+     },
+     "Capsule": {
+      "bytes": 128,
+      "fields": {
+       "BoxCenter": {
+        "bytes": 12,
+        "offset": 64,
+        "type": "Vector3"
+       },
+       "BoxMax": {
+        "bytes": 12,
+        "offset": 32,
+        "type": "Vector3"
+       },
+       "BoxMin": {
+        "bytes": 12,
+        "offset": 48,
+        "type": "Vector3"
+       },
+       "FilePagesInfoPointer": {
+        "bytes": 8,
+        "offset": 8,
+        "type": "UInt64"
+       },
+       "FileUnknown": {
+        "bytes": 4,
+        "offset": 4,
+        "type": "UInt32"
+       },
+       "FileVFT": {
+        "bytes": 4,
+        "offset": 0,
+        "type": "UInt32"
+       },
+       "Margin": {
+        "bytes": 4,
+        "offset": 44,
+        "type": "Single"
+       },
+       "MaterialColorIndex": {
+        "bytes": 1,
+        "offset": 93,
+        "type": "Byte"
+       },
+       "MaterialIndex": {
+        "bytes": 1,
+        "offset": 76,
+        "type": "Byte"
+       },
+       "PolyFlags": {
+        "bytes": 1,
+        "offset": 92,
+        "type": "Byte"
+       },
+       "ProceduralId": {
+        "bytes": 1,
+        "offset": 77,
+        "type": "Byte"
+       },
+       "RoomId_and_PedDensity": {
+        "bytes": 1,
+        "offset": 78,
+        "type": "Byte"
+       },
+       "SphereCenter": {
+        "bytes": 12,
+        "offset": 80,
+        "type": "Vector3"
+       },
+       "SphereRadius": {
+        "bytes": 4,
+        "offset": 20,
+        "type": "Single"
+       },
+       "Type": {
+        "bytes": 1,
+        "offset": 16,
+        "type": "Byte"
+       },
+       "UnkFlags": {
+        "bytes": 1,
+        "offset": 79,
+        "type": "Byte"
+       },
+       "Unknown_11h": {
+        "bytes": 1,
+        "offset": 17,
+        "type": "Byte"
+       },
+       "Unknown_12h": {
+        "bytes": 2,
+        "offset": 18,
+        "type": "UInt16"
+       },
+       "Unknown_18h": {
+        "bytes": 4,
+        "offset": 24,
+        "type": "UInt32"
+       },
+       "Unknown_1Ch": {
+        "bytes": 4,
+        "offset": 28,
+        "type": "UInt32"
+       },
+       "Unknown_3Ch": {
+        "bytes": 4,
+        "offset": 60,
+        "type": "UInt32"
+       },
+       "Unknown_5Eh": {
+        "bytes": 2,
+        "offset": 94,
+        "type": "UInt16"
+       },
+       "Unknown_60h": {
+        "bytes": 12,
+        "offset": 96,
+        "type": "Vector3"
+       },
+       "Unknown_70h": {
+        "bytes": 4,
+        "offset": 112,
+        "type": "UInt32"
+       },
+       "Unknown_74h": {
+        "bytes": 4,
+        "offset": 116,
+        "type": "UInt32"
+       },
+       "Unknown_78h": {
+        "bytes": 4,
+        "offset": 120,
+        "type": "UInt32"
+       },
+       "Unknown_7Ch": {
+        "bytes": 4,
+        "offset": 124,
+        "type": "UInt32"
+       },
+       "Volume": {
+        "bytes": 4,
+        "offset": 108,
+        "type": "Single"
+       }
+      }
+     },
+     "Composite": {
+      "bytes": 176,
+      "fields": {
+       "BVHPointer": {
+        "bytes": 8,
+        "offset": 168,
+        "type": "UInt64"
+       },
+       "BoxCenter": {
+        "bytes": 12,
+        "offset": 64,
+        "type": "Vector3"
+       },
+       "BoxMax": {
+        "bytes": 12,
+        "offset": 32,
+        "type": "Vector3"
+       },
+       "BoxMin": {
+        "bytes": 12,
+        "offset": 48,
+        "type": "Vector3"
+       },
+       "ChildrenBoundingBoxesPointer": {
+        "bytes": 8,
+        "offset": 136,
+        "type": "UInt64"
+       },
+       "ChildrenCount1": {
+        "bytes": 2,
+        "offset": 160,
+        "type": "UInt16"
+       },
+       "ChildrenCount2": {
+        "bytes": 2,
+        "offset": 162,
+        "type": "UInt16"
+       },
+       "ChildrenFlags1Pointer": {
+        "bytes": 8,
+        "offset": 144,
+        "type": "UInt64"
+       },
+       "ChildrenFlags2Pointer": {
+        "bytes": 8,
+        "offset": 152,
+        "type": "UInt64"
+       },
+       "ChildrenPointer": {
+        "bytes": 8,
+        "offset": 112,
+        "type": "UInt64"
+       },
+       "ChildrenTransformation1Pointer": {
+        "bytes": 8,
+        "offset": 120,
+        "type": "UInt64"
+       },
+       "ChildrenTransformation2Pointer": {
+        "bytes": 8,
+        "offset": 128,
+        "type": "UInt64"
+       },
+       "FilePagesInfoPointer": {
+        "bytes": 8,
+        "offset": 8,
+        "type": "UInt64"
+       },
+       "FileUnknown": {
+        "bytes": 4,
+        "offset": 4,
+        "type": "UInt32"
+       },
+       "FileVFT": {
+        "bytes": 4,
+        "offset": 0,
+        "type": "UInt32"
+       },
+       "Margin": {
+        "bytes": 4,
+        "offset": 44,
+        "type": "Single"
+       },
+       "MaterialColorIndex": {
+        "bytes": 1,
+        "offset": 93,
+        "type": "Byte"
+       },
+       "MaterialIndex": {
+        "bytes": 1,
+        "offset": 76,
+        "type": "Byte"
+       },
+       "PolyFlags": {
+        "bytes": 1,
+        "offset": 92,
+        "type": "Byte"
+       },
+       "ProceduralId": {
+        "bytes": 1,
+        "offset": 77,
+        "type": "Byte"
+       },
+       "RoomId_and_PedDensity": {
+        "bytes": 1,
+        "offset": 78,
+        "type": "Byte"
+       },
+       "SphereCenter": {
+        "bytes": 12,
+        "offset": 80,
+        "type": "Vector3"
+       },
+       "SphereRadius": {
+        "bytes": 4,
+        "offset": 20,
+        "type": "Single"
+       },
+       "Type": {
+        "bytes": 1,
+        "offset": 16,
+        "type": "Byte"
+       },
+       "UnkFlags": {
+        "bytes": 1,
+        "offset": 79,
+        "type": "Byte"
+       },
+       "Unknown_11h": {
+        "bytes": 1,
+        "offset": 17,
+        "type": "Byte"
+       },
+       "Unknown_12h": {
+        "bytes": 2,
+        "offset": 18,
+        "type": "UInt16"
+       },
+       "Unknown_18h": {
+        "bytes": 4,
+        "offset": 24,
+        "type": "UInt32"
+       },
+       "Unknown_1Ch": {
+        "bytes": 4,
+        "offset": 28,
+        "type": "UInt32"
+       },
+       "Unknown_3Ch": {
+        "bytes": 4,
+        "offset": 60,
+        "type": "UInt32"
+       },
+       "Unknown_5Eh": {
+        "bytes": 2,
+        "offset": 94,
+        "type": "UInt16"
+       },
+       "Unknown_60h": {
+        "bytes": 12,
+        "offset": 96,
+        "type": "Vector3"
+       },
+       "Unknown_A4h": {
+        "bytes": 4,
+        "offset": 164,
+        "type": "UInt32"
+       },
+       "Volume": {
+        "bytes": 4,
+        "offset": 108,
+        "type": "Single"
+       }
+      }
+     },
+     "Disc": {
+      "bytes": 128,
+      "fields": {
+       "BoxCenter": {
+        "bytes": 12,
+        "offset": 64,
+        "type": "Vector3"
+       },
+       "BoxMax": {
+        "bytes": 12,
+        "offset": 32,
+        "type": "Vector3"
+       },
+       "BoxMin": {
+        "bytes": 12,
+        "offset": 48,
+        "type": "Vector3"
+       },
+       "FilePagesInfoPointer": {
+        "bytes": 8,
+        "offset": 8,
+        "type": "UInt64"
+       },
+       "FileUnknown": {
+        "bytes": 4,
+        "offset": 4,
+        "type": "UInt32"
+       },
+       "FileVFT": {
+        "bytes": 4,
+        "offset": 0,
+        "type": "UInt32"
+       },
+       "Margin": {
+        "bytes": 4,
+        "offset": 44,
+        "type": "Single"
+       },
+       "MaterialColorIndex": {
+        "bytes": 1,
+        "offset": 93,
+        "type": "Byte"
+       },
+       "MaterialIndex": {
+        "bytes": 1,
+        "offset": 76,
+        "type": "Byte"
+       },
+       "PolyFlags": {
+        "bytes": 1,
+        "offset": 92,
+        "type": "Byte"
+       },
+       "ProceduralId": {
+        "bytes": 1,
+        "offset": 77,
+        "type": "Byte"
+       },
+       "RoomId_and_PedDensity": {
+        "bytes": 1,
+        "offset": 78,
+        "type": "Byte"
+       },
+       "SphereCenter": {
+        "bytes": 12,
+        "offset": 80,
+        "type": "Vector3"
+       },
+       "SphereRadius": {
+        "bytes": 4,
+        "offset": 20,
+        "type": "Single"
+       },
+       "Type": {
+        "bytes": 1,
+        "offset": 16,
+        "type": "Byte"
+       },
+       "UnkFlags": {
+        "bytes": 1,
+        "offset": 79,
+        "type": "Byte"
+       },
+       "Unknown_11h": {
+        "bytes": 1,
+        "offset": 17,
+        "type": "Byte"
+       },
+       "Unknown_12h": {
+        "bytes": 2,
+        "offset": 18,
+        "type": "UInt16"
+       },
+       "Unknown_18h": {
+        "bytes": 4,
+        "offset": 24,
+        "type": "UInt32"
+       },
+       "Unknown_1Ch": {
+        "bytes": 4,
+        "offset": 28,
+        "type": "UInt32"
+       },
+       "Unknown_3Ch": {
+        "bytes": 4,
+        "offset": 60,
+        "type": "UInt32"
+       },
+       "Unknown_5Eh": {
+        "bytes": 2,
+        "offset": 94,
+        "type": "UInt16"
+       },
+       "Unknown_60h": {
+        "bytes": 12,
+        "offset": 96,
+        "type": "Vector3"
+       },
+       "Unknown_70h": {
+        "bytes": 4,
+        "offset": 112,
+        "type": "UInt32"
+       },
+       "Unknown_74h": {
+        "bytes": 4,
+        "offset": 116,
+        "type": "UInt32"
+       },
+       "Unknown_78h": {
+        "bytes": 4,
+        "offset": 120,
+        "type": "UInt32"
+       },
+       "Unknown_7Ch": {
+        "bytes": 4,
+        "offset": 124,
+        "type": "UInt32"
+       },
+       "Volume": {
+        "bytes": 4,
+        "offset": 108,
+        "type": "Single"
+       }
+      }
+     },
+     "Geometry": {
+      "bytes": 304,
+      "fields": {
+       "BoxCenter": {
+        "bytes": 12,
+        "offset": 64,
+        "type": "Vector3"
+       },
+       "BoxMax": {
+        "bytes": 12,
+        "offset": 32,
+        "type": "Vector3"
+       },
+       "BoxMin": {
+        "bytes": 12,
+        "offset": 48,
+        "type": "Vector3"
+       },
+       "CenterGeom": {
+        "bytes": 12,
+        "offset": 160,
+        "type": "Vector3"
+       },
+       "FilePagesInfoPointer": {
+        "bytes": 8,
+        "offset": 8,
+        "type": "UInt64"
+       },
+       "FileUnknown": {
+        "bytes": 4,
+        "offset": 4,
+        "type": "UInt32"
+       },
+       "FileVFT": {
+        "bytes": 4,
+        "offset": 0,
+        "type": "UInt32"
+       },
+       "Margin": {
+        "bytes": 4,
+        "offset": 44,
+        "type": "Single"
+       },
+       "MaterialColorIndex": {
+        "bytes": 1,
+        "offset": 93,
+        "type": "Byte"
+       },
+       "MaterialColoursCount": {
+        "bytes": 1,
+        "offset": 289,
+        "type": "Byte"
+       },
+       "MaterialColoursPointer": {
+        "bytes": 8,
+        "offset": 248,
+        "type": "UInt64"
+       },
+       "MaterialIndex": {
+        "bytes": 1,
+        "offset": 76,
+        "type": "Byte"
+       },
+       "MaterialsCount": {
+        "bytes": 1,
+        "offset": 288,
+        "type": "Byte"
+       },
+       "MaterialsPointer": {
+        "bytes": 8,
+        "offset": 240,
+        "type": "UInt64"
+       },
+       "OctantItemsPointer": {
+        "bytes": 8,
+        "offset": 200,
+        "type": "UInt64"
+       },
+       "OctantsPointer": {
+        "bytes": 8,
+        "offset": 192,
+        "type": "UInt64"
+       },
+       "PolyFlags": {
+        "bytes": 1,
+        "offset": 92,
+        "type": "Byte"
+       },
+       "PolygonMaterialIndicesPointer": {
+        "bytes": 8,
+        "offset": 280,
+        "type": "UInt64"
+       },
+       "PolygonsCount": {
+        "bytes": 4,
+        "offset": 212,
+        "type": "UInt32"
+       },
+       "PolygonsPointer": {
+        "bytes": 8,
+        "offset": 136,
+        "type": "UInt64"
+       },
+       "ProceduralId": {
+        "bytes": 1,
+        "offset": 77,
+        "type": "Byte"
+       },
+       "Quantum": {
+        "bytes": 12,
+        "offset": 144,
+        "type": "Vector3"
+       },
+       "RoomId_and_PedDensity": {
+        "bytes": 1,
+        "offset": 78,
+        "type": "Byte"
+       },
+       "SphereCenter": {
+        "bytes": 12,
+        "offset": 80,
+        "type": "Vector3"
+       },
+       "SphereRadius": {
+        "bytes": 4,
+        "offset": 20,
+        "type": "Single"
+       },
+       "Type": {
+        "bytes": 1,
+        "offset": 16,
+        "type": "Byte"
+       },
+       "UnkFlags": {
+        "bytes": 1,
+        "offset": 79,
+        "type": "Byte"
+       },
+       "Unknown_100h": {
+        "bytes": 4,
+        "offset": 256,
+        "type": "UInt32"
+       },
+       "Unknown_104h": {
+        "bytes": 4,
+        "offset": 260,
+        "type": "UInt32"
+       },
+       "Unknown_108h": {
+        "bytes": 4,
+        "offset": 264,
+        "type": "UInt32"
+       },
+       "Unknown_10Ch": {
+        "bytes": 4,
+        "offset": 268,
+        "type": "UInt32"
+       },
+       "Unknown_110h": {
+        "bytes": 4,
+        "offset": 272,
+        "type": "UInt32"
+       },
+       "Unknown_114h": {
+        "bytes": 4,
+        "offset": 276,
+        "type": "UInt32"
+       },
+       "Unknown_11h": {
+        "bytes": 1,
+        "offset": 17,
+        "type": "Byte"
+       },
+       "Unknown_122h": {
+        "bytes": 2,
+        "offset": 290,
+        "type": "UInt16"
+       },
+       "Unknown_124h": {
+        "bytes": 4,
+        "offset": 292,
+        "type": "UInt32"
+       },
+       "Unknown_128h": {
+        "bytes": 4,
+        "offset": 296,
+        "type": "UInt32"
+       },
+       "Unknown_12Ch": {
+        "bytes": 4,
+        "offset": 300,
+        "type": "UInt32"
+       },
+       "Unknown_12h": {
+        "bytes": 2,
+        "offset": 18,
+        "type": "UInt16"
+       },
+       "Unknown_18h": {
+        "bytes": 4,
+        "offset": 24,
+        "type": "UInt32"
+       },
+       "Unknown_1Ch": {
+        "bytes": 4,
+        "offset": 28,
+        "type": "UInt32"
+       },
+       "Unknown_3Ch": {
+        "bytes": 4,
+        "offset": 60,
+        "type": "UInt32"
+       },
+       "Unknown_5Eh": {
+        "bytes": 2,
+        "offset": 94,
+        "type": "UInt16"
+       },
+       "Unknown_60h": {
+        "bytes": 12,
+        "offset": 96,
+        "type": "Vector3"
+       },
+       "Unknown_70h": {
+        "bytes": 4,
+        "offset": 112,
+        "type": "UInt32"
+       },
+       "Unknown_74h": {
+        "bytes": 4,
+        "offset": 116,
+        "type": "UInt32"
+       },
+       "Unknown_80h": {
+        "bytes": 2,
+        "offset": 128,
+        "type": "UInt16"
+       },
+       "Unknown_82h": {
+        "bytes": 2,
+        "offset": 130,
+        "type": "UInt16"
+       },
+       "Unknown_9Ch": {
+        "bytes": 4,
+        "offset": 156,
+        "type": "Single"
+       },
+       "Unknown_ACh": {
+        "bytes": 4,
+        "offset": 172,
+        "type": "Single"
+       },
+       "Unknown_D8h": {
+        "bytes": 4,
+        "offset": 216,
+        "type": "UInt32"
+       },
+       "Unknown_DCh": {
+        "bytes": 4,
+        "offset": 220,
+        "type": "UInt32"
+       },
+       "Unknown_E0h": {
+        "bytes": 4,
+        "offset": 224,
+        "type": "UInt32"
+       },
+       "Unknown_E4h": {
+        "bytes": 4,
+        "offset": 228,
+        "type": "UInt32"
+       },
+       "Unknown_E8h": {
+        "bytes": 4,
+        "offset": 232,
+        "type": "UInt32"
+       },
+       "Unknown_ECh": {
+        "bytes": 4,
+        "offset": 236,
+        "type": "UInt32"
+       },
+       "VertexColoursPointer": {
+        "bytes": 8,
+        "offset": 184,
+        "type": "UInt64"
+       },
+       "VerticesCount": {
+        "bytes": 4,
+        "offset": 208,
+        "type": "UInt32"
+       },
+       "VerticesPointer": {
+        "bytes": 8,
+        "offset": 176,
+        "type": "UInt64"
+       },
+       "VerticesShrunkCount": {
+        "bytes": 4,
+        "offset": 132,
+        "type": "UInt32"
+       },
+       "VerticesShrunkPointer": {
+        "bytes": 8,
+        "offset": 120,
+        "type": "UInt64"
+       },
+       "Volume": {
+        "bytes": 4,
+        "offset": 108,
+        "type": "Single"
+       }
+      }
+     }
+    },
+    "limitations": [
+     "Triangle polygons only; other kinds reject",
+     "Unknown native extensions must be zero"
+    ],
+    "minimumMaterials": 4,
+    "octantCount": 8,
+    "polygonTypeMask": 7,
+    "sourceLinks": {
+     "archetype": {
+      "bytes": 224,
+      "fields": {
+       "BoundPointer": {
+        "bytes": 8,
+        "offset": 32,
+        "type": "UInt64"
+       },
+       "InertiaTensor": {
+        "bytes": 12,
+        "offset": 96,
+        "type": "Vector3"
+       },
+       "InertiaTensorInv": {
+        "bytes": 12,
+        "offset": 112,
+        "type": "Vector3"
+       },
+       "Mass": {
+        "bytes": 4,
+        "offset": 64,
+        "type": "Single"
+       },
+       "MassInv": {
+        "bytes": 4,
+        "offset": 68,
+        "type": "Single"
+       },
+       "NamePointer": {
+        "bytes": 8,
+        "offset": 24,
+        "type": "UInt64"
+       },
+       "Unknown_04h": {
+        "bytes": 4,
+        "offset": 4,
+        "type": "UInt32"
+       },
+       "Unknown_08h": {
+        "bytes": 8,
+        "offset": 8,
+        "type": "UInt64"
+       },
+       "Unknown_10h": {
+        "bytes": 8,
+        "offset": 16,
+        "type": "UInt64"
+       },
+       "Unknown_28h": {
+        "bytes": 4,
+        "offset": 40,
+        "type": "UInt32"
+       },
+       "Unknown_2Ch": {
+        "bytes": 4,
+        "offset": 44,
+        "type": "UInt32"
+       },
+       "Unknown_30h": {
+        "bytes": 4,
+        "offset": 48,
+        "type": "UInt32"
+       },
+       "Unknown_34h": {
+        "bytes": 4,
+        "offset": 52,
+        "type": "UInt32"
+       },
+       "Unknown_38h": {
+        "bytes": 8,
+        "offset": 56,
+        "type": "UInt64"
+       },
+       "Unknown_48h": {
+        "bytes": 4,
+        "offset": 72,
+        "type": "Single"
+       },
+       "Unknown_4Ch": {
+        "bytes": 4,
+        "offset": 76,
+        "type": "Single"
+       },
+       "Unknown_50h": {
+        "bytes": 4,
+        "offset": 80,
+        "type": "Single"
+       },
+       "Unknown_54h": {
+        "bytes": 4,
+        "offset": 84,
+        "type": "Single"
+       },
+       "Unknown_58h": {
+        "bytes": 8,
+        "offset": 88,
+        "type": "UInt64"
+       },
+       "Unknown_6Ch": {
+        "bytes": 4,
+        "offset": 108,
+        "type": "UInt32"
+       },
+       "Unknown_7Ch": {
+        "bytes": 4,
+        "offset": 124,
+        "type": "UInt32"
+       },
+       "Unknown_80h": {
+        "bytes": 12,
+        "offset": 128,
+        "type": "Vector3"
+       },
+       "Unknown_8Ch": {
+        "bytes": 4,
+        "offset": 140,
+        "type": "UInt32"
+       },
+       "Unknown_90h": {
+        "bytes": 12,
+        "offset": 144,
+        "type": "Vector3"
+       },
+       "Unknown_9Ch": {
+        "bytes": 4,
+        "offset": 156,
+        "type": "UInt32"
+       },
+       "Unknown_A0h": {
+        "bytes": 12,
+        "offset": 160,
+        "type": "Vector3"
+       },
+       "Unknown_ACh": {
+        "bytes": 4,
+        "offset": 172,
+        "type": "UInt32"
+       },
+       "Unknown_B0h": {
+        "bytes": 12,
+        "offset": 176,
+        "type": "Vector3"
+       },
+       "Unknown_BCh": {
+        "bytes": 4,
+        "offset": 188,
+        "type": "UInt32"
+       },
+       "Unknown_C0h": {
+        "bytes": 12,
+        "offset": 192,
+        "type": "Vector3"
+       },
+       "Unknown_CCh": {
+        "bytes": 4,
+        "offset": 204,
+        "type": "UInt32"
+       },
+       "Unknown_D0h": {
+        "bytes": 12,
+        "offset": 208,
+        "type": "Vector3"
+       },
+       "Unknown_DCh": {
+        "bytes": 4,
+        "offset": 220,
+        "type": "UInt32"
+       },
+       "VFT": {
+        "bytes": 4,
+        "offset": 0,
+        "type": "UInt32"
+       }
+      }
+     },
+     "fragment": {
+      "bytes": 304,
+      "fields": {
+       "BoneTransformsPointer": {
+        "bytes": 8,
+        "offset": 168,
+        "type": "UInt64"
+       },
+       "BoundingSphereCenter": {
+        "bytes": 12,
+        "offset": 32,
+        "type": "Vector3"
+       },
+       "BoundingSphereRadius": {
+        "bytes": 4,
+        "offset": 44,
+        "type": "Single"
+       },
+       "BuoyancyFactor": {
+        "bytes": 4,
+        "offset": 212,
+        "type": "Single"
+       },
+       "Cloths.Capacity": {
+        "bytes": 2,
+        "offset": 106,
+        "type": "UInt16"
+       },
+       "Cloths.Count": {
+        "bytes": 2,
+        "offset": 104,
+        "type": "UInt16"
+       },
+       "Cloths.Pointer": {
+        "bytes": 8,
+        "offset": 96,
+        "type": "UInt64"
+       },
+       "Cloths.Unknown": {
+        "bytes": 4,
+        "offset": 108,
+        "type": "UInt32"
+       },
+       "DrawableArrayCount": {
+        "bytes": 4,
+        "offset": 72,
+        "type": "UInt32"
+       },
+       "DrawableArrayFlag": {
+        "bytes": 4,
+        "offset": 76,
+        "type": "Int32"
+       },
+       "DrawableArrayNamesPointer": {
+        "bytes": 8,
+        "offset": 64,
+        "type": "UInt64"
+       },
+       "DrawableArrayPointer": {
+        "bytes": 8,
+        "offset": 56,
+        "type": "UInt64"
+       },
+       "DrawableClothPointer": {
+        "bytes": 8,
+        "offset": 248,
+        "type": "UInt64"
+       },
+       "DrawablePointer": {
+        "bytes": 8,
+        "offset": 48,
+        "type": "UInt64"
+       },
+       "FilePagesInfoPointer": {
+        "bytes": 8,
+        "offset": 8,
+        "type": "UInt64"
+       },
+       "FileUnknown": {
+        "bytes": 4,
+        "offset": 4,
+        "type": "UInt32"
+       },
+       "FileVFT": {
+        "bytes": 4,
+        "offset": 0,
+        "type": "UInt32"
+       },
+       "GlassWindowsCount": {
+        "bytes": 1,
+        "offset": 217,
+        "type": "Byte"
+       },
+       "GlassWindowsPointer": {
+        "bytes": 8,
+        "offset": 224,
+        "type": "UInt64"
+       },
+       "GravityFactor": {
+        "bytes": 4,
+        "offset": 208,
+        "type": "Single"
+       },
+       "LightAttributes.Capacity": {
+        "bytes": 2,
+        "offset": 282,
+        "type": "UInt16"
+       },
+       "LightAttributes.Count": {
+        "bytes": 2,
+        "offset": 280,
+        "type": "UInt16"
+       },
+       "LightAttributes.Pointer": {
+        "bytes": 8,
+        "offset": 272,
+        "type": "UInt64"
+       },
+       "LightAttributes.Unknown": {
+        "bytes": 4,
+        "offset": 284,
+        "type": "UInt32"
+       },
+       "NamePointer": {
+        "bytes": 8,
+        "offset": 88,
+        "type": "UInt64"
+       },
+       "PhysicsLODGroupPointer": {
+        "bytes": 8,
+        "offset": 240,
+        "type": "UInt64"
+       },
+       "Unknown_100h": {
+        "bytes": 8,
+        "offset": 256,
+        "type": "UInt64"
+       },
+       "Unknown_108h": {
+        "bytes": 8,
+        "offset": 264,
+        "type": "UInt64"
+       },
+       "Unknown_10h": {
+        "bytes": 8,
+        "offset": 16,
+        "type": "UInt64"
+       },
+       "Unknown_128h": {
+        "bytes": 8,
+        "offset": 296,
+        "type": "UInt64"
+       },
+       "Unknown_18h": {
+        "bytes": 8,
+        "offset": 24,
+        "type": "UInt64"
+       },
+       "Unknown_50h": {
+        "bytes": 8,
+        "offset": 80,
+        "type": "UInt64"
+       },
+       "Unknown_70h": {
+        "bytes": 8,
+        "offset": 112,
+        "type": "UInt64"
+       },
+       "Unknown_78h": {
+        "bytes": 8,
+        "offset": 120,
+        "type": "UInt64"
+       },
+       "Unknown_80h": {
+        "bytes": 8,
+        "offset": 128,
+        "type": "UInt64"
+       },
+       "Unknown_88h": {
+        "bytes": 8,
+        "offset": 136,
+        "type": "UInt64"
+       },
+       "Unknown_90h": {
+        "bytes": 8,
+        "offset": 144,
+        "type": "UInt64"
+       },
+       "Unknown_98h": {
+        "bytes": 8,
+        "offset": 152,
+        "type": "UInt64"
+       },
+       "Unknown_A0h": {
+        "bytes": 8,
+        "offset": 160,
+        "type": "UInt64"
+       },
+       "Unknown_B0h": {
+        "bytes": 4,
+        "offset": 176,
+        "type": "Int32"
+       },
+       "Unknown_B4h": {
+        "bytes": 4,
+        "offset": 180,
+        "type": "Int32"
+       },
+       "Unknown_B8h": {
+        "bytes": 4,
+        "offset": 184,
+        "type": "Int32"
+       },
+       "Unknown_BCh": {
+        "bytes": 4,
+        "offset": 188,
+        "type": "Int32"
+       },
+       "Unknown_C0h": {
+        "bytes": 4,
+        "offset": 192,
+        "type": "Int32"
+       },
+       "Unknown_C4h": {
+        "bytes": 4,
+        "offset": 196,
+        "type": "Int32"
+       },
+       "Unknown_C8h": {
+        "bytes": 4,
+        "offset": 200,
+        "type": "Int32"
+       },
+       "Unknown_CCh": {
+        "bytes": 4,
+        "offset": 204,
+        "type": "Single"
+       },
+       "Unknown_D8h": {
+        "bytes": 1,
+        "offset": 216,
+        "type": "Byte"
+       },
+       "Unknown_DAh": {
+        "bytes": 2,
+        "offset": 218,
+        "type": "UInt16"
+       },
+       "Unknown_DCh": {
+        "bytes": 4,
+        "offset": 220,
+        "type": "UInt32"
+       },
+       "Unknown_E8h": {
+        "bytes": 8,
+        "offset": 232,
+        "type": "UInt64"
+       },
+       "VehicleGlassWindowsPointer": {
+        "bytes": 8,
+        "offset": 288,
+        "type": "UInt64"
+       }
+      }
+     },
+     "lod": {
+      "bytes": 304,
+      "fields": {
+       "Archetype1Pointer": {
+        "bytes": 8,
+        "offset": 216,
+        "type": "UInt64"
+       },
+       "Archetype2Pointer": {
+        "bytes": 8,
+        "offset": 224,
+        "type": "UInt64"
+       },
+       "ArticulatedBodyTypePointer": {
+        "bytes": 8,
+        "offset": 32,
+        "type": "UInt64"
+       },
+       "BoundPointer": {
+        "bytes": 8,
+        "offset": 232,
+        "type": "UInt64"
+       },
+       "ChildrenCount": {
+        "bytes": 1,
+        "offset": 285,
+        "type": "Byte"
+       },
+       "ChildrenCount2": {
+        "bytes": 1,
+        "offset": 286,
+        "type": "Byte"
+       },
+       "ChildrenInertiaTensorsPointer": {
+        "bytes": 8,
+        "offset": 240,
+        "type": "UInt64"
+       },
+       "ChildrenPointer": {
+        "bytes": 8,
+        "offset": 208,
+        "type": "UInt64"
+       },
+       "ChildrenUnkFloatsPointer": {
+        "bytes": 8,
+        "offset": 40,
+        "type": "UInt64"
+       },
+       "ChildrenUnkVecsPointer": {
+        "bytes": 8,
+        "offset": 248,
+        "type": "UInt64"
+       },
+       "DampingAngularC": {
+        "bytes": 12,
+        "offset": 144,
+        "type": "Vector3"
+       },
+       "DampingAngularV": {
+        "bytes": 12,
+        "offset": 160,
+        "type": "Vector3"
+       },
+       "DampingAngularV2": {
+        "bytes": 12,
+        "offset": 176,
+        "type": "Vector3"
+       },
+       "DampingLinearC": {
+        "bytes": 12,
+        "offset": 96,
+        "type": "Vector3"
+       },
+       "DampingLinearV": {
+        "bytes": 12,
+        "offset": 112,
+        "type": "Vector3"
+       },
+       "DampingLinearV2": {
+        "bytes": 12,
+        "offset": 128,
+        "type": "Vector3"
+       },
+       "FragTransformsPointer": {
+        "bytes": 8,
+        "offset": 256,
+        "type": "UInt64"
+       },
+       "GroupNamesPointer": {
+        "bytes": 8,
+        "offset": 192,
+        "type": "UInt64"
+       },
+       "GroupsCount": {
+        "bytes": 1,
+        "offset": 282,
+        "type": "Byte"
+       },
+       "GroupsPointer": {
+        "bytes": 8,
+        "offset": 200,
+        "type": "UInt64"
+       },
+       "PositionOffset": {
+        "bytes": 12,
+        "offset": 48,
+        "type": "Vector3"
+       },
+       "RootGroupsCount": {
+        "bytes": 1,
+        "offset": 283,
+        "type": "Byte"
+       },
+       "UnknownData1Count": {
+        "bytes": 1,
+        "offset": 280,
+        "type": "Byte"
+       },
+       "UnknownData1Pointer": {
+        "bytes": 8,
+        "offset": 264,
+        "type": "UInt64"
+       },
+       "UnknownData2Count": {
+        "bytes": 1,
+        "offset": 281,
+        "type": "Byte"
+       },
+       "UnknownData2Pointer": {
+        "bytes": 8,
+        "offset": 272,
+        "type": "UInt64"
+       },
+       "Unknown_04h": {
+        "bytes": 4,
+        "offset": 4,
+        "type": "UInt32"
+       },
+       "Unknown_08h": {
+        "bytes": 8,
+        "offset": 8,
+        "type": "UInt64"
+       },
+       "Unknown_10h": {
+        "bytes": 4,
+        "offset": 16,
+        "type": "UInt32"
+       },
+       "Unknown_11Ch": {
+        "bytes": 1,
+        "offset": 284,
+        "type": "Byte"
+       },
+       "Unknown_11Fh": {
+        "bytes": 1,
+        "offset": 287,
+        "type": "Byte"
+       },
+       "Unknown_120h": {
+        "bytes": 8,
+        "offset": 288,
+        "type": "UInt64"
+       },
+       "Unknown_128h": {
+        "bytes": 8,
+        "offset": 296,
+        "type": "UInt64"
+       },
+       "Unknown_14h": {
+        "bytes": 4,
+        "offset": 20,
+        "type": "Single"
+       },
+       "Unknown_18h": {
+        "bytes": 4,
+        "offset": 24,
+        "type": "Single"
+       },
+       "Unknown_1Ch": {
+        "bytes": 4,
+        "offset": 28,
+        "type": "Single"
+       },
+       "Unknown_3Ch": {
+        "bytes": 4,
+        "offset": 60,
+        "type": "UInt32"
+       },
+       "Unknown_40h": {
+        "bytes": 12,
+        "offset": 64,
+        "type": "Vector3"
+       },
+       "Unknown_4Ch": {
+        "bytes": 4,
+        "offset": 76,
+        "type": "UInt32"
+       },
+       "Unknown_50h": {
+        "bytes": 12,
+        "offset": 80,
+        "type": "Vector3"
+       },
+       "Unknown_5Ch": {
+        "bytes": 4,
+        "offset": 92,
+        "type": "UInt32"
+       },
+       "Unknown_6Ch": {
+        "bytes": 4,
+        "offset": 108,
+        "type": "UInt32"
+       },
+       "Unknown_7Ch": {
+        "bytes": 4,
+        "offset": 124,
+        "type": "UInt32"
+       },
+       "Unknown_8Ch": {
+        "bytes": 4,
+        "offset": 140,
+        "type": "UInt32"
+       },
+       "Unknown_9Ch": {
+        "bytes": 4,
+        "offset": 156,
+        "type": "UInt32"
+       },
+       "Unknown_ACh": {
+        "bytes": 4,
+        "offset": 172,
+        "type": "UInt32"
+       },
+       "Unknown_BCh": {
+        "bytes": 4,
+        "offset": 188,
+        "type": "UInt32"
+       },
+       "VFT": {
+        "bytes": 4,
+        "offset": 0,
+        "type": "UInt32"
+       }
+      }
+     },
+     "lodGroup": {
+      "bytes": 48,
+      "fields": {
+       "PhysicsLOD1Pointer": {
+        "bytes": 8,
+        "offset": 16,
+        "type": "UInt64"
+       },
+       "PhysicsLOD2Pointer": {
+        "bytes": 8,
+        "offset": 24,
+        "type": "UInt64"
+       },
+       "PhysicsLOD3Pointer": {
+        "bytes": 8,
+        "offset": 32,
+        "type": "UInt64"
+       },
+       "Unknown_04h": {
+        "bytes": 4,
+        "offset": 4,
+        "type": "UInt32"
+       },
+       "Unknown_08h": {
+        "bytes": 8,
+        "offset": 8,
+        "type": "UInt64"
+       },
+       "Unknown_28h": {
+        "bytes": 8,
+        "offset": 40,
+        "type": "UInt64"
+       },
+       "VFT": {
+        "bytes": 4,
+        "offset": 0,
+        "type": "UInt32"
+       }
+      }
+     }
+    },
+    "sourceSha256": {
+     "baseTypes": "f91f2cb8dd79a81872271eda22bf36cef2276ecee1234068d0613859646b5352",
+     "bounds": "99b034b9e8b3b8461160db50623f011bf942bdd2bc6c10cc29f98f36188a5b19",
+     "fragment": "952e8c7f620639415c17898e617182845a63073995ebdfff45128ab8715e38b2",
+     "resourceFile": "5fef7e32674b55ad13b8e4603c6307812fbd0353b79161e5eb1f0f8a6a6c45b8"
+    },
+    "structs": {
+     "AABB_s": {
+      "bytes": 32,
+      "fields": {
+       "Max": {
+        "bytes": 16,
+        "offset": 16,
+        "type": "Vector4"
+       },
+       "Min": {
+        "bytes": 16,
+        "offset": 0,
+        "type": "Vector4"
+       }
+      }
+     },
+     "BVHNode_s": {
+      "bytes": 16,
+      "fields": {
+       "ItemCount": {
+        "bytes": 2,
+        "offset": 14,
+        "type": "Int16"
+       },
+       "ItemId": {
+        "bytes": 2,
+        "offset": 12,
+        "type": "Int16"
+       },
+       "MaxX": {
+        "bytes": 2,
+        "offset": 6,
+        "type": "Int16"
+       },
+       "MaxY": {
+        "bytes": 2,
+        "offset": 8,
+        "type": "Int16"
+       },
+       "MaxZ": {
+        "bytes": 2,
+        "offset": 10,
+        "type": "Int16"
+       },
+       "MinX": {
+        "bytes": 2,
+        "offset": 0,
+        "type": "Int16"
+       },
+       "MinY": {
+        "bytes": 2,
+        "offset": 2,
+        "type": "Int16"
+       },
+       "MinZ": {
+        "bytes": 2,
+        "offset": 4,
+        "type": "Int16"
+       }
+      }
+     },
+     "BVHTreeInfo_s": {
+      "bytes": 16,
+      "fields": {
+       "MaxX": {
+        "bytes": 2,
+        "offset": 6,
+        "type": "Int16"
+       },
+       "MaxY": {
+        "bytes": 2,
+        "offset": 8,
+        "type": "Int16"
+       },
+       "MaxZ": {
+        "bytes": 2,
+        "offset": 10,
+        "type": "Int16"
+       },
+       "MinX": {
+        "bytes": 2,
+        "offset": 0,
+        "type": "Int16"
+       },
+       "MinY": {
+        "bytes": 2,
+        "offset": 2,
+        "type": "Int16"
+       },
+       "MinZ": {
+        "bytes": 2,
+        "offset": 4,
+        "type": "Int16"
+       },
+       "NodeIndex1": {
+        "bytes": 2,
+        "offset": 12,
+        "type": "Int16"
+       },
+       "NodeIndex2": {
+        "bytes": 2,
+        "offset": 14,
+        "type": "Int16"
+       }
+      }
+     },
+     "BoundCompositeChildrenFlags": {
+      "bytes": 8,
+      "fields": {
+       "Flags1": {
+        "bytes": 4,
+        "offset": 0,
+        "type": "UInt32"
+       },
+       "Flags2": {
+        "bytes": 4,
+        "offset": 4,
+        "type": "UInt32"
+       }
+      }
+     },
+     "BoundMaterialColour": {
+      "bytes": 4,
+      "fields": {
+       "A": {
+        "bytes": 1,
+        "offset": 3,
+        "type": "Byte"
+       },
+       "B": {
+        "bytes": 1,
+        "offset": 2,
+        "type": "Byte"
+       },
+       "G": {
+        "bytes": 1,
+        "offset": 1,
+        "type": "Byte"
+       },
+       "R": {
+        "bytes": 1,
+        "offset": 0,
+        "type": "Byte"
+       }
+      }
+     },
+     "BoundMaterial_s": {
+      "bytes": 8,
+      "fields": {
+       "Data1": {
+        "bytes": 4,
+        "offset": 0,
+        "type": "UInt32"
+       },
+       "Data2": {
+        "bytes": 4,
+        "offset": 4,
+        "type": "UInt32"
+       }
+      }
+     },
+     "BoundVertex_s": {
+      "bytes": 6,
+      "fields": {
+       "X": {
+        "bytes": 2,
+        "offset": 0,
+        "type": "Int16"
+       },
+       "Y": {
+        "bytes": 2,
+        "offset": 2,
+        "type": "Int16"
+       },
+       "Z": {
+        "bytes": 2,
+        "offset": 4,
+        "type": "Int16"
+       }
+      }
+     },
+     "Matrix4F_s": {
+      "bytes": 64,
+      "fields": {
+       "Column1": {
+        "bytes": 12,
+        "offset": 0,
+        "type": "Vector3"
+       },
+       "Column2": {
+        "bytes": 12,
+        "offset": 16,
+        "type": "Vector3"
+       },
+       "Column3": {
+        "bytes": 12,
+        "offset": 32,
+        "type": "Vector3"
+       },
+       "Column4": {
+        "bytes": 12,
+        "offset": 48,
+        "type": "Vector3"
+       },
+       "Flags1": {
+        "bytes": 4,
+        "offset": 12,
+        "type": "UInt32"
+       },
+       "Flags2": {
+        "bytes": 4,
+        "offset": 28,
+        "type": "UInt32"
+       },
+       "Flags3": {
+        "bytes": 4,
+        "offset": 44,
+        "type": "UInt32"
+       },
+       "Flags4": {
+        "bytes": 4,
+        "offset": 60,
+        "type": "UInt32"
+       }
+      }
+     }
+    },
+    "triangle": {
+     "bytes": 16,
+     "fields": {
+      "edgeIndex1": {
+       "bytes": 2,
+       "offset": 10,
+       "type": "UInt16"
+      },
+      "edgeIndex2": {
+       "bytes": 2,
+       "offset": 12,
+       "type": "UInt16"
+      },
+      "edgeIndex3": {
+       "bytes": 2,
+       "offset": 14,
+       "type": "UInt16"
+      },
+      "triArea": {
+       "bytes": 4,
+       "offset": 0,
+       "type": "Single"
+      },
+      "triIndex1": {
+       "bytes": 2,
+       "offset": 4,
+       "type": "UInt16"
+      },
+      "triIndex2": {
+       "bytes": 2,
+       "offset": 6,
+       "type": "UInt16"
+      },
+      "triIndex3": {
+       "bytes": 2,
+       "offset": 8,
+       "type": "UInt16"
+      }
+     }
+    },
+    "triangleIndexMask": 32767,
+    "types": {
+     "Box": 3,
+     "Capsule": 1,
+     "Cloth": 15,
+     "Composite": 10,
+     "Cylinder": 13,
+     "Disc": 12,
+     "Geometry": 4,
+     "GeometryBVH": 8,
+     "None": 255,
+     "Sphere": 0
+    }
+   },
+   "drawable": {
+    "drawable": {
+     "bytes": 336,
+     "fields": {
+      "BoundPointer": {
+       "bytes": 8,
+       "offset": 240,
+       "type": "UInt64"
+      },
+      "BoundingBoxMax": {
+       "bytes": 12,
+       "offset": 64,
+       "type": "Vector3"
+      },
+      "BoundingBoxMin": {
+       "bytes": 12,
+       "offset": 48,
+       "type": "Vector3"
+      },
+      "BoundingCenter": {
+       "bytes": 12,
+       "offset": 32,
+       "type": "Vector3"
+      },
+      "BoundingSphereRadius": {
+       "bytes": 4,
+       "offset": 44,
+       "type": "Single"
+      },
+      "DrawableModelsBlocksSize": {
+       "bytes": 2,
+       "offset": 154,
+       "type": "UInt16"
+      },
+      "DrawableModelsHighPointer": {
+       "bytes": 8,
+       "offset": 80,
+       "type": "UInt64"
+      },
+      "DrawableModelsLowPointer": {
+       "bytes": 8,
+       "offset": 96,
+       "type": "UInt64"
+      },
+      "DrawableModelsMediumPointer": {
+       "bytes": 8,
+       "offset": 88,
+       "type": "UInt64"
+      },
+      "DrawableModelsPointer": {
+       "bytes": 8,
+       "offset": 160,
+       "type": "UInt64"
+      },
+      "DrawableModelsVeryLowPointer": {
+       "bytes": 8,
+       "offset": 104,
+       "type": "UInt64"
+      },
+      "FilePagesInfoPointer": {
+       "bytes": 8,
+       "offset": 8,
+       "type": "UInt64"
+      },
+      "FileUnknown": {
+       "bytes": 4,
+       "offset": 4,
+       "type": "UInt32"
+      },
+      "FileVFT": {
+       "bytes": 4,
+       "offset": 0,
+       "type": "UInt32"
+      },
+      "FragMatricesCapacity": {
+       "bytes": 2,
+       "offset": 258,
+       "type": "UInt16"
+      },
+      "FragMatricesCount": {
+       "bytes": 2,
+       "offset": 272,
+       "type": "UInt16"
+      },
+      "FragMatricesIndsCount": {
+       "bytes": 2,
+       "offset": 256,
+       "type": "UInt16"
+      },
+      "FragMatricesIndsPointer": {
+       "bytes": 8,
+       "offset": 248,
+       "type": "UInt64"
+      },
+      "FragMatricesPointer": {
+       "bytes": 8,
+       "offset": 264,
+       "type": "UInt64"
+      },
+      "FragMatrix": {
+       "bytes": 64,
+       "offset": 176,
+       "type": "Matrix4F_s"
+      },
+      "JointsPointer": {
+       "bytes": 8,
+       "offset": 144,
+       "type": "UInt64"
+      },
+      "LodDistHigh": {
+       "bytes": 4,
+       "offset": 112,
+       "type": "Single"
+      },
+      "LodDistLow": {
+       "bytes": 4,
+       "offset": 120,
+       "type": "Single"
+      },
+      "LodDistMed": {
+       "bytes": 4,
+       "offset": 116,
+       "type": "Single"
+      },
+      "LodDistVlow": {
+       "bytes": 4,
+       "offset": 124,
+       "type": "Single"
+      },
+      "NamePointer": {
+       "bytes": 8,
+       "offset": 304,
+       "type": "UInt64"
+      },
+      "RenderMaskFlagsHigh": {
+       "bytes": 4,
+       "offset": 128,
+       "type": "UInt32"
+      },
+      "RenderMaskFlagsLow": {
+       "bytes": 4,
+       "offset": 136,
+       "type": "UInt32"
+      },
+      "RenderMaskFlagsMed": {
+       "bytes": 4,
+       "offset": 132,
+       "type": "UInt32"
+      },
+      "RenderMaskFlagsVlow": {
+       "bytes": 4,
+       "offset": 140,
+       "type": "UInt32"
+      },
+      "ShaderGroupPointer": {
+       "bytes": 8,
+       "offset": 16,
+       "type": "UInt64"
+      },
+      "SkeletonPointer": {
+       "bytes": 8,
+       "offset": 24,
+       "type": "UInt64"
+      },
+      "Unknown_0A8h": {
+       "bytes": 8,
+       "offset": 168,
+       "type": "UInt64"
+      },
+      "Unknown_104h": {
+       "bytes": 4,
+       "offset": 260,
+       "type": "UInt32"
+      },
+      "Unknown_112h": {
+       "bytes": 2,
+       "offset": 274,
+       "type": "UInt16"
+      },
+      "Unknown_114h": {
+       "bytes": 4,
+       "offset": 276,
+       "type": "UInt32"
+      },
+      "Unknown_118h": {
+       "bytes": 8,
+       "offset": 280,
+       "type": "UInt64"
+      },
+      "Unknown_120h": {
+       "bytes": 8,
+       "offset": 288,
+       "type": "UInt64"
+      },
+      "Unknown_128h": {
+       "bytes": 8,
+       "offset": 296,
+       "type": "UInt64"
+      },
+      "Unknown_138h": {
+       "bytes": 8,
+       "offset": 312,
+       "type": "UInt64"
+      },
+      "Unknown_140h": {
+       "bytes": 8,
+       "offset": 320,
+       "type": "UInt64"
+      },
+      "Unknown_148h": {
+       "bytes": 8,
+       "offset": 328,
+       "type": "UInt64"
+      },
+      "Unknown_3Ch": {
+       "bytes": 4,
+       "offset": 60,
+       "type": "UInt32"
+      },
+      "Unknown_4Ch": {
+       "bytes": 4,
+       "offset": 76,
+       "type": "UInt32"
+      },
+      "Unknown_98h": {
+       "bytes": 2,
+       "offset": 152,
+       "type": "UInt16"
+      },
+      "Unknown_9Ch": {
+       "bytes": 4,
+       "offset": 156,
+       "type": "UInt32"
+      }
+     }
+    },
+    "joints": {
+     "bytes": 64,
+     "fields": {
+      "RotationLimitsCount": {
+       "bytes": 2,
+       "offset": 48,
+       "type": "UInt16"
+      },
+      "RotationLimitsPointer": {
+       "bytes": 8,
+       "offset": 16,
+       "type": "UInt64"
+      },
+      "TranslationLimitsCount": {
+       "bytes": 2,
+       "offset": 50,
+       "type": "UInt16"
+      },
+      "TranslationLimitsPointer": {
+       "bytes": 8,
+       "offset": 24,
+       "type": "UInt64"
+      },
+      "Unknown_20h": {
+       "bytes": 8,
+       "offset": 32,
+       "type": "UInt64"
+      },
+      "Unknown_28h": {
+       "bytes": 8,
+       "offset": 40,
+       "type": "UInt64"
+      },
+      "Unknown_34h": {
+       "bytes": 2,
+       "offset": 52,
+       "type": "UInt16"
+      },
+      "Unknown_36h": {
+       "bytes": 2,
+       "offset": 54,
+       "type": "UInt16"
+      },
+      "Unknown_38h": {
+       "bytes": 8,
+       "offset": 56,
+       "type": "UInt64"
+      },
+      "Unknown_4h": {
+       "bytes": 4,
+       "offset": 4,
+       "type": "UInt32"
+      },
+      "Unknown_8h": {
+       "bytes": 8,
+       "offset": 8,
+       "type": "UInt64"
+      },
+      "VFT": {
+       "bytes": 4,
+       "offset": 0,
+       "type": "UInt32"
+      }
+     }
+    },
+    "listHeader": {
+     "bytes": 16,
+     "fields": {
+      "Capacity": {
+       "bytes": 2,
+       "offset": 10,
+       "type": "UInt16"
+      },
+      "Count": {
+       "bytes": 2,
+       "offset": 8,
+       "type": "UInt16"
+      },
+      "Pointer": {
+       "bytes": 8,
+       "offset": 0,
+       "type": "UInt64"
+      },
+      "Unknown": {
+       "bytes": 4,
+       "offset": 12,
+       "type": "UInt32"
+      }
+     }
+    },
+    "rotationLimit": {
+     "bytes": 192,
+     "fields": {
+      "BoneId": {
+       "bytes": 2,
+       "offset": 8,
+       "type": "UInt16"
+      },
+      "Max": {
+       "bytes": 12,
+       "offset": 104,
+       "type": "Vector3"
+      },
+      "Min": {
+       "bytes": 12,
+       "offset": 92,
+       "type": "Vector3"
+      },
+      "Unknown_0h": {
+       "bytes": 4,
+       "offset": 0,
+       "type": "UInt32"
+      },
+      "Unknown_10h": {
+       "bytes": 4,
+       "offset": 16,
+       "type": "UInt32"
+      },
+      "Unknown_14h": {
+       "bytes": 4,
+       "offset": 20,
+       "type": "UInt32"
+      },
+      "Unknown_18h": {
+       "bytes": 4,
+       "offset": 24,
+       "type": "UInt32"
+      },
+      "Unknown_1Ch": {
+       "bytes": 4,
+       "offset": 28,
+       "type": "UInt32"
+      },
+      "Unknown_20h": {
+       "bytes": 4,
+       "offset": 32,
+       "type": "UInt32"
+      },
+      "Unknown_24h": {
+       "bytes": 4,
+       "offset": 36,
+       "type": "UInt32"
+      },
+      "Unknown_28h": {
+       "bytes": 4,
+       "offset": 40,
+       "type": "UInt32"
+      },
+      "Unknown_2Ch": {
+       "bytes": 4,
+       "offset": 44,
+       "type": "Single"
+      },
+      "Unknown_30h": {
+       "bytes": 4,
+       "offset": 48,
+       "type": "UInt32"
+      },
+      "Unknown_34h": {
+       "bytes": 4,
+       "offset": 52,
+       "type": "UInt32"
+      },
+      "Unknown_38h": {
+       "bytes": 4,
+       "offset": 56,
+       "type": "UInt32"
+      },
+      "Unknown_3Ch": {
+       "bytes": 4,
+       "offset": 60,
+       "type": "UInt32"
+      },
+      "Unknown_40h": {
+       "bytes": 4,
+       "offset": 64,
+       "type": "Single"
+      },
+      "Unknown_44h": {
+       "bytes": 4,
+       "offset": 68,
+       "type": "UInt32"
+      },
+      "Unknown_48h": {
+       "bytes": 4,
+       "offset": 72,
+       "type": "UInt32"
+      },
+      "Unknown_4Ch": {
+       "bytes": 4,
+       "offset": 76,
+       "type": "UInt32"
+      },
+      "Unknown_4h": {
+       "bytes": 4,
+       "offset": 4,
+       "type": "UInt32"
+      },
+      "Unknown_50h": {
+       "bytes": 4,
+       "offset": 80,
+       "type": "Single"
+      },
+      "Unknown_54h": {
+       "bytes": 4,
+       "offset": 84,
+       "type": "Single"
+      },
+      "Unknown_58h": {
+       "bytes": 4,
+       "offset": 88,
+       "type": "Single"
+      },
+      "Unknown_74h": {
+       "bytes": 4,
+       "offset": 116,
+       "type": "Single"
+      },
+      "Unknown_78h": {
+       "bytes": 4,
+       "offset": 120,
+       "type": "Single"
+      },
+      "Unknown_7Ch": {
+       "bytes": 4,
+       "offset": 124,
+       "type": "Single"
+      },
+      "Unknown_80h": {
+       "bytes": 4,
+       "offset": 128,
+       "type": "Single"
+      },
+      "Unknown_84h": {
+       "bytes": 4,
+       "offset": 132,
+       "type": "Single"
+      },
+      "Unknown_88h": {
+       "bytes": 4,
+       "offset": 136,
+       "type": "Single"
+      },
+      "Unknown_8Ch": {
+       "bytes": 4,
+       "offset": 140,
+       "type": "Single"
+      },
+      "Unknown_90h": {
+       "bytes": 4,
+       "offset": 144,
+       "type": "Single"
+      },
+      "Unknown_94h": {
+       "bytes": 4,
+       "offset": 148,
+       "type": "Single"
+      },
+      "Unknown_98h": {
+       "bytes": 4,
+       "offset": 152,
+       "type": "Single"
+      },
+      "Unknown_9Ch": {
+       "bytes": 4,
+       "offset": 156,
+       "type": "Single"
+      },
+      "Unknown_A0h": {
+       "bytes": 4,
+       "offset": 160,
+       "type": "Single"
+      },
+      "Unknown_A4h": {
+       "bytes": 4,
+       "offset": 164,
+       "type": "Single"
+      },
+      "Unknown_A8h": {
+       "bytes": 4,
+       "offset": 168,
+       "type": "Single"
+      },
+      "Unknown_ACh": {
+       "bytes": 4,
+       "offset": 172,
+       "type": "Single"
+      },
+      "Unknown_Ah": {
+       "bytes": 2,
+       "offset": 10,
+       "type": "UInt16"
+      },
+      "Unknown_B0h": {
+       "bytes": 4,
+       "offset": 176,
+       "type": "Single"
+      },
+      "Unknown_B4h": {
+       "bytes": 4,
+       "offset": 180,
+       "type": "Single"
+      },
+      "Unknown_B8h": {
+       "bytes": 4,
+       "offset": 184,
+       "type": "Single"
+      },
+      "Unknown_BCh": {
+       "bytes": 4,
+       "offset": 188,
+       "type": "UInt32"
+      },
+      "Unknown_Ch": {
+       "bytes": 4,
+       "offset": 12,
+       "type": "UInt32"
+      }
+     }
+    },
+    "scope": "Finite null optional fragment arrays/extensions; source model-block size must be zero as in accepted native references",
+    "sourceSha256": {
+     "baseTypes": "f91f2cb8dd79a81872271eda22bf36cef2276ecee1234068d0613859646b5352",
+     "drawable": "f4911e01d21bbbef054709456fa5c10ae2743593c6b812e6a4434c128b51ea30",
+     "fragment": "952e8c7f620639415c17898e617182845a63073995ebdfff45128ab8715e38b2",
+     "resourceFile": "5fef7e32674b55ad13b8e4603c6307812fbd0353b79161e5eb1f0f8a6a6c45b8"
+    },
+    "translationLimit": {
+     "bytes": 64,
+     "fields": {
+      "BoneId": {
+       "bytes": 4,
+       "offset": 8,
+       "type": "UInt32"
+      },
+      "Max": {
+       "bytes": 12,
+       "offset": 48,
+       "type": "Vector3"
+      },
+      "Min": {
+       "bytes": 12,
+       "offset": 32,
+       "type": "Vector3"
+      },
+      "Unknown_0h": {
+       "bytes": 4,
+       "offset": 0,
+       "type": "UInt32"
+      },
+      "Unknown_10h": {
+       "bytes": 4,
+       "offset": 16,
+       "type": "UInt32"
+      },
+      "Unknown_14h": {
+       "bytes": 4,
+       "offset": 20,
+       "type": "UInt32"
+      },
+      "Unknown_18h": {
+       "bytes": 4,
+       "offset": 24,
+       "type": "UInt32"
+      },
+      "Unknown_1Ch": {
+       "bytes": 4,
+       "offset": 28,
+       "type": "UInt32"
+      },
+      "Unknown_2Ch": {
+       "bytes": 4,
+       "offset": 44,
+       "type": "UInt32"
+      },
+      "Unknown_3Ch": {
+       "bytes": 4,
+       "offset": 60,
+       "type": "UInt32"
+      },
+      "Unknown_4h": {
+       "bytes": 4,
+       "offset": 4,
+       "type": "UInt32"
+      },
+      "Unknown_Ch": {
+       "bytes": 4,
+       "offset": 12,
+       "type": "UInt32"
+      }
+     }
+    }
+   },
+   "fragment": {
+    "boneHeader": {
+     "bytes": 32,
+     "fields": {
+      "ItemCount1": {
+       "bytes": 1,
+       "offset": 16,
+       "type": "Byte"
+      },
+      "ItemCount2": {
+       "bytes": 1,
+       "offset": 17,
+       "type": "Byte"
+      },
+      "Unknown_00h": {
+       "bytes": 8,
+       "offset": 0,
+       "type": "UInt64"
+      },
+      "Unknown_08h": {
+       "bytes": 8,
+       "offset": 8,
+       "type": "UInt64"
+      },
+      "Unknown_12h": {
+       "bytes": 2,
+       "offset": 18,
+       "type": "UInt16"
+      },
+      "Unknown_14h": {
+       "bytes": 4,
+       "offset": 20,
+       "type": "UInt32"
+      },
+      "Unknown_18h": {
+       "bytes": 8,
+       "offset": 24,
+       "type": "UInt64"
+      }
+     }
+    },
+    "boneMatrix": {
+     "bytes": 48,
+     "fields": {
+      "Row1.W": {
+       "bytes": 4,
+       "offset": 12,
+       "type": "Single"
+      },
+      "Row1.X": {
+       "bytes": 4,
+       "offset": 0,
+       "type": "Single"
+      },
+      "Row1.Y": {
+       "bytes": 4,
+       "offset": 4,
+       "type": "Single"
+      },
+      "Row1.Z": {
+       "bytes": 4,
+       "offset": 8,
+       "type": "Single"
+      },
+      "Row2.W": {
+       "bytes": 4,
+       "offset": 28,
+       "type": "Single"
+      },
+      "Row2.X": {
+       "bytes": 4,
+       "offset": 16,
+       "type": "Single"
+      },
+      "Row2.Y": {
+       "bytes": 4,
+       "offset": 20,
+       "type": "Single"
+      },
+      "Row2.Z": {
+       "bytes": 4,
+       "offset": 24,
+       "type": "Single"
+      },
+      "Row3.W": {
+       "bytes": 4,
+       "offset": 44,
+       "type": "Single"
+      },
+      "Row3.X": {
+       "bytes": 4,
+       "offset": 32,
+       "type": "Single"
+      },
+      "Row3.Y": {
+       "bytes": 4,
+       "offset": 36,
+       "type": "Single"
+      },
+      "Row3.Z": {
+       "bytes": 4,
+       "offset": 40,
+       "type": "Single"
+      }
+     }
+    },
+    "glassHeader": {
+     "bytes": 12,
+     "fields": {
+      "ItemCount": {
+       "bytes": 2,
+       "offset": 6,
+       "type": "UInt16"
+      },
+      "TotalLength": {
+       "bytes": 4,
+       "offset": 8,
+       "type": "UInt32"
+      },
+      "Unknown_0h": {
+       "bytes": 4,
+       "offset": 0,
+       "type": "UInt32"
+      },
+      "Unknown_4h": {
+       "bytes": 2,
+       "offset": 4,
+       "type": "UInt16"
+      }
+     }
+    },
+    "glassSignature": 1447515976,
+    "matrixDeclarations": {
+     "line": 85,
+     "rows": [
+      "Row1",
+      "Row2",
+      "Row3"
+     ]
+    },
+    "root": {
+     "bytes": 304,
+     "fields": {
+      "BoneTransformsPointer": {
+       "bytes": 8,
+       "offset": 168,
+       "type": "UInt64"
+      },
+      "BoundingSphereCenter": {
+       "bytes": 12,
+       "offset": 32,
+       "type": "Vector3"
+      },
+      "BoundingSphereRadius": {
+       "bytes": 4,
+       "offset": 44,
+       "type": "Single"
+      },
+      "BuoyancyFactor": {
+       "bytes": 4,
+       "offset": 212,
+       "type": "Single"
+      },
+      "Cloths.Capacity": {
+       "bytes": 2,
+       "offset": 106,
+       "type": "UInt16"
+      },
+      "Cloths.Count": {
+       "bytes": 2,
+       "offset": 104,
+       "type": "UInt16"
+      },
+      "Cloths.Pointer": {
+       "bytes": 8,
+       "offset": 96,
+       "type": "UInt64"
+      },
+      "Cloths.Unknown": {
+       "bytes": 4,
+       "offset": 108,
+       "type": "UInt32"
+      },
+      "DrawableArrayCount": {
+       "bytes": 4,
+       "offset": 72,
+       "type": "UInt32"
+      },
+      "DrawableArrayFlag": {
+       "bytes": 4,
+       "offset": 76,
+       "type": "Int32"
+      },
+      "DrawableArrayNamesPointer": {
+       "bytes": 8,
+       "offset": 64,
+       "type": "UInt64"
+      },
+      "DrawableArrayPointer": {
+       "bytes": 8,
+       "offset": 56,
+       "type": "UInt64"
+      },
+      "DrawableClothPointer": {
+       "bytes": 8,
+       "offset": 248,
+       "type": "UInt64"
+      },
+      "DrawablePointer": {
+       "bytes": 8,
+       "offset": 48,
+       "type": "UInt64"
+      },
+      "FilePagesInfoPointer": {
+       "bytes": 8,
+       "offset": 8,
+       "type": "UInt64"
+      },
+      "FileUnknown": {
+       "bytes": 4,
+       "offset": 4,
+       "type": "UInt32"
+      },
+      "FileVFT": {
+       "bytes": 4,
+       "offset": 0,
+       "type": "UInt32"
+      },
+      "GlassWindowsCount": {
+       "bytes": 1,
+       "offset": 217,
+       "type": "Byte"
+      },
+      "GlassWindowsPointer": {
+       "bytes": 8,
+       "offset": 224,
+       "type": "UInt64"
+      },
+      "GravityFactor": {
+       "bytes": 4,
+       "offset": 208,
+       "type": "Single"
+      },
+      "LightAttributes.Capacity": {
+       "bytes": 2,
+       "offset": 282,
+       "type": "UInt16"
+      },
+      "LightAttributes.Count": {
+       "bytes": 2,
+       "offset": 280,
+       "type": "UInt16"
+      },
+      "LightAttributes.Pointer": {
+       "bytes": 8,
+       "offset": 272,
+       "type": "UInt64"
+      },
+      "LightAttributes.Unknown": {
+       "bytes": 4,
+       "offset": 284,
+       "type": "UInt32"
+      },
+      "NamePointer": {
+       "bytes": 8,
+       "offset": 88,
+       "type": "UInt64"
+      },
+      "PhysicsLODGroupPointer": {
+       "bytes": 8,
+       "offset": 240,
+       "type": "UInt64"
+      },
+      "Unknown_100h": {
+       "bytes": 8,
+       "offset": 256,
+       "type": "UInt64"
+      },
+      "Unknown_108h": {
+       "bytes": 8,
+       "offset": 264,
+       "type": "UInt64"
+      },
+      "Unknown_10h": {
+       "bytes": 8,
+       "offset": 16,
+       "type": "UInt64"
+      },
+      "Unknown_128h": {
+       "bytes": 8,
+       "offset": 296,
+       "type": "UInt64"
+      },
+      "Unknown_18h": {
+       "bytes": 8,
+       "offset": 24,
+       "type": "UInt64"
+      },
+      "Unknown_50h": {
+       "bytes": 8,
+       "offset": 80,
+       "type": "UInt64"
+      },
+      "Unknown_70h": {
+       "bytes": 8,
+       "offset": 112,
+       "type": "UInt64"
+      },
+      "Unknown_78h": {
+       "bytes": 8,
+       "offset": 120,
+       "type": "UInt64"
+      },
+      "Unknown_80h": {
+       "bytes": 8,
+       "offset": 128,
+       "type": "UInt64"
+      },
+      "Unknown_88h": {
+       "bytes": 8,
+       "offset": 136,
+       "type": "UInt64"
+      },
+      "Unknown_90h": {
+       "bytes": 8,
+       "offset": 144,
+       "type": "UInt64"
+      },
+      "Unknown_98h": {
+       "bytes": 8,
+       "offset": 152,
+       "type": "UInt64"
+      },
+      "Unknown_A0h": {
+       "bytes": 8,
+       "offset": 160,
+       "type": "UInt64"
+      },
+      "Unknown_B0h": {
+       "bytes": 4,
+       "offset": 176,
+       "type": "Int32"
+      },
+      "Unknown_B4h": {
+       "bytes": 4,
+       "offset": 180,
+       "type": "Int32"
+      },
+      "Unknown_B8h": {
+       "bytes": 4,
+       "offset": 184,
+       "type": "Int32"
+      },
+      "Unknown_BCh": {
+       "bytes": 4,
+       "offset": 188,
+       "type": "Int32"
+      },
+      "Unknown_C0h": {
+       "bytes": 4,
+       "offset": 192,
+       "type": "Int32"
+      },
+      "Unknown_C4h": {
+       "bytes": 4,
+       "offset": 196,
+       "type": "Int32"
+      },
+      "Unknown_C8h": {
+       "bytes": 4,
+       "offset": 200,
+       "type": "Int32"
+      },
+      "Unknown_CCh": {
+       "bytes": 4,
+       "offset": 204,
+       "type": "Single"
+      },
+      "Unknown_D8h": {
+       "bytes": 1,
+       "offset": 216,
+       "type": "Byte"
+      },
+      "Unknown_DAh": {
+       "bytes": 2,
+       "offset": 218,
+       "type": "UInt16"
+      },
+      "Unknown_DCh": {
+       "bytes": 4,
+       "offset": 220,
+       "type": "UInt32"
+      },
+      "Unknown_E8h": {
+       "bytes": 8,
+       "offset": 232,
+       "type": "UInt64"
+      },
+      "VehicleGlassWindowsPointer": {
+       "bytes": 8,
+       "offset": 288,
+       "type": "UInt64"
+      }
+     }
+    },
+    "sourceSha256": {
+     "baseTypes": "f91f2cb8dd79a81872271eda22bf36cef2276ecee1234068d0613859646b5352",
+     "fragment": "952e8c7f620639415c17898e617182845a63073995ebdfff45128ab8715e38b2"
+    },
+    "window": {
+     "bytes": 112,
+     "fields": {
+      "CracksTextureTiling": {
+       "bytes": 4,
+       "offset": 100,
+       "type": "Single"
+      },
+      "ItemDataByteLength": {
+       "bytes": 2,
+       "offset": 76,
+       "type": "UInt16"
+      },
+      "ItemDataCount": {
+       "bytes": 2,
+       "offset": 74,
+       "type": "UInt16"
+      },
+      "ItemID": {
+       "bytes": 2,
+       "offset": 68,
+       "type": "UInt16"
+      },
+      "Projection.M11": {
+       "bytes": 4,
+       "offset": 0,
+       "type": "Single"
+      },
+      "Projection.M12": {
+       "bytes": 4,
+       "offset": 4,
+       "type": "Single"
+      },
+      "Projection.M13": {
+       "bytes": 4,
+       "offset": 8,
+       "type": "Single"
+      },
+      "Projection.M14": {
+       "bytes": 4,
+       "offset": 12,
+       "type": "Single"
+      },
+      "Projection.M21": {
+       "bytes": 4,
+       "offset": 16,
+       "type": "Single"
+      },
+      "Projection.M22": {
+       "bytes": 4,
+       "offset": 20,
+       "type": "Single"
+      },
+      "Projection.M23": {
+       "bytes": 4,
+       "offset": 24,
+       "type": "Single"
+      },
+      "Projection.M24": {
+       "bytes": 4,
+       "offset": 28,
+       "type": "Single"
+      },
+      "Projection.M31": {
+       "bytes": 4,
+       "offset": 32,
+       "type": "Single"
+      },
+      "Projection.M32": {
+       "bytes": 4,
+       "offset": 36,
+       "type": "Single"
+      },
+      "Projection.M33": {
+       "bytes": 4,
+       "offset": 40,
+       "type": "Single"
+      },
+      "Projection.M34": {
+       "bytes": 4,
+       "offset": 44,
+       "type": "Single"
+      },
+      "Projection.M41": {
+       "bytes": 4,
+       "offset": 48,
+       "type": "Single"
+      },
+      "Projection.M42": {
+       "bytes": 4,
+       "offset": 52,
+       "type": "Single"
+      },
+      "Projection.M43": {
+       "bytes": 4,
+       "offset": 56,
+       "type": "Single"
+      },
+      "Projection.M44": {
+       "bytes": 4,
+       "offset": 60,
+       "type": "Single"
+      },
+      "ShatterMapWidth": {
+       "bytes": 2,
+       "offset": 72,
+       "type": "UInt16"
+      },
+      "UnkFloat17": {
+       "bytes": 4,
+       "offset": 88,
+       "type": "Single"
+      },
+      "UnkFloat18": {
+       "bytes": 4,
+       "offset": 92,
+       "type": "Single"
+      },
+      "UnkUint1": {
+       "bytes": 4,
+       "offset": 64,
+       "type": "UInt32"
+      },
+      "UnkUint2": {
+       "bytes": 4,
+       "offset": 80,
+       "type": "UInt32"
+      },
+      "UnkUint3": {
+       "bytes": 4,
+       "offset": 84,
+       "type": "UInt32"
+      },
+      "UnkUint4": {
+       "bytes": 4,
+       "offset": 104,
+       "type": "UInt32"
+      },
+      "UnkUint5": {
+       "bytes": 4,
+       "offset": 108,
+       "type": "UInt32"
+      },
+      "UnkUshort1": {
+       "bytes": 2,
+       "offset": 70,
+       "type": "UInt16"
+      },
+      "UnkUshort3": {
+       "bytes": 2,
+       "offset": 78,
+       "type": "UInt16"
+      },
+      "UnkUshort4": {
+       "bytes": 2,
+       "offset": 96,
+       "type": "UInt16"
+      },
+      "UnkUshort5": {
+       "bytes": 2,
+       "offset": 98,
+       "type": "UInt16"
+      }
+     }
+    },
+    "windowSignature": 1447515971
+   },
+   "meshDrawContext": {
+    "defaultTopology": "triangle-list",
+    "exceptionRequiresParameterList": true,
+    "exceptionShaderFileHash": 3854885487,
+    "exceptionTopology": "line-list"
+   },
+   "physics": {
+    "archetypeKind": 2,
+    "contiguousGroup": {
+     "bytes": 176,
+     "fields": {
+      "ChildCount": {
+       "bytes": 1,
+       "offset": 79,
+       "type": "Byte"
+      },
+      "ChildGroupCount": {
+       "bytes": 1,
+       "offset": 80,
+       "type": "Byte"
+      },
+      "ChildGroupIndex": {
+       "bytes": 1,
+       "offset": 76,
+       "type": "Byte"
+      },
+      "ChildIndex": {
+       "bytes": 1,
+       "offset": 78,
+       "type": "Byte"
+      },
+      "DamageHealth": {
+       "bytes": 4,
+       "offset": 88,
+       "type": "Single"
+      },
+      "ForceTransmissionScaleDown": {
+       "bytes": 4,
+       "offset": 24,
+       "type": "Single"
+      },
+      "ForceTransmissionScaleUp": {
+       "bytes": 4,
+       "offset": 20,
+       "type": "Single"
+      },
+      "GlassFlags": {
+       "bytes": 1,
+       "offset": 83,
+       "type": "Byte"
+      },
+      "GlassWindowIndex": {
+       "bytes": 1,
+       "offset": 82,
+       "type": "Byte"
+      },
+      "JointStiffness": {
+       "bytes": 4,
+       "offset": 28,
+       "type": "Single"
+      },
+      "LatchStrength": {
+       "bytes": 4,
+       "offset": 64,
+       "type": "Single"
+      },
+      "Mass": {
+       "bytes": 4,
+       "offset": 68,
+       "type": "Single"
+      },
+      "MaxSoftAngle1": {
+       "bytes": 4,
+       "offset": 36,
+       "type": "Single"
+      },
+      "MaxSoftAngle2": {
+       "bytes": 4,
+       "offset": 40,
+       "type": "Single"
+      },
+      "MaxSoftAngle3": {
+       "bytes": 4,
+       "offset": 44,
+       "type": "Single"
+      },
+      "MinDamageForce": {
+       "bytes": 4,
+       "offset": 84,
+       "type": "Single"
+      },
+      "MinSoftAngle1": {
+       "bytes": 4,
+       "offset": 32,
+       "type": "Single"
+      },
+      "Name.Unknown_00h": {
+       "bytes": 4,
+       "offset": 128,
+       "type": "UInt32"
+      },
+      "Name.Unknown_04h": {
+       "bytes": 4,
+       "offset": 132,
+       "type": "UInt32"
+      },
+      "Name.Unknown_08h": {
+       "bytes": 4,
+       "offset": 136,
+       "type": "UInt32"
+      },
+      "Name.Unknown_0Ch": {
+       "bytes": 4,
+       "offset": 140,
+       "type": "UInt32"
+      },
+      "Name.Unknown_10h": {
+       "bytes": 4,
+       "offset": 144,
+       "type": "UInt32"
+      },
+      "Name.Unknown_14h": {
+       "bytes": 4,
+       "offset": 148,
+       "type": "UInt32"
+      },
+      "Name.Unknown_18h": {
+       "bytes": 4,
+       "offset": 152,
+       "type": "UInt32"
+      },
+      "Name.Unknown_1Ch": {
+       "bytes": 4,
+       "offset": 156,
+       "type": "UInt32"
+      },
+      "Name.Unknown_20h": {
+       "bytes": 4,
+       "offset": 160,
+       "type": "UInt32"
+      },
+      "Name.Unknown_24h": {
+       "bytes": 4,
+       "offset": 164,
+       "type": "UInt32"
+      },
+      "ParentIndex": {
+       "bytes": 1,
+       "offset": 77,
+       "type": "Byte"
+      },
+      "RestoringMaxTorque": {
+       "bytes": 4,
+       "offset": 60,
+       "type": "Single"
+      },
+      "RestoringStrength": {
+       "bytes": 4,
+       "offset": 56,
+       "type": "Single"
+      },
+      "RotationSpeed": {
+       "bytes": 4,
+       "offset": 48,
+       "type": "Single"
+      },
+      "RotationStrength": {
+       "bytes": 4,
+       "offset": 52,
+       "type": "Single"
+      },
+      "Strength": {
+       "bytes": 4,
+       "offset": 16,
+       "type": "Single"
+      },
+      "UnkByte51": {
+       "bytes": 1,
+       "offset": 81,
+       "type": "Byte"
+      },
+      "UnkFloat5C": {
+       "bytes": 4,
+       "offset": 92,
+       "type": "Single"
+      },
+      "UnkFloat60": {
+       "bytes": 4,
+       "offset": 96,
+       "type": "Single"
+      },
+      "UnkFloat64": {
+       "bytes": 4,
+       "offset": 100,
+       "type": "Single"
+      },
+      "UnkFloat68": {
+       "bytes": 4,
+       "offset": 104,
+       "type": "Single"
+      },
+      "UnkFloat6C": {
+       "bytes": 4,
+       "offset": 108,
+       "type": "Single"
+      },
+      "UnkFloat70": {
+       "bytes": 4,
+       "offset": 112,
+       "type": "Single"
+      },
+      "UnkFloat74": {
+       "bytes": 4,
+       "offset": 116,
+       "type": "Single"
+      },
+      "UnkFloat78": {
+       "bytes": 4,
+       "offset": 120,
+       "type": "Single"
+      },
+      "UnkFloatA8": {
+       "bytes": 4,
+       "offset": 168,
+       "type": "Single"
+      },
+      "Unknown_00h": {
+       "bytes": 4,
+       "offset": 0,
+       "type": "Single"
+      },
+      "Unknown_04h": {
+       "bytes": 4,
+       "offset": 4,
+       "type": "Single"
+      },
+      "Unknown_08h": {
+       "bytes": 4,
+       "offset": 8,
+       "type": "Single"
+      },
+      "Unknown_0Ch": {
+       "bytes": 4,
+       "offset": 12,
+       "type": "Single"
+      },
+      "Unknown_48h": {
+       "bytes": 4,
+       "offset": 72,
+       "type": "Single"
+      },
+      "Unknown_7Ch": {
+       "bytes": 4,
+       "offset": 124,
+       "type": "Single"
+      },
+      "Unknown_ACh": {
+       "bytes": 4,
+       "offset": 172,
+       "type": "Single"
+      }
+     }
+    },
+    "fragment": {
+     "bytes": 304,
+     "fields": {
+      "BoneTransformsPointer": {
+       "bytes": 8,
+       "offset": 168,
+       "type": "UInt64"
+      },
+      "BoundingSphereCenter": {
+       "bytes": 12,
+       "offset": 32,
+       "type": "Vector3"
+      },
+      "BoundingSphereRadius": {
+       "bytes": 4,
+       "offset": 44,
+       "type": "Single"
+      },
+      "BuoyancyFactor": {
+       "bytes": 4,
+       "offset": 212,
+       "type": "Single"
+      },
+      "Cloths.Capacity": {
+       "bytes": 2,
+       "offset": 106,
+       "type": "UInt16"
+      },
+      "Cloths.Count": {
+       "bytes": 2,
+       "offset": 104,
+       "type": "UInt16"
+      },
+      "Cloths.Pointer": {
+       "bytes": 8,
+       "offset": 96,
+       "type": "UInt64"
+      },
+      "Cloths.Unknown": {
+       "bytes": 4,
+       "offset": 108,
+       "type": "UInt32"
+      },
+      "DrawableArrayCount": {
+       "bytes": 4,
+       "offset": 72,
+       "type": "UInt32"
+      },
+      "DrawableArrayFlag": {
+       "bytes": 4,
+       "offset": 76,
+       "type": "Int32"
+      },
+      "DrawableArrayNamesPointer": {
+       "bytes": 8,
+       "offset": 64,
+       "type": "UInt64"
+      },
+      "DrawableArrayPointer": {
+       "bytes": 8,
+       "offset": 56,
+       "type": "UInt64"
+      },
+      "DrawableClothPointer": {
+       "bytes": 8,
+       "offset": 248,
+       "type": "UInt64"
+      },
+      "DrawablePointer": {
+       "bytes": 8,
+       "offset": 48,
+       "type": "UInt64"
+      },
+      "FilePagesInfoPointer": {
+       "bytes": 8,
+       "offset": 8,
+       "type": "UInt64"
+      },
+      "FileUnknown": {
+       "bytes": 4,
+       "offset": 4,
+       "type": "UInt32"
+      },
+      "FileVFT": {
+       "bytes": 4,
+       "offset": 0,
+       "type": "UInt32"
+      },
+      "GlassWindowsCount": {
+       "bytes": 1,
+       "offset": 217,
+       "type": "Byte"
+      },
+      "GlassWindowsPointer": {
+       "bytes": 8,
+       "offset": 224,
+       "type": "UInt64"
+      },
+      "GravityFactor": {
+       "bytes": 4,
+       "offset": 208,
+       "type": "Single"
+      },
+      "LightAttributes.Capacity": {
+       "bytes": 2,
+       "offset": 282,
+       "type": "UInt16"
+      },
+      "LightAttributes.Count": {
+       "bytes": 2,
+       "offset": 280,
+       "type": "UInt16"
+      },
+      "LightAttributes.Pointer": {
+       "bytes": 8,
+       "offset": 272,
+       "type": "UInt64"
+      },
+      "LightAttributes.Unknown": {
+       "bytes": 4,
+       "offset": 284,
+       "type": "UInt32"
+      },
+      "NamePointer": {
+       "bytes": 8,
+       "offset": 88,
+       "type": "UInt64"
+      },
+      "PhysicsLODGroupPointer": {
+       "bytes": 8,
+       "offset": 240,
+       "type": "UInt64"
+      },
+      "Unknown_100h": {
+       "bytes": 8,
+       "offset": 256,
+       "type": "UInt64"
+      },
+      "Unknown_108h": {
+       "bytes": 8,
+       "offset": 264,
+       "type": "UInt64"
+      },
+      "Unknown_10h": {
+       "bytes": 8,
+       "offset": 16,
+       "type": "UInt64"
+      },
+      "Unknown_128h": {
+       "bytes": 8,
+       "offset": 296,
+       "type": "UInt64"
+      },
+      "Unknown_18h": {
+       "bytes": 8,
+       "offset": 24,
+       "type": "UInt64"
+      },
+      "Unknown_50h": {
+       "bytes": 8,
+       "offset": 80,
+       "type": "UInt64"
+      },
+      "Unknown_70h": {
+       "bytes": 8,
+       "offset": 112,
+       "type": "UInt64"
+      },
+      "Unknown_78h": {
+       "bytes": 8,
+       "offset": 120,
+       "type": "UInt64"
+      },
+      "Unknown_80h": {
+       "bytes": 8,
+       "offset": 128,
+       "type": "UInt64"
+      },
+      "Unknown_88h": {
+       "bytes": 8,
+       "offset": 136,
+       "type": "UInt64"
+      },
+      "Unknown_90h": {
+       "bytes": 8,
+       "offset": 144,
+       "type": "UInt64"
+      },
+      "Unknown_98h": {
+       "bytes": 8,
+       "offset": 152,
+       "type": "UInt64"
+      },
+      "Unknown_A0h": {
+       "bytes": 8,
+       "offset": 160,
+       "type": "UInt64"
+      },
+      "Unknown_B0h": {
+       "bytes": 4,
+       "offset": 176,
+       "type": "Int32"
+      },
+      "Unknown_B4h": {
+       "bytes": 4,
+       "offset": 180,
+       "type": "Int32"
+      },
+      "Unknown_B8h": {
+       "bytes": 4,
+       "offset": 184,
+       "type": "Int32"
+      },
+      "Unknown_BCh": {
+       "bytes": 4,
+       "offset": 188,
+       "type": "Int32"
+      },
+      "Unknown_C0h": {
+       "bytes": 4,
+       "offset": 192,
+       "type": "Int32"
+      },
+      "Unknown_C4h": {
+       "bytes": 4,
+       "offset": 196,
+       "type": "Int32"
+      },
+      "Unknown_C8h": {
+       "bytes": 4,
+       "offset": 200,
+       "type": "Int32"
+      },
+      "Unknown_CCh": {
+       "bytes": 4,
+       "offset": 204,
+       "type": "Single"
+      },
+      "Unknown_D8h": {
+       "bytes": 1,
+       "offset": 216,
+       "type": "Byte"
+      },
+      "Unknown_DAh": {
+       "bytes": 2,
+       "offset": 218,
+       "type": "UInt16"
+      },
+      "Unknown_DCh": {
+       "bytes": 4,
+       "offset": 220,
+       "type": "UInt32"
+      },
+      "Unknown_E8h": {
+       "bytes": 8,
+       "offset": 232,
+       "type": "UInt64"
+      },
+      "VehicleGlassWindowsPointer": {
+       "bytes": 8,
+       "offset": 288,
+       "type": "UInt64"
+      }
+     }
+    },
+    "groupNameOffset": 128,
+    "groupNamesTrailerBytes": 8,
+    "layouts": {
+     "Single": {
+      "bytes": 4,
+      "fields": {
+       "value": {
+        "bytes": 4,
+        "offset": 0,
+        "type": "Single"
+       }
+      }
+     },
+     "Vector4": {
+      "bytes": 16,
+      "fields": {
+       "value": {
+        "bytes": 16,
+        "offset": 0,
+        "type": "Vector4"
+       }
+      }
+     },
+     "archetype": {
+      "bytes": 224,
+      "fields": {
+       "BoundPointer": {
+        "bytes": 8,
+        "offset": 32,
+        "type": "UInt64"
+       },
+       "InertiaTensor": {
+        "bytes": 12,
+        "offset": 96,
+        "type": "Vector3"
+       },
+       "InertiaTensorInv": {
+        "bytes": 12,
+        "offset": 112,
+        "type": "Vector3"
+       },
+       "Mass": {
+        "bytes": 4,
+        "offset": 64,
+        "type": "Single"
+       },
+       "MassInv": {
+        "bytes": 4,
+        "offset": 68,
+        "type": "Single"
+       },
+       "NamePointer": {
+        "bytes": 8,
+        "offset": 24,
+        "type": "UInt64"
+       },
+       "Unknown_04h": {
+        "bytes": 4,
+        "offset": 4,
+        "type": "UInt32"
+       },
+       "Unknown_08h": {
+        "bytes": 8,
+        "offset": 8,
+        "type": "UInt64"
+       },
+       "Unknown_10h": {
+        "bytes": 8,
+        "offset": 16,
+        "type": "UInt64"
+       },
+       "Unknown_28h": {
+        "bytes": 4,
+        "offset": 40,
+        "type": "UInt32"
+       },
+       "Unknown_2Ch": {
+        "bytes": 4,
+        "offset": 44,
+        "type": "UInt32"
+       },
+       "Unknown_30h": {
+        "bytes": 4,
+        "offset": 48,
+        "type": "UInt32"
+       },
+       "Unknown_34h": {
+        "bytes": 4,
+        "offset": 52,
+        "type": "UInt32"
+       },
+       "Unknown_38h": {
+        "bytes": 8,
+        "offset": 56,
+        "type": "UInt64"
+       },
+       "Unknown_48h": {
+        "bytes": 4,
+        "offset": 72,
+        "type": "Single"
+       },
+       "Unknown_4Ch": {
+        "bytes": 4,
+        "offset": 76,
+        "type": "Single"
+       },
+       "Unknown_50h": {
+        "bytes": 4,
+        "offset": 80,
+        "type": "Single"
+       },
+       "Unknown_54h": {
+        "bytes": 4,
+        "offset": 84,
+        "type": "Single"
+       },
+       "Unknown_58h": {
+        "bytes": 8,
+        "offset": 88,
+        "type": "UInt64"
+       },
+       "Unknown_6Ch": {
+        "bytes": 4,
+        "offset": 108,
+        "type": "UInt32"
+       },
+       "Unknown_7Ch": {
+        "bytes": 4,
+        "offset": 124,
+        "type": "UInt32"
+       },
+       "Unknown_80h": {
+        "bytes": 12,
+        "offset": 128,
+        "type": "Vector3"
+       },
+       "Unknown_8Ch": {
+        "bytes": 4,
+        "offset": 140,
+        "type": "UInt32"
+       },
+       "Unknown_90h": {
+        "bytes": 12,
+        "offset": 144,
+        "type": "Vector3"
+       },
+       "Unknown_9Ch": {
+        "bytes": 4,
+        "offset": 156,
+        "type": "UInt32"
+       },
+       "Unknown_A0h": {
+        "bytes": 12,
+        "offset": 160,
+        "type": "Vector3"
+       },
+       "Unknown_ACh": {
+        "bytes": 4,
+        "offset": 172,
+        "type": "UInt32"
+       },
+       "Unknown_B0h": {
+        "bytes": 12,
+        "offset": 176,
+        "type": "Vector3"
+       },
+       "Unknown_BCh": {
+        "bytes": 4,
+        "offset": 188,
+        "type": "UInt32"
+       },
+       "Unknown_C0h": {
+        "bytes": 12,
+        "offset": 192,
+        "type": "Vector3"
+       },
+       "Unknown_CCh": {
+        "bytes": 4,
+        "offset": 204,
+        "type": "UInt32"
+       },
+       "Unknown_D0h": {
+        "bytes": 12,
+        "offset": 208,
+        "type": "Vector3"
+       },
+       "Unknown_DCh": {
+        "bytes": 4,
+        "offset": 220,
+        "type": "UInt32"
+       },
+       "VFT": {
+        "bytes": 4,
+        "offset": 0,
+        "type": "UInt32"
+       }
+      }
+     },
+     "child": {
+      "bytes": 256,
+      "fields": {
+       "BoneTag": {
+        "bytes": 2,
+        "offset": 18,
+        "type": "UInt16"
+       },
+       "DamagedMass": {
+        "bytes": 4,
+        "offset": 12,
+        "type": "Single"
+       },
+       "Drawable1Pointer": {
+        "bytes": 8,
+        "offset": 160,
+        "type": "UInt64"
+       },
+       "Drawable2Pointer": {
+        "bytes": 8,
+        "offset": 168,
+        "type": "UInt64"
+       },
+       "EvtSetPointer": {
+        "bytes": 8,
+        "offset": 176,
+        "type": "UInt64"
+       },
+       "GroupIndex": {
+        "bytes": 2,
+        "offset": 16,
+        "type": "UInt16"
+       },
+       "PristineMass": {
+        "bytes": 4,
+        "offset": 8,
+        "type": "Single"
+       },
+       "Unknown_04h": {
+        "bytes": 4,
+        "offset": 4,
+        "type": "UInt32"
+       },
+       "Unknown_14h": {
+        "bytes": 4,
+        "offset": 20,
+        "type": "UInt32"
+       },
+       "Unknown_18h": {
+        "bytes": 8,
+        "offset": 24,
+        "type": "UInt64"
+       },
+       "Unknown_20h": {
+        "bytes": 8,
+        "offset": 32,
+        "type": "UInt64"
+       },
+       "Unknown_28h": {
+        "bytes": 8,
+        "offset": 40,
+        "type": "UInt64"
+       },
+       "Unknown_30h": {
+        "bytes": 8,
+        "offset": 48,
+        "type": "UInt64"
+       },
+       "Unknown_38h": {
+        "bytes": 8,
+        "offset": 56,
+        "type": "UInt64"
+       },
+       "Unknown_40h": {
+        "bytes": 8,
+        "offset": 64,
+        "type": "UInt64"
+       },
+       "Unknown_48h": {
+        "bytes": 8,
+        "offset": 72,
+        "type": "UInt64"
+       },
+       "Unknown_50h": {
+        "bytes": 8,
+        "offset": 80,
+        "type": "UInt64"
+       },
+       "Unknown_58h": {
+        "bytes": 8,
+        "offset": 88,
+        "type": "UInt64"
+       },
+       "Unknown_60h": {
+        "bytes": 8,
+        "offset": 96,
+        "type": "UInt64"
+       },
+       "Unknown_68h": {
+        "bytes": 8,
+        "offset": 104,
+        "type": "UInt64"
+       },
+       "Unknown_70h": {
+        "bytes": 8,
+        "offset": 112,
+        "type": "UInt64"
+       },
+       "Unknown_78h": {
+        "bytes": 8,
+        "offset": 120,
+        "type": "UInt64"
+       },
+       "Unknown_80h": {
+        "bytes": 8,
+        "offset": 128,
+        "type": "UInt64"
+       },
+       "Unknown_88h": {
+        "bytes": 8,
+        "offset": 136,
+        "type": "UInt64"
+       },
+       "Unknown_90h": {
+        "bytes": 8,
+        "offset": 144,
+        "type": "UInt64"
+       },
+       "Unknown_98h": {
+        "bytes": 8,
+        "offset": 152,
+        "type": "UInt64"
+       },
+       "Unknown_B8h": {
+        "bytes": 8,
+        "offset": 184,
+        "type": "UInt64"
+       },
+       "Unknown_C0h": {
+        "bytes": 8,
+        "offset": 192,
+        "type": "UInt64"
+       },
+       "Unknown_C8h": {
+        "bytes": 8,
+        "offset": 200,
+        "type": "UInt64"
+       },
+       "Unknown_D0h": {
+        "bytes": 8,
+        "offset": 208,
+        "type": "UInt64"
+       },
+       "Unknown_D8h": {
+        "bytes": 8,
+        "offset": 216,
+        "type": "UInt64"
+       },
+       "Unknown_E0h": {
+        "bytes": 8,
+        "offset": 224,
+        "type": "UInt64"
+       },
+       "Unknown_E8h": {
+        "bytes": 8,
+        "offset": 232,
+        "type": "UInt64"
+       },
+       "Unknown_F0h": {
+        "bytes": 8,
+        "offset": 240,
+        "type": "UInt64"
+       },
+       "Unknown_F8h": {
+        "bytes": 8,
+        "offset": 248,
+        "type": "UInt64"
+       },
+       "VFT": {
+        "bytes": 4,
+        "offset": 0,
+        "type": "UInt32"
+       }
+      }
+     },
+     "event": {
+      "bytes": 48,
+      "fields": {
+       "Unknown_04h": {
+        "bytes": 4,
+        "offset": 4,
+        "type": "UInt32"
+       },
+       "Unknown_08h": {
+        "bytes": 8,
+        "offset": 8,
+        "type": "UInt64"
+       },
+       "Unknown_10h": {
+        "bytes": 8,
+        "offset": 16,
+        "type": "UInt64"
+       },
+       "Unknown_18h": {
+        "bytes": 8,
+        "offset": 24,
+        "type": "UInt64"
+       },
+       "Unknown_20h": {
+        "bytes": 8,
+        "offset": 32,
+        "type": "UInt64"
+       },
+       "Unknown_28h": {
+        "bytes": 8,
+        "offset": 40,
+        "type": "UInt64"
+       },
+       "VFT": {
+        "bytes": 4,
+        "offset": 0,
+        "type": "UInt32"
+       }
+      }
+     },
+     "group": {
+      "bytes": 128,
+      "fields": {
+       "ChildCount": {
+        "bytes": 1,
+        "offset": 79,
+        "type": "Byte"
+       },
+       "ChildGroupCount": {
+        "bytes": 1,
+        "offset": 80,
+        "type": "Byte"
+       },
+       "ChildGroupIndex": {
+        "bytes": 1,
+        "offset": 76,
+        "type": "Byte"
+       },
+       "ChildIndex": {
+        "bytes": 1,
+        "offset": 78,
+        "type": "Byte"
+       },
+       "DamageHealth": {
+        "bytes": 4,
+        "offset": 88,
+        "type": "Single"
+       },
+       "ForceTransmissionScaleDown": {
+        "bytes": 4,
+        "offset": 24,
+        "type": "Single"
+       },
+       "ForceTransmissionScaleUp": {
+        "bytes": 4,
+        "offset": 20,
+        "type": "Single"
+       },
+       "GlassFlags": {
+        "bytes": 1,
+        "offset": 83,
+        "type": "Byte"
+       },
+       "GlassWindowIndex": {
+        "bytes": 1,
+        "offset": 82,
+        "type": "Byte"
+       },
+       "JointStiffness": {
+        "bytes": 4,
+        "offset": 28,
+        "type": "Single"
+       },
+       "LatchStrength": {
+        "bytes": 4,
+        "offset": 64,
+        "type": "Single"
+       },
+       "Mass": {
+        "bytes": 4,
+        "offset": 68,
+        "type": "Single"
+       },
+       "MaxSoftAngle1": {
+        "bytes": 4,
+        "offset": 36,
+        "type": "Single"
+       },
+       "MaxSoftAngle2": {
+        "bytes": 4,
+        "offset": 40,
+        "type": "Single"
+       },
+       "MaxSoftAngle3": {
+        "bytes": 4,
+        "offset": 44,
+        "type": "Single"
+       },
+       "MinDamageForce": {
+        "bytes": 4,
+        "offset": 84,
+        "type": "Single"
+       },
+       "MinSoftAngle1": {
+        "bytes": 4,
+        "offset": 32,
+        "type": "Single"
+       },
+       "ParentIndex": {
+        "bytes": 1,
+        "offset": 77,
+        "type": "Byte"
+       },
+       "RestoringMaxTorque": {
+        "bytes": 4,
+        "offset": 60,
+        "type": "Single"
+       },
+       "RestoringStrength": {
+        "bytes": 4,
+        "offset": 56,
+        "type": "Single"
+       },
+       "RotationSpeed": {
+        "bytes": 4,
+        "offset": 48,
+        "type": "Single"
+       },
+       "RotationStrength": {
+        "bytes": 4,
+        "offset": 52,
+        "type": "Single"
+       },
+       "Strength": {
+        "bytes": 4,
+        "offset": 16,
+        "type": "Single"
+       },
+       "UnkByte51": {
+        "bytes": 1,
+        "offset": 81,
+        "type": "Byte"
+       },
+       "UnkFloat5C": {
+        "bytes": 4,
+        "offset": 92,
+        "type": "Single"
+       },
+       "UnkFloat60": {
+        "bytes": 4,
+        "offset": 96,
+        "type": "Single"
+       },
+       "UnkFloat64": {
+        "bytes": 4,
+        "offset": 100,
+        "type": "Single"
+       },
+       "UnkFloat68": {
+        "bytes": 4,
+        "offset": 104,
+        "type": "Single"
+       },
+       "UnkFloat6C": {
+        "bytes": 4,
+        "offset": 108,
+        "type": "Single"
+       },
+       "UnkFloat70": {
+        "bytes": 4,
+        "offset": 112,
+        "type": "Single"
+       },
+       "UnkFloat74": {
+        "bytes": 4,
+        "offset": 116,
+        "type": "Single"
+       },
+       "UnkFloat78": {
+        "bytes": 4,
+        "offset": 120,
+        "type": "Single"
+       },
+       "Unknown_00h": {
+        "bytes": 4,
+        "offset": 0,
+        "type": "Single"
+       },
+       "Unknown_04h": {
+        "bytes": 4,
+        "offset": 4,
+        "type": "Single"
+       },
+       "Unknown_08h": {
+        "bytes": 4,
+        "offset": 8,
+        "type": "Single"
+       },
+       "Unknown_0Ch": {
+        "bytes": 4,
+        "offset": 12,
+        "type": "Single"
+       },
+       "Unknown_48h": {
+        "bytes": 4,
+        "offset": 72,
+        "type": "Single"
+       },
+       "Unknown_7Ch": {
+        "bytes": 4,
+        "offset": 124,
+        "type": "Single"
+       }
+      }
+     },
+     "lod": {
+      "bytes": 304,
+      "fields": {
+       "Archetype1Pointer": {
+        "bytes": 8,
+        "offset": 216,
+        "type": "UInt64"
+       },
+       "Archetype2Pointer": {
+        "bytes": 8,
+        "offset": 224,
+        "type": "UInt64"
+       },
+       "ArticulatedBodyTypePointer": {
+        "bytes": 8,
+        "offset": 32,
+        "type": "UInt64"
+       },
+       "BoundPointer": {
+        "bytes": 8,
+        "offset": 232,
+        "type": "UInt64"
+       },
+       "ChildrenCount": {
+        "bytes": 1,
+        "offset": 285,
+        "type": "Byte"
+       },
+       "ChildrenCount2": {
+        "bytes": 1,
+        "offset": 286,
+        "type": "Byte"
+       },
+       "ChildrenInertiaTensorsPointer": {
+        "bytes": 8,
+        "offset": 240,
+        "type": "UInt64"
+       },
+       "ChildrenPointer": {
+        "bytes": 8,
+        "offset": 208,
+        "type": "UInt64"
+       },
+       "ChildrenUnkFloatsPointer": {
+        "bytes": 8,
+        "offset": 40,
+        "type": "UInt64"
+       },
+       "ChildrenUnkVecsPointer": {
+        "bytes": 8,
+        "offset": 248,
+        "type": "UInt64"
+       },
+       "DampingAngularC": {
+        "bytes": 12,
+        "offset": 144,
+        "type": "Vector3"
+       },
+       "DampingAngularV": {
+        "bytes": 12,
+        "offset": 160,
+        "type": "Vector3"
+       },
+       "DampingAngularV2": {
+        "bytes": 12,
+        "offset": 176,
+        "type": "Vector3"
+       },
+       "DampingLinearC": {
+        "bytes": 12,
+        "offset": 96,
+        "type": "Vector3"
+       },
+       "DampingLinearV": {
+        "bytes": 12,
+        "offset": 112,
+        "type": "Vector3"
+       },
+       "DampingLinearV2": {
+        "bytes": 12,
+        "offset": 128,
+        "type": "Vector3"
+       },
+       "FragTransformsPointer": {
+        "bytes": 8,
+        "offset": 256,
+        "type": "UInt64"
+       },
+       "GroupNamesPointer": {
+        "bytes": 8,
+        "offset": 192,
+        "type": "UInt64"
+       },
+       "GroupsCount": {
+        "bytes": 1,
+        "offset": 282,
+        "type": "Byte"
+       },
+       "GroupsPointer": {
+        "bytes": 8,
+        "offset": 200,
+        "type": "UInt64"
+       },
+       "PositionOffset": {
+        "bytes": 12,
+        "offset": 48,
+        "type": "Vector3"
+       },
+       "RootGroupsCount": {
+        "bytes": 1,
+        "offset": 283,
+        "type": "Byte"
+       },
+       "UnknownData1Count": {
+        "bytes": 1,
+        "offset": 280,
+        "type": "Byte"
+       },
+       "UnknownData1Pointer": {
+        "bytes": 8,
+        "offset": 264,
+        "type": "UInt64"
+       },
+       "UnknownData2Count": {
+        "bytes": 1,
+        "offset": 281,
+        "type": "Byte"
+       },
+       "UnknownData2Pointer": {
+        "bytes": 8,
+        "offset": 272,
+        "type": "UInt64"
+       },
+       "Unknown_04h": {
+        "bytes": 4,
+        "offset": 4,
+        "type": "UInt32"
+       },
+       "Unknown_08h": {
+        "bytes": 8,
+        "offset": 8,
+        "type": "UInt64"
+       },
+       "Unknown_10h": {
+        "bytes": 4,
+        "offset": 16,
+        "type": "UInt32"
+       },
+       "Unknown_11Ch": {
+        "bytes": 1,
+        "offset": 284,
+        "type": "Byte"
+       },
+       "Unknown_11Fh": {
+        "bytes": 1,
+        "offset": 287,
+        "type": "Byte"
+       },
+       "Unknown_120h": {
+        "bytes": 8,
+        "offset": 288,
+        "type": "UInt64"
+       },
+       "Unknown_128h": {
+        "bytes": 8,
+        "offset": 296,
+        "type": "UInt64"
+       },
+       "Unknown_14h": {
+        "bytes": 4,
+        "offset": 20,
+        "type": "Single"
+       },
+       "Unknown_18h": {
+        "bytes": 4,
+        "offset": 24,
+        "type": "Single"
+       },
+       "Unknown_1Ch": {
+        "bytes": 4,
+        "offset": 28,
+        "type": "Single"
+       },
+       "Unknown_3Ch": {
+        "bytes": 4,
+        "offset": 60,
+        "type": "UInt32"
+       },
+       "Unknown_40h": {
+        "bytes": 12,
+        "offset": 64,
+        "type": "Vector3"
+       },
+       "Unknown_4Ch": {
+        "bytes": 4,
+        "offset": 76,
+        "type": "UInt32"
+       },
+       "Unknown_50h": {
+        "bytes": 12,
+        "offset": 80,
+        "type": "Vector3"
+       },
+       "Unknown_5Ch": {
+        "bytes": 4,
+        "offset": 92,
+        "type": "UInt32"
+       },
+       "Unknown_6Ch": {
+        "bytes": 4,
+        "offset": 108,
+        "type": "UInt32"
+       },
+       "Unknown_7Ch": {
+        "bytes": 4,
+        "offset": 124,
+        "type": "UInt32"
+       },
+       "Unknown_8Ch": {
+        "bytes": 4,
+        "offset": 140,
+        "type": "UInt32"
+       },
+       "Unknown_9Ch": {
+        "bytes": 4,
+        "offset": 156,
+        "type": "UInt32"
+       },
+       "Unknown_ACh": {
+        "bytes": 4,
+        "offset": 172,
+        "type": "UInt32"
+       },
+       "Unknown_BCh": {
+        "bytes": 4,
+        "offset": 188,
+        "type": "UInt32"
+       },
+       "VFT": {
+        "bytes": 4,
+        "offset": 0,
+        "type": "UInt32"
+       }
+      }
+     },
+     "lodGroup": {
+      "bytes": 48,
+      "fields": {
+       "PhysicsLOD1Pointer": {
+        "bytes": 8,
+        "offset": 16,
+        "type": "UInt64"
+       },
+       "PhysicsLOD2Pointer": {
+        "bytes": 8,
+        "offset": 24,
+        "type": "UInt64"
+       },
+       "PhysicsLOD3Pointer": {
+        "bytes": 8,
+        "offset": 32,
+        "type": "UInt64"
+       },
+       "Unknown_04h": {
+        "bytes": 4,
+        "offset": 4,
+        "type": "UInt32"
+       },
+       "Unknown_08h": {
+        "bytes": 8,
+        "offset": 8,
+        "type": "UInt64"
+       },
+       "Unknown_28h": {
+        "bytes": 8,
+        "offset": 40,
+        "type": "UInt64"
+       },
+       "VFT": {
+        "bytes": 4,
+        "offset": 0,
+        "type": "UInt32"
+       }
+      }
+     },
+     "matrix": {
+      "bytes": 64,
+      "fields": {
+       "M11": {
+        "bytes": 4,
+        "offset": 0,
+        "type": "Single"
+       },
+       "M12": {
+        "bytes": 4,
+        "offset": 4,
+        "type": "Single"
+       },
+       "M13": {
+        "bytes": 4,
+        "offset": 8,
+        "type": "Single"
+       },
+       "M14": {
+        "bytes": 4,
+        "offset": 12,
+        "type": "Single"
+       },
+       "M21": {
+        "bytes": 4,
+        "offset": 16,
+        "type": "Single"
+       },
+       "M22": {
+        "bytes": 4,
+        "offset": 20,
+        "type": "Single"
+       },
+       "M23": {
+        "bytes": 4,
+        "offset": 24,
+        "type": "Single"
+       },
+       "M24": {
+        "bytes": 4,
+        "offset": 28,
+        "type": "Single"
+       },
+       "M31": {
+        "bytes": 4,
+        "offset": 32,
+        "type": "Single"
+       },
+       "M32": {
+        "bytes": 4,
+        "offset": 36,
+        "type": "Single"
+       },
+       "M33": {
+        "bytes": 4,
+        "offset": 40,
+        "type": "Single"
+       },
+       "M34": {
+        "bytes": 4,
+        "offset": 44,
+        "type": "Single"
+       },
+       "M41": {
+        "bytes": 4,
+        "offset": 48,
+        "type": "Single"
+       },
+       "M42": {
+        "bytes": 4,
+        "offset": 52,
+        "type": "Single"
+       },
+       "M43": {
+        "bytes": 4,
+        "offset": 56,
+        "type": "Single"
+       },
+       "M44": {
+        "bytes": 4,
+        "offset": 60,
+        "type": "Single"
+       }
+      }
+     },
+     "name": {
+      "bytes": 48,
+      "fields": {
+       "Name.Unknown_00h": {
+        "bytes": 4,
+        "offset": 0,
+        "type": "UInt32"
+       },
+       "Name.Unknown_04h": {
+        "bytes": 4,
+        "offset": 4,
+        "type": "UInt32"
+       },
+       "Name.Unknown_08h": {
+        "bytes": 4,
+        "offset": 8,
+        "type": "UInt32"
+       },
+       "Name.Unknown_0Ch": {
+        "bytes": 4,
+        "offset": 12,
+        "type": "UInt32"
+       },
+       "Name.Unknown_10h": {
+        "bytes": 4,
+        "offset": 16,
+        "type": "UInt32"
+       },
+       "Name.Unknown_14h": {
+        "bytes": 4,
+        "offset": 20,
+        "type": "UInt32"
+       },
+       "Name.Unknown_18h": {
+        "bytes": 4,
+        "offset": 24,
+        "type": "UInt32"
+       },
+       "Name.Unknown_1Ch": {
+        "bytes": 4,
+        "offset": 28,
+        "type": "UInt32"
+       },
+       "Name.Unknown_20h": {
+        "bytes": 4,
+        "offset": 32,
+        "type": "UInt32"
+       },
+       "Name.Unknown_24h": {
+        "bytes": 4,
+        "offset": 36,
+        "type": "UInt32"
+       },
+       "UnkFloatA8": {
+        "bytes": 4,
+        "offset": 40,
+        "type": "Single"
+       },
+       "Unknown_ACh": {
+        "bytes": 4,
+        "offset": 44,
+        "type": "Single"
+       }
+      }
+     },
+     "transforms": {
+      "bytes": 32,
+      "fields": {
+       "MatricesCount": {
+        "bytes": 4,
+        "offset": 16,
+        "type": "UInt32"
+       },
+       "Unknown_04h": {
+        "bytes": 4,
+        "offset": 4,
+        "type": "UInt32"
+       },
+       "Unknown_08h": {
+        "bytes": 8,
+        "offset": 8,
+        "type": "UInt64"
+       },
+       "Unknown_14h": {
+        "bytes": 4,
+        "offset": 20,
+        "type": "UInt32"
+       },
+       "Unknown_18h": {
+        "bytes": 8,
+        "offset": 24,
+        "type": "UInt64"
+       },
+       "VFT": {
+        "bytes": 4,
+        "offset": 0,
+        "type": "UInt32"
+       }
+      }
+     }
+    },
+    "scope": "Null articulated body and unknown extensions, empty event payloads; every populated supported field is retained",
+    "sourceSha256": "952e8c7f620639415c17898e617182845a63073995ebdfff45128ab8715e38b2"
+   },
+   "resource": {
+    "header": {
+     "bytes": 16,
+     "fields": {
+      "GraphicsPagesCount": {
+       "bytes": 1,
+       "offset": 9,
+       "type": "Byte"
+      },
+      "SystemPagesCount": {
+       "bytes": 1,
+       "offset": 8,
+       "type": "Byte"
+      },
+      "Unknown_0h": {
+       "bytes": 4,
+       "offset": 0,
+       "type": "UInt32"
+      },
+      "Unknown_4h": {
+       "bytes": 4,
+       "offset": 4,
+       "type": "UInt32"
+      },
+      "Unknown_Ah": {
+       "bytes": 2,
+       "offset": 10,
+       "type": "UInt16"
+      },
+      "Unknown_Ch": {
+       "bytes": 4,
+       "offset": 12,
+       "type": "UInt32"
+      }
+     }
+    },
+    "recordBytes": 8,
+    "root": {
+     "bytes": 16,
+     "fields": {
+      "FilePagesInfoPointer": {
+       "bytes": 8,
+       "offset": 8,
+       "type": "UInt64"
+      },
+      "FileUnknown": {
+       "bytes": 4,
+       "offset": 4,
+       "type": "UInt32"
+      },
+      "FileVFT": {
+       "bytes": 4,
+       "offset": 0,
+       "type": "UInt32"
+      }
+     }
+    },
+    "serializedHeaderPolicy": "Zero-initialized public scalar fields, exact region counts, zero serialized records",
+    "sourceSha256": "5fef7e32674b55ad13b8e4603c6307812fbd0353b79161e5eb1f0f8a6a6c45b8"
+   },
+   "skeleton": {
+    "binding": {
+     "BoneIndex": {
+      "mask": 255,
+      "shift": 24
+     },
+     "HasSkin": {
+      "mask": 255,
+      "shift": 8
+     },
+     "SkeletonBindUnk1": {
+      "mask": 255,
+      "shift": 0
+     },
+     "SkeletonBindUnk2": {
+      "mask": 255,
+      "shift": 16
+     }
+    },
+    "layouts": {
+     "Bone": {
+      "bytes": 80,
+      "fields": {
+       "Flags": {
+        "bytes": 2,
+        "offset": 64,
+        "type": "UInt16"
+       },
+       "Index": {
+        "bytes": 2,
+        "offset": 66,
+        "type": "Int16"
+       },
+       "Index2": {
+        "bytes": 2,
+        "offset": 70,
+        "type": "Int16"
+       },
+       "NamePointer": {
+        "bytes": 8,
+        "offset": 56,
+        "type": "UInt64"
+       },
+       "NextSiblingIndex": {
+        "bytes": 2,
+        "offset": 48,
+        "type": "Int16"
+       },
+       "ParentIndex": {
+        "bytes": 2,
+        "offset": 50,
+        "type": "Int16"
+       },
+       "Rotation": {
+        "bytes": 16,
+        "offset": 0,
+        "type": "Vector4"
+       },
+       "Scale": {
+        "bytes": 12,
+        "offset": 32,
+        "type": "Vector3"
+       },
+       "Tag": {
+        "bytes": 2,
+        "offset": 68,
+        "type": "UInt16"
+       },
+       "Translation": {
+        "bytes": 12,
+        "offset": 16,
+        "type": "Vector3"
+       },
+       "Unknown_1Ch": {
+        "bytes": 4,
+        "offset": 28,
+        "type": "UInt32"
+       },
+       "Unknown_2Ch": {
+        "bytes": 4,
+        "offset": 44,
+        "type": "Single"
+       },
+       "Unknown_34h": {
+        "bytes": 4,
+        "offset": 52,
+        "type": "UInt32"
+       },
+       "Unknown_48h": {
+        "bytes": 8,
+        "offset": 72,
+        "type": "UInt64"
+       }
+      }
+     },
+     "Skeleton": {
+      "bytes": 112,
+      "fields": {
+       "BoneTagsCapacity": {
+        "bytes": 2,
+        "offset": 24,
+        "type": "UInt16"
+       },
+       "BoneTagsCount": {
+        "bytes": 2,
+        "offset": 26,
+        "type": "UInt16"
+       },
+       "BoneTagsPointer": {
+        "bytes": 8,
+        "offset": 16,
+        "type": "UInt64"
+       },
+       "BonesCount": {
+        "bytes": 2,
+        "offset": 94,
+        "type": "UInt16"
+       },
+       "BonesPointer": {
+        "bytes": 8,
+        "offset": 32,
+        "type": "UInt64"
+       },
+       "ChildIndicesCount": {
+        "bytes": 2,
+        "offset": 96,
+        "type": "UInt16"
+       },
+       "ChildIndicesPointer": {
+        "bytes": 8,
+        "offset": 64,
+        "type": "UInt64"
+       },
+       "ParentIndicesPointer": {
+        "bytes": 8,
+        "offset": 56,
+        "type": "UInt64"
+       },
+       "TransformationsInvertedPointer": {
+        "bytes": 8,
+        "offset": 40,
+        "type": "UInt64"
+       },
+       "TransformationsPointer": {
+        "bytes": 8,
+        "offset": 48,
+        "type": "UInt64"
+       },
+       "Unknown_1Ch": {
+        "bytes": 4,
+        "offset": 28,
+        "type": "UInt32"
+       },
+       "Unknown_48h": {
+        "bytes": 8,
+        "offset": 72,
+        "type": "UInt64"
+       },
+       "Unknown_4h": {
+        "bytes": 4,
+        "offset": 4,
+        "type": "UInt32"
+       },
+       "Unknown_50h": {
+        "bytes": 4,
+        "offset": 80,
+        "type": "UInt32"
+       },
+       "Unknown_54h": {
+        "bytes": 4,
+        "offset": 84,
+        "type": "UInt32"
+       },
+       "Unknown_58h": {
+        "bytes": 4,
+        "offset": 88,
+        "type": "UInt32"
+       },
+       "Unknown_5Ch": {
+        "bytes": 2,
+        "offset": 92,
+        "type": "UInt16"
+       },
+       "Unknown_62h": {
+        "bytes": 2,
+        "offset": 98,
+        "type": "UInt16"
+       },
+       "Unknown_64h": {
+        "bytes": 4,
+        "offset": 100,
+        "type": "UInt32"
+       },
+       "Unknown_68h": {
+        "bytes": 8,
+        "offset": 104,
+        "type": "UInt64"
+       },
+       "Unknown_8h": {
+        "bytes": 8,
+        "offset": 8,
+        "type": "UInt64"
+       },
+       "VFT": {
+        "bytes": 4,
+        "offset": 0,
+        "type": "UInt32"
+       }
+      }
+     },
+     "SkeletonBoneTag": {
+      "bytes": 16,
+      "fields": {
+       "BoneIndex": {
+        "bytes": 4,
+        "offset": 4,
+        "type": "UInt32"
+       },
+       "BoneTag": {
+        "bytes": 4,
+        "offset": 0,
+        "type": "UInt32"
+       },
+       "NextPointer": {
+        "bytes": 8,
+        "offset": 8,
+        "type": "UInt64"
+       }
+      }
+     },
+     "SkeletonBonesBlock": {
+      "bytes": 16,
+      "fields": {
+       "Count": {
+        "bytes": 4,
+        "offset": 0,
+        "type": "UInt32"
+       },
+       "Unk0": {
+        "bytes": 4,
+        "offset": 4,
+        "type": "UInt32"
+       },
+       "Unk1": {
+        "bytes": 4,
+        "offset": 8,
+        "type": "UInt32"
+       },
+       "Unk2": {
+        "bytes": 4,
+        "offset": 12,
+        "type": "UInt32"
+       }
+      }
+     }
+    }
+   },
+   "skinning": {
+    "clothLane": 2,
+    "clothThreshold": 254,
+    "componentBytes": 4,
+    "componentType": "Colour",
+    "declarationTypes": 8598872888530528662,
+    "format": "R8G8B8A8_UNorm",
+    "indexRecoveryScale": 255.001953,
+    "laneCount": 4,
+    "matrixCapacity": 255,
+    "selectedVertexTypes": {
+     "16479": {
+      "name": "PBBNCTX"
+     },
+     "16607": {
+      "name": "PBBNCTTX"
+     },
+     "223": {
+      "name": "PBBNCTT"
+     },
+     "479": {
+      "name": "PBBNCTTT"
+     },
+     "95": {
+      "name": "PBBNCT"
+     }
+    },
+    "weightDenominator": 255
+   },
+   "textureReference": {
+    "legacy": {
+     "bytes": 80,
+     "fields": {
+      "ExtraFlags": {
+       "bytes": 4,
+       "offset": 72
+      },
+      "NamePointer": {
+       "bytes": 8,
+       "offset": 40
+      },
+      "Unknown_10h": {
+       "bytes": 4,
+       "offset": 16
+      },
+      "Unknown_14h": {
+       "bytes": 4,
+       "offset": 20
+      },
+      "Unknown_18h": {
+       "bytes": 4,
+       "offset": 24
+      },
+      "Unknown_1Ch": {
+       "bytes": 4,
+       "offset": 28
+      },
+      "Unknown_20h": {
+       "bytes": 4,
+       "offset": 32
+      },
+      "Unknown_24h": {
+       "bytes": 4,
+       "offset": 36
+      },
+      "Unknown_30h": {
+       "bytes": 2,
+       "offset": 48
+      },
+      "Unknown_32h": {
+       "bytes": 2,
+       "offset": 50
+      },
+      "Unknown_34h": {
+       "bytes": 4,
+       "offset": 52
+      },
+      "Unknown_38h": {
+       "bytes": 4,
+       "offset": 56
+      },
+      "Unknown_3Ch": {
+       "bytes": 4,
+       "offset": 60
+      },
+      "Unknown_44h": {
+       "bytes": 4,
+       "offset": 68
+      },
+      "Unknown_4Ch": {
+       "bytes": 4,
+       "offset": 76
+      },
+      "Unknown_4h": {
+       "bytes": 4,
+       "offset": 4
+      },
+      "Unknown_8h": {
+       "bytes": 4,
+       "offset": 8
+      },
+      "Unknown_Ch": {
+       "bytes": 4,
+       "offset": 12
+      },
+      "UsageData": {
+       "bytes": 4,
+       "offset": 64
+      },
+      "VFT": {
+       "bytes": 4,
+       "offset": 0
+      }
+     }
+    },
+    "legacyReferenceCount": 1,
+    "legacyReferenceTag": 2,
+    "native": {
+     "bytes": 80,
+     "fields": {
+      "DataPointer": {
+       "bytes": 8,
+       "offset": 56
+      },
+      "Depth": {
+       "bytes": 2,
+       "offset": 28
+      },
+      "G9_AntiAliasType": {
+       "bytes": 1,
+       "offset": 33
+      },
+      "G9_BlockCount": {
+       "bytes": 4,
+       "offset": 8
+      },
+      "G9_BlockStride": {
+       "bytes": 4,
+       "offset": 12
+      },
+      "G9_Dimension": {
+       "bytes": 1,
+       "offset": 30
+      },
+      "G9_Flags": {
+       "bytes": 4,
+       "offset": 16
+      },
+      "G9_Format": {
+       "bytes": 1,
+       "offset": 31
+      },
+      "G9_SRVPointer": {
+       "bytes": 8,
+       "offset": 48
+      },
+      "G9_TileMode": {
+       "bytes": 1,
+       "offset": 32
+      },
+      "G9_Unknown_23h": {
+       "bytes": 1,
+       "offset": 35
+      },
+      "G9_Unknown_25h": {
+       "bytes": 1,
+       "offset": 37
+      },
+      "G9_Unknown_48h": {
+       "bytes": 8,
+       "offset": 72
+      },
+      "G9_UsageCount": {
+       "bytes": 2,
+       "offset": 38
+      },
+      "G9_UsageData": {
+       "bytes": 4,
+       "offset": 64
+      },
+      "Height": {
+       "bytes": 2,
+       "offset": 26
+      },
+      "Levels": {
+       "bytes": 1,
+       "offset": 34
+      },
+      "NamePointer": {
+       "bytes": 8,
+       "offset": 40
+      },
+      "Unknown_14h": {
+       "bytes": 4,
+       "offset": 20
+      },
+      "Unknown_24h": {
+       "bytes": 1,
+       "offset": 36
+      },
+      "Unknown_44h": {
+       "bytes": 4,
+       "offset": 68
+      },
+      "Unknown_4h": {
+       "bytes": 4,
+       "offset": 4
+      },
+      "VFT": {
+       "bytes": 4,
+       "offset": 0
+      },
+      "Width": {
+       "bytes": 2,
+       "offset": 24
+      }
+     }
+    },
+    "sourceSha256": "f30292b0d18cfe598fc805c340d271041141ec7340addaeb773d3ae2ae235fd4"
+   },
+   "transform": {
+    "comparisonPolicy": {
+     "absoluteTolerance": 1e-05,
+     "purpose": "host diagnostic tolerance fixed before corpus comparison, not a retail acceptance rule",
+     "relativeTolerance": 1e-05
+    },
+    "matrix": {
+     "bytes": 64,
+     "column4": [
+      "M14",
+      "M24",
+      "M34",
+      "M44"
+     ],
+     "fieldOrder": [
+      "M11",
+      "M12",
+      "M13",
+      "M14",
+      "M21",
+      "M22",
+      "M23",
+      "M24",
+      "M31",
+      "M32",
+      "M33",
+      "M34",
+      "M41",
+      "M42",
+      "M43",
+      "M44"
+     ],
+     "fields": {
+      "M11": {
+       "bytes": 4,
+       "offset": 0
+      },
+      "M12": {
+       "bytes": 4,
+       "offset": 4
+      },
+      "M13": {
+       "bytes": 4,
+       "offset": 8
+      },
+      "M14": {
+       "bytes": 4,
+       "offset": 12
+      },
+      "M21": {
+       "bytes": 4,
+       "offset": 16
+      },
+      "M22": {
+       "bytes": 4,
+       "offset": 20
+      },
+      "M23": {
+       "bytes": 4,
+       "offset": 24
+      },
+      "M24": {
+       "bytes": 4,
+       "offset": 28
+      },
+      "M31": {
+       "bytes": 4,
+       "offset": 32
+      },
+      "M32": {
+       "bytes": 4,
+       "offset": 36
+      },
+      "M33": {
+       "bytes": 4,
+       "offset": 40
+      },
+      "M34": {
+       "bytes": 4,
+       "offset": 44
+      },
+      "M41": {
+       "bytes": 4,
+       "offset": 48
+      },
+      "M42": {
+       "bytes": 4,
+       "offset": 52
+      },
+      "M43": {
+       "bytes": 4,
+       "offset": 56
+      },
+      "M44": {
+       "bytes": 4,
+       "offset": 60
+      }
+     },
+     "identity": {
+      "M11": 1.0,
+      "M12": 0.0,
+      "M13": 0.0,
+      "M14": 0.0,
+      "M21": 0.0,
+      "M22": 1.0,
+      "M23": 0.0,
+      "M24": 0.0,
+      "M31": 0.0,
+      "M32": 0.0,
+      "M33": 1.0,
+      "M34": 0.0,
+      "M41": 0.0,
+      "M42": 0.0,
+      "M43": 0.0,
+      "M44": 1.0
+     },
+     "methods": {
+      "multiply": [
+       {
+        "control": "zero"
+       },
+       {
+        "expression": [
+         "add",
+         [
+          "add",
+          [
+           "add",
+           [
+            "mul",
+            [
+             "name",
+             "left.M11"
+            ],
+            [
+             "name",
+             "right.M11"
+            ]
+           ],
+           [
+            "mul",
+            [
+             "name",
+             "left.M12"
+            ],
+            [
+             "name",
+             "right.M21"
+            ]
+           ]
+          ],
+          [
+           "mul",
+           [
+            "name",
+            "left.M13"
+           ],
+           [
+            "name",
+            "right.M31"
+           ]
+          ]
+         ],
+         [
+          "mul",
+          [
+           "name",
+           "left.M14"
+          ],
+          [
+           "name",
+           "right.M41"
+          ]
+         ]
+        ],
+        "target": "temp.M11"
+       },
+       {
+        "expression": [
+         "add",
+         [
+          "add",
+          [
+           "add",
+           [
+            "mul",
+            [
+             "name",
+             "left.M11"
+            ],
+            [
+             "name",
+             "right.M12"
+            ]
+           ],
+           [
+            "mul",
+            [
+             "name",
+             "left.M12"
+            ],
+            [
+             "name",
+             "right.M22"
+            ]
+           ]
+          ],
+          [
+           "mul",
+           [
+            "name",
+            "left.M13"
+           ],
+           [
+            "name",
+            "right.M32"
+           ]
+          ]
+         ],
+         [
+          "mul",
+          [
+           "name",
+           "left.M14"
+          ],
+          [
+           "name",
+           "right.M42"
+          ]
+         ]
+        ],
+        "target": "temp.M12"
+       },
+       {
+        "expression": [
+         "add",
+         [
+          "add",
+          [
+           "add",
+           [
+            "mul",
+            [
+             "name",
+             "left.M11"
+            ],
+            [
+             "name",
+             "right.M13"
+            ]
+           ],
+           [
+            "mul",
+            [
+             "name",
+             "left.M12"
+            ],
+            [
+             "name",
+             "right.M23"
+            ]
+           ]
+          ],
+          [
+           "mul",
+           [
+            "name",
+            "left.M13"
+           ],
+           [
+            "name",
+            "right.M33"
+           ]
+          ]
+         ],
+         [
+          "mul",
+          [
+           "name",
+           "left.M14"
+          ],
+          [
+           "name",
+           "right.M43"
+          ]
+         ]
+        ],
+        "target": "temp.M13"
+       },
+       {
+        "expression": [
+         "add",
+         [
+          "add",
+          [
+           "add",
+           [
+            "mul",
+            [
+             "name",
+             "left.M11"
+            ],
+            [
+             "name",
+             "right.M14"
+            ]
+           ],
+           [
+            "mul",
+            [
+             "name",
+             "left.M12"
+            ],
+            [
+             "name",
+             "right.M24"
+            ]
+           ]
+          ],
+          [
+           "mul",
+           [
+            "name",
+            "left.M13"
+           ],
+           [
+            "name",
+            "right.M34"
+           ]
+          ]
+         ],
+         [
+          "mul",
+          [
+           "name",
+           "left.M14"
+          ],
+          [
+           "name",
+           "right.M44"
+          ]
+         ]
+        ],
+        "target": "temp.M14"
+       },
+       {
+        "expression": [
+         "add",
+         [
+          "add",
+          [
+           "add",
+           [
+            "mul",
+            [
+             "name",
+             "left.M21"
+            ],
+            [
+             "name",
+             "right.M11"
+            ]
+           ],
+           [
+            "mul",
+            [
+             "name",
+             "left.M22"
+            ],
+            [
+             "name",
+             "right.M21"
+            ]
+           ]
+          ],
+          [
+           "mul",
+           [
+            "name",
+            "left.M23"
+           ],
+           [
+            "name",
+            "right.M31"
+           ]
+          ]
+         ],
+         [
+          "mul",
+          [
+           "name",
+           "left.M24"
+          ],
+          [
+           "name",
+           "right.M41"
+          ]
+         ]
+        ],
+        "target": "temp.M21"
+       },
+       {
+        "expression": [
+         "add",
+         [
+          "add",
+          [
+           "add",
+           [
+            "mul",
+            [
+             "name",
+             "left.M21"
+            ],
+            [
+             "name",
+             "right.M12"
+            ]
+           ],
+           [
+            "mul",
+            [
+             "name",
+             "left.M22"
+            ],
+            [
+             "name",
+             "right.M22"
+            ]
+           ]
+          ],
+          [
+           "mul",
+           [
+            "name",
+            "left.M23"
+           ],
+           [
+            "name",
+            "right.M32"
+           ]
+          ]
+         ],
+         [
+          "mul",
+          [
+           "name",
+           "left.M24"
+          ],
+          [
+           "name",
+           "right.M42"
+          ]
+         ]
+        ],
+        "target": "temp.M22"
+       },
+       {
+        "expression": [
+         "add",
+         [
+          "add",
+          [
+           "add",
+           [
+            "mul",
+            [
+             "name",
+             "left.M21"
+            ],
+            [
+             "name",
+             "right.M13"
+            ]
+           ],
+           [
+            "mul",
+            [
+             "name",
+             "left.M22"
+            ],
+            [
+             "name",
+             "right.M23"
+            ]
+           ]
+          ],
+          [
+           "mul",
+           [
+            "name",
+            "left.M23"
+           ],
+           [
+            "name",
+            "right.M33"
+           ]
+          ]
+         ],
+         [
+          "mul",
+          [
+           "name",
+           "left.M24"
+          ],
+          [
+           "name",
+           "right.M43"
+          ]
+         ]
+        ],
+        "target": "temp.M23"
+       },
+       {
+        "expression": [
+         "add",
+         [
+          "add",
+          [
+           "add",
+           [
+            "mul",
+            [
+             "name",
+             "left.M21"
+            ],
+            [
+             "name",
+             "right.M14"
+            ]
+           ],
+           [
+            "mul",
+            [
+             "name",
+             "left.M22"
+            ],
+            [
+             "name",
+             "right.M24"
+            ]
+           ]
+          ],
+          [
+           "mul",
+           [
+            "name",
+            "left.M23"
+           ],
+           [
+            "name",
+            "right.M34"
+           ]
+          ]
+         ],
+         [
+          "mul",
+          [
+           "name",
+           "left.M24"
+          ],
+          [
+           "name",
+           "right.M44"
+          ]
+         ]
+        ],
+        "target": "temp.M24"
+       },
+       {
+        "expression": [
+         "add",
+         [
+          "add",
+          [
+           "add",
+           [
+            "mul",
+            [
+             "name",
+             "left.M31"
+            ],
+            [
+             "name",
+             "right.M11"
+            ]
+           ],
+           [
+            "mul",
+            [
+             "name",
+             "left.M32"
+            ],
+            [
+             "name",
+             "right.M21"
+            ]
+           ]
+          ],
+          [
+           "mul",
+           [
+            "name",
+            "left.M33"
+           ],
+           [
+            "name",
+            "right.M31"
+           ]
+          ]
+         ],
+         [
+          "mul",
+          [
+           "name",
+           "left.M34"
+          ],
+          [
+           "name",
+           "right.M41"
+          ]
+         ]
+        ],
+        "target": "temp.M31"
+       },
+       {
+        "expression": [
+         "add",
+         [
+          "add",
+          [
+           "add",
+           [
+            "mul",
+            [
+             "name",
+             "left.M31"
+            ],
+            [
+             "name",
+             "right.M12"
+            ]
+           ],
+           [
+            "mul",
+            [
+             "name",
+             "left.M32"
+            ],
+            [
+             "name",
+             "right.M22"
+            ]
+           ]
+          ],
+          [
+           "mul",
+           [
+            "name",
+            "left.M33"
+           ],
+           [
+            "name",
+            "right.M32"
+           ]
+          ]
+         ],
+         [
+          "mul",
+          [
+           "name",
+           "left.M34"
+          ],
+          [
+           "name",
+           "right.M42"
+          ]
+         ]
+        ],
+        "target": "temp.M32"
+       },
+       {
+        "expression": [
+         "add",
+         [
+          "add",
+          [
+           "add",
+           [
+            "mul",
+            [
+             "name",
+             "left.M31"
+            ],
+            [
+             "name",
+             "right.M13"
+            ]
+           ],
+           [
+            "mul",
+            [
+             "name",
+             "left.M32"
+            ],
+            [
+             "name",
+             "right.M23"
+            ]
+           ]
+          ],
+          [
+           "mul",
+           [
+            "name",
+            "left.M33"
+           ],
+           [
+            "name",
+            "right.M33"
+           ]
+          ]
+         ],
+         [
+          "mul",
+          [
+           "name",
+           "left.M34"
+          ],
+          [
+           "name",
+           "right.M43"
+          ]
+         ]
+        ],
+        "target": "temp.M33"
+       },
+       {
+        "expression": [
+         "add",
+         [
+          "add",
+          [
+           "add",
+           [
+            "mul",
+            [
+             "name",
+             "left.M31"
+            ],
+            [
+             "name",
+             "right.M14"
+            ]
+           ],
+           [
+            "mul",
+            [
+             "name",
+             "left.M32"
+            ],
+            [
+             "name",
+             "right.M24"
+            ]
+           ]
+          ],
+          [
+           "mul",
+           [
+            "name",
+            "left.M33"
+           ],
+           [
+            "name",
+            "right.M34"
+           ]
+          ]
+         ],
+         [
+          "mul",
+          [
+           "name",
+           "left.M34"
+          ],
+          [
+           "name",
+           "right.M44"
+          ]
+         ]
+        ],
+        "target": "temp.M34"
+       },
+       {
+        "expression": [
+         "add",
+         [
+          "add",
+          [
+           "add",
+           [
+            "mul",
+            [
+             "name",
+             "left.M41"
+            ],
+            [
+             "name",
+             "right.M11"
+            ]
+           ],
+           [
+            "mul",
+            [
+             "name",
+             "left.M42"
+            ],
+            [
+             "name",
+             "right.M21"
+            ]
+           ]
+          ],
+          [
+           "mul",
+           [
+            "name",
+            "left.M43"
+           ],
+           [
+            "name",
+            "right.M31"
+           ]
+          ]
+         ],
+         [
+          "mul",
+          [
+           "name",
+           "left.M44"
+          ],
+          [
+           "name",
+           "right.M41"
+          ]
+         ]
+        ],
+        "target": "temp.M41"
+       },
+       {
+        "expression": [
+         "add",
+         [
+          "add",
+          [
+           "add",
+           [
+            "mul",
+            [
+             "name",
+             "left.M41"
+            ],
+            [
+             "name",
+             "right.M12"
+            ]
+           ],
+           [
+            "mul",
+            [
+             "name",
+             "left.M42"
+            ],
+            [
+             "name",
+             "right.M22"
+            ]
+           ]
+          ],
+          [
+           "mul",
+           [
+            "name",
+            "left.M43"
+           ],
+           [
+            "name",
+            "right.M32"
+           ]
+          ]
+         ],
+         [
+          "mul",
+          [
+           "name",
+           "left.M44"
+          ],
+          [
+           "name",
+           "right.M42"
+          ]
+         ]
+        ],
+        "target": "temp.M42"
+       },
+       {
+        "expression": [
+         "add",
+         [
+          "add",
+          [
+           "add",
+           [
+            "mul",
+            [
+             "name",
+             "left.M41"
+            ],
+            [
+             "name",
+             "right.M13"
+            ]
+           ],
+           [
+            "mul",
+            [
+             "name",
+             "left.M42"
+            ],
+            [
+             "name",
+             "right.M23"
+            ]
+           ]
+          ],
+          [
+           "mul",
+           [
+            "name",
+            "left.M43"
+           ],
+           [
+            "name",
+            "right.M33"
+           ]
+          ]
+         ],
+         [
+          "mul",
+          [
+           "name",
+           "left.M44"
+          ],
+          [
+           "name",
+           "right.M43"
+          ]
+         ]
+        ],
+        "target": "temp.M43"
+       },
+       {
+        "expression": [
+         "add",
+         [
+          "add",
+          [
+           "add",
+           [
+            "mul",
+            [
+             "name",
+             "left.M41"
+            ],
+            [
+             "name",
+             "right.M14"
+            ]
+           ],
+           [
+            "mul",
+            [
+             "name",
+             "left.M42"
+            ],
+            [
+             "name",
+             "right.M24"
+            ]
+           ]
+          ],
+          [
+           "mul",
+           [
+            "name",
+            "left.M43"
+           ],
+           [
+            "name",
+            "right.M34"
+           ]
+          ]
+         ],
+         [
+          "mul",
+          [
+           "name",
+           "left.M44"
+          ],
+          [
+           "name",
+           "right.M44"
+          ]
+         ]
+        ],
+        "target": "temp.M44"
+       },
+       {
+        "control": "result"
+       }
+      ],
+      "rotation": [
+       {
+        "expression": [
+         "mul",
+         [
+          "name",
+          "rotation.X"
+         ],
+         [
+          "name",
+          "rotation.X"
+         ]
+        ],
+        "target": "xx"
+       },
+       {
+        "expression": [
+         "mul",
+         [
+          "name",
+          "rotation.Y"
+         ],
+         [
+          "name",
+          "rotation.Y"
+         ]
+        ],
+        "target": "yy"
+       },
+       {
+        "expression": [
+         "mul",
+         [
+          "name",
+          "rotation.Z"
+         ],
+         [
+          "name",
+          "rotation.Z"
+         ]
+        ],
+        "target": "zz"
+       },
+       {
+        "expression": [
+         "mul",
+         [
+          "name",
+          "rotation.X"
+         ],
+         [
+          "name",
+          "rotation.Y"
+         ]
+        ],
+        "target": "xy"
+       },
+       {
+        "expression": [
+         "mul",
+         [
+          "name",
+          "rotation.Z"
+         ],
+         [
+          "name",
+          "rotation.W"
+         ]
+        ],
+        "target": "zw"
+       },
+       {
+        "expression": [
+         "mul",
+         [
+          "name",
+          "rotation.Z"
+         ],
+         [
+          "name",
+          "rotation.X"
+         ]
+        ],
+        "target": "zx"
+       },
+       {
+        "expression": [
+         "mul",
+         [
+          "name",
+          "rotation.Y"
+         ],
+         [
+          "name",
+          "rotation.W"
+         ]
+        ],
+        "target": "yw"
+       },
+       {
+        "expression": [
+         "mul",
+         [
+          "name",
+          "rotation.Y"
+         ],
+         [
+          "name",
+          "rotation.Z"
+         ]
+        ],
+        "target": "yz"
+       },
+       {
+        "expression": [
+         "mul",
+         [
+          "name",
+          "rotation.X"
+         ],
+         [
+          "name",
+          "rotation.W"
+         ]
+        ],
+        "target": "xw"
+       },
+       {
+        "control": "identity"
+       },
+       {
+        "expression": [
+         "sub",
+         [
+          "number",
+          1.0
+         ],
+         [
+          "mul",
+          [
+           "number",
+           2.0
+          ],
+          [
+           "add",
+           [
+            "name",
+            "yy"
+           ],
+           [
+            "name",
+            "zz"
+           ]
+          ]
+         ]
+        ],
+        "target": "result.M11"
+       },
+       {
+        "expression": [
+         "mul",
+         [
+          "number",
+          2.0
+         ],
+         [
+          "add",
+          [
+           "name",
+           "xy"
+          ],
+          [
+           "name",
+           "zw"
+          ]
+         ]
+        ],
+        "target": "result.M12"
+       },
+       {
+        "expression": [
+         "mul",
+         [
+          "number",
+          2.0
+         ],
+         [
+          "sub",
+          [
+           "name",
+           "zx"
+          ],
+          [
+           "name",
+           "yw"
+          ]
+         ]
+        ],
+        "target": "result.M13"
+       },
+       {
+        "expression": [
+         "mul",
+         [
+          "number",
+          2.0
+         ],
+         [
+          "sub",
+          [
+           "name",
+           "xy"
+          ],
+          [
+           "name",
+           "zw"
+          ]
+         ]
+        ],
+        "target": "result.M21"
+       },
+       {
+        "expression": [
+         "sub",
+         [
+          "number",
+          1.0
+         ],
+         [
+          "mul",
+          [
+           "number",
+           2.0
+          ],
+          [
+           "add",
+           [
+            "name",
+            "zz"
+           ],
+           [
+            "name",
+            "xx"
+           ]
+          ]
+         ]
+        ],
+        "target": "result.M22"
+       },
+       {
+        "expression": [
+         "mul",
+         [
+          "number",
+          2.0
+         ],
+         [
+          "add",
+          [
+           "name",
+           "yz"
+          ],
+          [
+           "name",
+           "xw"
+          ]
+         ]
+        ],
+        "target": "result.M23"
+       },
+       {
+        "expression": [
+         "mul",
+         [
+          "number",
+          2.0
+         ],
+         [
+          "add",
+          [
+           "name",
+           "zx"
+          ],
+          [
+           "name",
+           "yw"
+          ]
+         ]
+        ],
+        "target": "result.M31"
+       },
+       {
+        "expression": [
+         "mul",
+         [
+          "number",
+          2.0
+         ],
+         [
+          "sub",
+          [
+           "name",
+           "yz"
+          ],
+          [
+           "name",
+           "xw"
+          ]
+         ]
+        ],
+        "target": "result.M32"
+       },
+       {
+        "expression": [
+         "sub",
+         [
+          "number",
+          1.0
+         ],
+         [
+          "mul",
+          [
+           "number",
+           2.0
+          ],
+          [
+           "add",
+           [
+            "name",
+            "yy"
+           ],
+           [
+            "name",
+            "xx"
+           ]
+          ]
+         ]
+        ],
+        "target": "result.M33"
+       }
+      ],
+      "translation": [
+       {
+        "control": "identity"
+       },
+       {
+        "expression": [
+         "name",
+         "x"
+        ],
+        "target": "result.M41"
+       },
+       {
+        "expression": [
+         "name",
+         "y"
+        ],
+        "target": "result.M42"
+       },
+       {
+        "expression": [
+         "name",
+         "z"
+        ],
+        "target": "result.M43"
+       }
+      ]
+     },
+     "pack": 4,
+     "scaleFields": [
+      "M11",
+      "M22",
+      "M33"
+     ]
+    }
+   }
+  },
+  "target": {
+   "binaryIdentity": {
+    "encryptedEboot": {
+     "sha256": "01d4302521e57a070e908eda1d779aec7c17abc509243b1d09a1b0e934b68f07",
+     "size": 70691458
+    },
+    "normalizedElf": {
+     "sha256": "2a3419b404a5d10f2d36d8056916e65afad6352b78489365e5f1003f8e953c0d",
+     "size": 99012608
+    }
+   },
+   "loader": {
+    "runtimeImageBias": "0x400000"
+   },
+   "targetId": "PPSA04264_01.010.002_DISC"
+  }
+ },
+ "contractsSha256": "966fe484f854d0cc191a0dcf1cce89d738a138eba859d60187051a96c54183c0",
+ "kind": "gtavmenu-vehicle-format-contracts",
+ "schemaVersion": 1
+}

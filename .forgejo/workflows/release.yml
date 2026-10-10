@@ -47,9 +47,7 @@ jobs:
           unzip -q /tmp/ps5-payload-sdk.zip -d "$HOME"
       - name: Build and assemble release
         run: |
-          for target in ppsa04264-01.005.000 ppsa04264-01.010.002 ppsa04263-01.010.002; do
-            make GTAV_TARGET="$target" package-target
-          done
+          make package-universal
           python3 tools/release.py assemble --tag "$RELEASE_TAG"
           python3 tools/release.py verify --tag "$RELEASE_TAG"
       - name: Retain release assets
@@ -59,7 +57,3 @@ jobs:
           path: build/release/
           if-no-files-found: error
           retention-days: 14
-      - name: Publish Forgejo release
-        env:
-          FORGEJO_TOKEN: ${{ secrets.RELEASE_TOKEN }}
-        run: python3 tools/release.py publish --platform forgejo --tag "$RELEASE_TAG"

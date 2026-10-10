@@ -46,6 +46,10 @@ extern "C" {
 // exactly which chord to treat specially.
 #define GTAV_PAD_OPEN_CHORD_MASK (GTAV_PAD_BTN_R1 | GTAV_PAD_BTN_LEFT)
 
+// Row capabilities passed to gtav_pad_input_map (bit flags, from the selected menu row).
+//   GTAV_PAD_ROW_CYCLER    the row is a value cycler: Left/Right may auto-repeat.
+#define GTAV_PAD_ROW_CYCLER 0x1
+
 // Caller-owned mapping state: edge detection + dpad hold auto-repeat + a latch
 // so the open chord fires exactly once per chord rather than every poll.
 typedef struct GtavPadMapState {
@@ -55,12 +59,12 @@ typedef struct GtavPadMapState {
   uint32_t chord_latch;    // open chord currently held and already fired
   uint32_t hotkey_latch;   // bound combo currently held and already fired (mask), or 0
   uint32_t hotkey_action;  // action id of the last HOTKEY command (read by the caller)
-  // Monotonic poll clock + per-shoulder press timestamps for the L1/R1 double-tap that emits
-  // HOME/END. A single tap pages immediately (no latency); a second tap within the double-tap
-  // window jumps to the list edge (the intermediate page is harmless -- the jump is absolute).
-  uint32_t poll_seq;      // increments once per map() call; never 0 after the first call
-  uint32_t last_l1_poll;  // poll_seq at the last L1 press edge (0 = none); double-tap -> HOME
-  uint32_t last_r1_poll;  // poll_seq at the last R1 press edge (0 = none); double-tap -> END
+  uint32_t poll_seq;       // increments once per map() call; never 0 after the first call
+  // L1/R1 top/bottom jump while the menu is open: the shoulder being tracked (0 = none) and
+  // whether another menu button spoiled it. A clean press fires on release, so R1 held for the
+  // R1 + DpadLeft close chord never also jumps.
+  uint32_t shoulder_bit;
+  uint32_t shoulder_spoiled;
   // Circle hold-to-collapse: a tap is an immediate single BACK; holding past the threshold also
   // emits one BACK_ROOT (collapse to the root menu). The intermediate BACK is harmless -- the
   // collapse is absolute. circle_hold counts polls Circle has been held; back_root_fired latches
@@ -94,20 +98,22 @@ uint32_t gtav_pad_input_map_touch(GtavPadTouchMapState* state, int x, int y, int
 // snapshot to a single GTAV_MENU_COMMAND_*:
 //   - R1 + DpadLeft (either press order) -> TOGGLE, once per chord.
 //   - While visible: DpadUp -> PREV, DpadDown -> NEXT (with auto-repeat),
-//     Cross -> SELECT, Circle -> BACK.
+//     Cross -> SELECT, Circle -> BACK, L1 -> HOME, R1 -> END (top / bottom selectable row).
 //   - While NOT visible: a bound keybind combo (installed via gtav_pad_input_set_binds)
 //     held in full -> HOTKEY, once per press; the fired action is left in
 //     state->hotkey_action. Open chord wins (checked first), and hotkeys only match while
 //     closed so they never steal navigation.
 // repeat_delay / repeat_rate are in poll ticks; repeat_rate 0 means repeat
 // every poll once the delay elapses; repeat_delay 0 disables auto-repeat.
-// lr_repeat_ok gates Left/Right auto-repeat: pass 1 only when the selected row is a value
-// cycler. On other rows Left is a one-shot Back, so repeating it would walk the user out of
-// the menu; Up/Down auto-repeat (scrolling) is unaffected.
+// row_caps (GTAV_PAD_ROW_* bits) describes the selected row. GTAV_PAD_ROW_CYCLER gates
+// Left/Right auto-repeat (on other rows Left/Right are one-shots); Up/Down auto-repeat (scrolling)
+// is unaffected. L1/R1 belong to the menu on every row while it is visible: a press with no other
+// menu button joining it emits HOME / END on RELEASE (no repeat), so the R1 + DpadLeft close chord
+// never also jumps. While hidden L1/R1 map to NONE (they stay with the game).
 // Reads the installed bind table (file-local; set via gtav_pad_input_set_binds) but is
 // otherwise side-effect-free apart from *state, so host tests stay deterministic.
 uint32_t gtav_pad_input_map(GtavPadMapState* state, uint32_t buttons, int visible,
-                            uint32_t repeat_delay, uint32_t repeat_rate, int lr_repeat_ok);
+                            uint32_t repeat_delay, uint32_t repeat_rate, int row_caps);
 
 // Override the live D-pad auto-repeat cadence (poll ticks; rate 0 = repeat every poll once the
 // delay elapses, delay 0 = no auto-repeat). Set by the Menu Settings Nav Delay / Nav Speed cyclers

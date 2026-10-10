@@ -211,15 +211,17 @@ static int autopilot_hook_ready(void) {
 }
 
 // Worker-side cyclers/action. They only advance the index/mode + raise the dirty flag; the
-// game-thread tick reads the live values. Engaging a drive mode is refused until the frame
-// hook is live (the drive natives run on that tick), mirroring toggle_noclip().
+// game-thread tick reads the live values. Mode is pick then apply (mode_pick_step): Left/Right
+// stage it and Cross engages it, so stepping past Drive/Wander does not start each one. Engaging a
+// drive mode is refused until the frame hook is live (the drive natives run on that tick),
+// mirroring toggle_noclip().
+static ModePick g_autopilot_pick;
 static uint32_t cycle_autopilot_mode(uint32_t param) {
   const uint32_t action = GTAV_NATIVE_SHELL_ACTION_CYCLE_AUTOPILOT_MODE;
   const uint32_t count = (uint32_t)(sizeof(kApModes) / sizeof(kApModes[0]));
-  if (param == 1u || param == 2u) {
-    g_autopilot_mode = (int)list_step((uint32_t)g_autopilot_mode, count, param == 2u ? -1 : 1);
-    g_autopilot_dirty = 1;
-  }
+  if (mode_pick_step(&g_autopilot_pick, &g_autopilot_mode, count, param))
+    return ok(action, kApModes[g_autopilot_pick.pick % count].label);
+  g_autopilot_dirty = 1;
   const uint32_t mode = (uint32_t)g_autopilot_mode % count;
   if (mode != (uint32_t)GTAV_AP_MODE_OFF && !autopilot_hook_ready()) {
     return unavailable(action, "needs main-thread hook");

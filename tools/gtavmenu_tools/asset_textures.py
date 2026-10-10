@@ -66,7 +66,9 @@ class ResourceView:
             name = data[:stop].decode("ascii")
         except UnicodeError as exc:
             raise AssetError("texture name is not ASCII") from exc
-        safe_name(name)
+        # A texture name is a key, not a path: PC exporters leave trailing blanks ("NormalMap " in the Prowler
+        # bike); the vehicle converter's texture-name repair turns them into identifiers before conversion.
+        safe_name(name.rstrip(" ") or name)
         if "/" in name:
             raise AssetError("texture name contains a directory separator")
         return name
@@ -132,7 +134,7 @@ def inspect_legacy_dictionary(payload: bytes, header: dict, limits: Limits) -> d
             "systemOffset": start,
             "issues": [],
             "linearPayloadValidated": False,
-            "ordinaryStaticConversionEligible": SCRIPT_TEXTURE_MARKER not in name,
+            "ordinaryStaticConversionEligible": SCRIPT_TEXTURE_MARKER not in name.lower(),
         }
         rows.append(row)
         if not row["ordinaryStaticConversionEligible"]:

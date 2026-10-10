@@ -27,7 +27,7 @@
     "nativeAddresses": {
       "json": "data/native_targets/production-native-addresses-ppsa04264-01.010.002.json",
       "header": "gtavmenu/native_addresses_ppsa04264-01.010.002_generated.h",
-      "sha256": "0b48f6e41f61798e9f55d5980ad44d0ebcbf7452d0a16f7adda166d2c1fa67aa"
+      "sha256": "d963e038a8908f4b90678c1db9e21406e45907c52ce4a4193ffa5d0fd158e4e1"
     },
     "scriptGlobals": {
       "json": "data/script_globals/anchors.json",
@@ -43,7 +43,8 @@
       "buttonGlyphs": false,
       "scriptGlobals": true,
       "phaseIntercept": true,
-      "phaseDrawList": true
+      "phaseDrawList": true,
+      "customPacks": true
     },
     "injection": {
       "lane": "ptrace-free-cave",

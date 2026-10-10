@@ -68,17 +68,9 @@ static const struct WAttachRow* wattach_row_for(uint32_t weapon) {
   return nullptr;
 }
 
-// Worker-side staging cycler for one slot: Left/Right flip Off<->On; the value is committed to the
-// weapon by Apply Attachments (the give/remove natives are game-thread only). Quiet on Left/Right
-// (a staging cycler), so it is NOT in action_applies_on_change.
-static uint32_t cycle_weapon_attachment(uint32_t action, int slot, uint32_t param) {
-  stage_step(&g_wattach_on[slot], 2u, param);
-  return ok(action, g_wattach_on[slot] ? "On" : "Off");
-}
-
 // Read the player's currently-equipped weapon hash (out-param idiom, same as cycle_weapon_tint).
 // Returns 0 if none/unavailable.
-static uint32_t wattach_current_weapon(int* out_ped) {
+[[gnu::noinline]] static uint32_t wattach_current_weapon(int* out_ped) {
   if (!g_n.get_current_ped_weapon || !g_n.player_ped_id) return 0u;
   int ped = native_player_ped_id();
   if (out_ped) *out_ped = ped;
@@ -86,6 +78,73 @@ static uint32_t wattach_current_weapon(int* out_ped) {
   uint32_t weapon = 0u;
   int has = invoke_return<int>(g_n.get_current_ped_weapon, ped, &weapon, 1);
   return (has && weapon) ? weapon : 0u;
+}
+
+static int pack_weapon_spawn(uint32_t weapon);  // custom_pack_data.inc (or the no-pack stub)
+
+// Why the Quick Slots rows cannot serve `weapon`, or nullptr when they can (a retail weapon of
+// kWAttach) or no weapon is in hand. A pack weapon is never in the table: its parts are the
+// Component row's (2026-10-08 session 3: Suppressor On on a pack weapon staged silently).
+static const char* wattach_refusal(uint32_t weapon) {
+  if (!weapon || wattach_row_for(weapon)) return nullptr;
+  return pack_weapon_spawn(weapon) >= 0 ? "pack weapon: use Component"
+                                        : "not a quick-slot weapon: use Component";
+}
+
+// Worker-side staging cycler for one slot: Left/Right flip Off<->On; the value is committed to the
+// weapon by Apply Attachments (the give/remove natives are game-thread only). Quiet on Left/Right
+// (a SETTING row in list_kinds.def: the step only stages what Apply Attachments installs). Stages
+// nothing for a weapon the table does not know (the footer says why: wattach_footer).
+static uint32_t cycle_weapon_attachment(uint32_t action, int slot, uint32_t param) {
+  if (const char* why = wattach_refusal(wattach_current_weapon(nullptr)))
+    return unavailable(action, why);
+  stage_step(&g_wattach_on[slot], 2u, param);
+  return ok(action, g_wattach_on[slot] ? "On" : "Off");
+}
+
+// Footer of the Quick Slots rows (native_bridge.cpp item_description, through
+// gtav_features_pack_footer): the refusal for the weapon in hand, or "" (the static help). Worker.
+[[maybe_unused]] static const char* wattach_footer() {
+  const char* why = wattach_refusal(wattach_current_weapon(nullptr));
+  return why ? why : "";
+}
+
+// Apply / Remove All with a weapon the table does not know (game thread): a pack-notes line for the
+// hardware check (pack lane builds: the worker klog is linked with it), then the refusal toast.
+static uint32_t wattach_refuse(uint32_t action, uint32_t weapon) {
+  const char* why = wattach_refusal(weapon);
+#if GTAV_MENU_ENABLE_CUSTOM_PACKS
+  char line[112];
+  snprintf(line, sizeof(line), "GTAVMenu pack quick slots weapon=0x%08x refused: %s",
+           (unsigned)weapon, why);
+  gtav_worker_klog(line);
+#endif
+  return unavailable(action, why);
+}
+
+// Game thread: GIVE_WEAPON_COMPONENT_TO_PED (on) or REMOVE_WEAPON_COMPONENT_FROM_PED (off). One
+// call site for both (the invoke wrappers are large).
+[[gnu::noinline]] static void weapon_component_set(int ped, uint32_t weapon,
+                                                           uint32_t component, int on) {
+  invoke_void(on ? g_n.give_weapon_component_to_ped : g_n.remove_weapon_component_from_ped, ped,
+              weapon, component);
+}
+
+// Game thread: fit `component` to `weapon` of `ped`, or remove it when fitted (HAS_PED_GOT_WEAPON_
+// COMPONENT, then GIVE_ / REMOVE_WEAPON_COMPONENT_TO/FROM_PED). Returns whether the weapon has it
+// afterwards; *had gets the state before. Shared by Component (weapon_components.inc) and the
+// Custom Packs component rows (toggle_pack_component).
+[[gnu::noinline]] static int weapon_component_flip(int ped, uint32_t weapon,
+                                                           uint32_t component, int* had) {
+  int state[2] = {0, 0};
+  // One HAS call site (the invoke wrappers are large): HAS, then GIVE or REMOVE, then HAS.
+#pragma clang loop unroll(disable)
+  for (int pass = 0; pass < 2; ++pass) {
+    state[pass] = invoke_return<int>(g_n.has_ped_got_weapon_component, ped, weapon, component) != 0;
+    if (!pass) weapon_component_set(ped, weapon, component, !state[0]);
+  }
+  *had = state[0];
+  return state[1];
 }
 
 // Game-thread: commit the staged Off/On set to the equipped weapon (give the On slots, remove the
@@ -101,17 +160,13 @@ static uint32_t apply_weapon_attachments(void) {
   if (ped <= 0) return failed(action, "no valid player ped (be in active gameplay)");
   if (!weapon) return failed(action, "no weapon equipped");
   const struct WAttachRow* row = wattach_row_for(weapon);
-  if (!row) return unavailable(action, "no attachments for this weapon");
+  if (!row) return wattach_refuse(action, weapon);
   int on = 0;
   for (int s = 0; s < GTAV_WATTACH_SLOT_COUNT; ++s) {
     const uint32_t comp = row->comp[s];
     if (!comp) continue;  // this weapon does not accept this slot
-    if (g_wattach_on[s]) {
-      invoke_void(g_n.give_weapon_component_to_ped, ped, weapon, comp);
-      ++on;
-    } else {
-      invoke_void(g_n.remove_weapon_component_from_ped, ped, weapon, comp);
-    }
+    weapon_component_set(ped, weapon, comp, g_wattach_on[s] != 0u);
+    on += g_wattach_on[s] != 0u;
   }
   char msg[GTAV_FEATURE_MESSAGE_LEN];
   snprintf(msg, sizeof(msg), "attachments applied (%d on)", on);
@@ -129,9 +184,9 @@ static uint32_t remove_weapon_attachments(void) {
   if (ped <= 0) return failed(action, "no valid player ped (be in active gameplay)");
   if (!weapon) return failed(action, "no weapon equipped");
   const struct WAttachRow* row = wattach_row_for(weapon);
-  if (!row) return unavailable(action, "no attachments for this weapon");
+  if (!row) return wattach_refuse(action, weapon);
   for (int s = 0; s < GTAV_WATTACH_SLOT_COUNT; ++s) {
-    if (row->comp[s]) invoke_void(g_n.remove_weapon_component_from_ped, ped, weapon, row->comp[s]);
+    if (row->comp[s]) weapon_component_set(ped, weapon, row->comp[s], 0);
     g_wattach_on[s] = 0u;
   }
   return ok(action, "attachments removed");
