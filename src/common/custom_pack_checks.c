@@ -1,5 +1,6 @@
 #include "gtavmenu/custom_pack_checks.h"
 
+#include <stdio.h>
 #include <string.h>
 
 // Parser differential (custom_pack_data.inc): the model factories append one record per element of
@@ -155,6 +156,7 @@ static uint32_t xml_bound(const char* text, size_t size, const char* list, size_
       const size_t name = at;
       while (at < size && xml_name_char((unsigned char)text[at])) ++at;
       const size_t length = at - name;
+      if (length > GTAV_CUSTOM_PACK_XML_NAME_KEEP) return UINT32_MAX;  // as the stream refuses
       while (at < size && xml_space((unsigned char)text[at])) ++at;
       if (!length || !depth || at >= size || text[at] != '>') return UINT32_MAX;
       --depth;
@@ -168,6 +170,7 @@ static uint32_t xml_bound(const char* text, size_t size, const char* list, size_
     if (!xml_name_start((unsigned char)text[at])) return UINT32_MAX;
     while (at < size && xml_name_char((unsigned char)text[at])) ++at;
     const size_t length = at - name;
+    if (length > GTAV_CUSTOM_PACK_XML_NAME_KEEP) return UINT32_MAX;  // as the stream refuses
     if (at >= size) return UINT32_MAX;
     if (!xml_space((unsigned char)text[at]) && text[at] != '>' && text[at] != '/')
       return UINT32_MAX;
@@ -222,6 +225,371 @@ uint32_t gtav_custom_pack_xml_list_bound(const char* text, size_t size, const ch
 
 uint32_t gtav_custom_pack_xml_grandchild_bound(const char* text, size_t size, const char* list) {
   return xml_bound(text, size, list, 2u);
+}
+
+// xml_bound as a byte-at-a-time state machine, for files read in pieces. Every rule above maps to
+// a state: the regions end at their first terminator ("-->", "]]>", "?>"); a comment's content is
+// what precedes the terminator's two dashes (so it ends in '-' when 3+ dashes precede the '>', and
+// holds "--" when an earlier run of 2+ dashes was not the terminator); a reference is checked
+// against the following characters while they are also read as text.
+enum {
+  XML_S_TEXT = 0,
+  XML_S_LT,    // after '<'
+  XML_S_BANG,  // after "<!": "--" or "[CDATA[" must follow
+  XML_S_COMMENT,
+  XML_S_CDATA,
+  XML_S_PI,
+  XML_S_END_NAME,    // after "</"
+  XML_S_END_SPACE,   // after the end tag's name
+  XML_S_START_NAME,  // in a start tag's name
+  XML_S_TAG,         // in a start tag, outside quotes
+  XML_S_TAG_SLASH,   // after '/' in a start tag: '>' must follow
+  XML_S_TAG_QUOTE,   // in a quoted attribute value
+};
+#define XML_BANG_COMMENT 0x100u  // bang: matching "<!--"
+#define XML_BANG_CDATA 0x200u    // bang: matching "<![CDATA["
+static const char* const kXmlReferences[4] = {"amp;", "gt;", "quot;", "apos;"};
+
+static void xml_name_start_at(GtavCustomPackXmlName* name) {
+  memset(name, 0, sizeof(*name));
+  name->hash = 0xcbf29ce484222325ull;  // FNV-1a 64
+}
+
+static void xml_name_add(GtavCustomPackXmlStream* s, unsigned char c) {
+  GtavCustomPackXmlName* name = &s->name;
+  // Names longer than the kept head are refused (as the one-buffer walk does): the end-tag match
+  // then compares every byte, never only a hash (a crafted collision could otherwise undercount).
+  if (name->length >= GTAV_CUSTOM_PACK_XML_NAME_KEEP) {
+    s->refused = 1;
+    return;
+  }
+  if (name->length < GTAV_CUSTOM_PACK_XML_NAME_KEEP) name->head[name->length] = (char)c;
+  name->hash = (name->hash ^ c) * 0x100000001b3ull;
+  s->tail[name->length % GTAV_CUSTOM_PACK_XML_NAME_KEEP] = (char)c;
+  if (name->length < UINT32_MAX) name->length++;
+}
+
+// The name just read is `list`, alone or after a namespace prefix (xml_name_is), from its tail.
+static int xml_stream_name_is_list(const GtavCustomPackXmlStream* s) {
+  const uint32_t length = s->name.length, want = s->list_length;
+  if (length < want) return 0;
+  const uint32_t keep = GTAV_CUSTOM_PACK_XML_NAME_KEEP;
+  if (length > want && s->tail[(length - want - 1u) % keep] != ':') return 0;
+  for (uint32_t i = 0; i < want; ++i)
+    if (xml_lower((unsigned char)s->tail[(length - want + i) % keep]) !=
+        xml_lower((unsigned char)s->list[i]))
+      return 0;
+  return 1;
+}
+
+static int xml_names_equal(const GtavCustomPackXmlName* a, const GtavCustomPackXmlName* b) {
+  const uint32_t head =
+      a->length < GTAV_CUSTOM_PACK_XML_NAME_KEEP ? a->length : GTAV_CUSTOM_PACK_XML_NAME_KEEP;
+  return a->length == b->length && a->hash == b->hash && memcmp(a->head, b->head, head) == 0;
+}
+
+static void xml_stream_start_tag_done(GtavCustomPackXmlStream* s, int self_closing) {
+  if (s->depth >= s->generation && s->open[s->depth - s->generation].list) ++s->count;
+  if (!self_closing) {
+    if (s->depth >= GTAV_CUSTOM_PACK_XML_DEPTH_MAX) {
+      s->refused = 1;
+      return;
+    }
+    s->open[s->depth] = s->name;
+    s->open[s->depth].list = (uint8_t)xml_stream_name_is_list(s);
+    s->depth++;
+  }
+  s->state = XML_S_TEXT;
+}
+
+static void xml_stream_end_tag_done(GtavCustomPackXmlStream* s) {
+  if (!s->depth) {
+    s->refused = 1;
+    return;
+  }
+  s->depth--;
+  if (!xml_names_equal(&s->open[s->depth], &s->name)) s->refused = 1;
+  s->state = XML_S_TEXT;
+}
+
+// Region content character (comment, CDATA, processing instruction): "<name" markup and the
+// characters a parser reading the region differently could take as markup.
+static void xml_stream_region_char(GtavCustomPackXmlStream* s, unsigned char c) {
+  if (s->prev_lt && xml_name_start(c)) s->markup++;
+  s->prev_lt = c == '<';
+  if (c == '<' || c == '>' || c == '&') s->region_ambiguous = 1;
+}
+
+static void xml_stream_region_open(GtavCustomPackXmlStream* s, int state) {
+  s->state = state;
+  s->run = 0;
+  s->markup = 0;
+  s->prev_lt = 0;
+  s->prev_question = 0;
+  s->double_dash = 0;
+  s->region_ambiguous = 0;
+}
+
+static void xml_stream_step(GtavCustomPackXmlStream* s, unsigned char c) {
+  if (c == '\0') {
+    s->refused = 1;
+    return;
+  }
+  // Every "<item" in the file (xml_flat_items).
+  static const char kItem[] = "<item";
+  if (xml_lower(c) == (unsigned char)kItem[s->item_at]) {
+    if (++s->item_at == sizeof(kItem) - 1u) {
+      s->flat++;
+      s->item_at = 0;
+    }
+  } else {
+    s->item_at = c == '<';
+  }
+  // A pending reference: the characters after its '&' must spell one of kXmlReferences.
+  if (s->ref_mask) {
+    uint32_t still = 0;
+    for (uint32_t k = 0; k < 4u; ++k) {
+      if (!(s->ref_mask & (1u << k)) || (unsigned char)kXmlReferences[k][s->ref_at] != c) continue;
+      if (kXmlReferences[k][s->ref_at + 1u] == '\0') {
+        still = 0;
+        s->ref_mask = 0;
+        goto reference_done;
+      }
+      still |= 1u << k;
+    }
+    if (!still) {
+      s->refused = 1;
+      return;
+    }
+    s->ref_mask = still;
+    s->ref_at++;
+  }
+reference_done:
+  switch (s->state) {
+    case XML_S_TEXT:
+      if (c == '<') {
+        s->state = XML_S_LT;
+        return;
+      }
+      if (c == '&') {
+        s->ref_mask = 0xfu;
+        s->ref_at = 0;
+      }
+      if (!xml_space(c) && c != 0xefu && c != 0xbbu && c != 0xbfu) s->prolog = 0;
+      return;
+    case XML_S_LT:
+      if (c == '!') {
+        s->state = XML_S_BANG;
+        s->bang = 0;
+        return;
+      }
+      if (c == '?') {
+        xml_stream_region_open(s, XML_S_PI);
+        return;
+      }
+      s->prolog = 0;
+      xml_name_start_at(&s->name);
+      if (c == '/') {
+        s->state = XML_S_END_NAME;
+        return;
+      }
+      if (!xml_name_start(c)) {
+        s->refused = 1;
+        return;
+      }
+      s->state = XML_S_START_NAME;
+      xml_name_add(s, c);
+      return;
+    case XML_S_BANG: {
+      // bang: the matched characters after "<!", tagged with the candidate once the first is known.
+      const uint32_t at = s->bang & 0xffu;
+      uint32_t kind = s->bang & ~0xffu;
+      if (!kind) kind = c == '-' ? XML_BANG_COMMENT : c == '[' ? XML_BANG_CDATA : 0u;
+      const char* want = kind == XML_BANG_COMMENT ? "--" : kind == XML_BANG_CDATA ? "[CDATA[" : "";
+      if (!kind || (unsigned char)want[at] != c) {
+        s->refused = 1;  // DOCTYPE, ENTITY, ...: entities could add markup
+        return;
+      }
+      s->bang = kind | (at + 1u);
+      if (want[at + 1u] == '\0')
+        xml_stream_region_open(s, kind == XML_BANG_COMMENT ? XML_S_COMMENT : XML_S_CDATA);
+      return;
+    }
+    case XML_S_COMMENT:
+      if (c == '-') {
+        s->run++;
+        s->prev_lt = 0;
+        return;
+      }
+      if (c == '>' && s->run >= 2u) {
+        // XML forbids "--" inside a comment and a comment ending in '-'.
+        if (s->double_dash || s->run >= 3u) {
+          s->refused = 1;
+          return;
+        }
+        s->count += s->markup;
+        s->ambiguous |= s->region_ambiguous;
+        s->state = XML_S_TEXT;
+        return;
+      }
+      if (s->run >= 2u) s->double_dash = 1;
+      s->run = 0;
+      xml_stream_region_char(s, c);
+      return;
+    case XML_S_CDATA:
+      if (c == ']') {
+        s->run++;
+        s->prev_lt = 0;
+        return;
+      }
+      if (c == '>' && s->run >= 2u) {
+        // A parser without CDATA support would read it as markup: always ambiguous.
+        s->count += s->markup;
+        s->ambiguous = 1;
+        s->state = XML_S_TEXT;
+        return;
+      }
+      s->run = 0;
+      xml_stream_region_char(s, c);
+      return;
+    case XML_S_PI:
+      if (c == '>' && s->prev_question) {
+        s->count += s->markup;
+        s->ambiguous |= !s->prolog || s->region_ambiguous;
+        s->prolog = 0;
+        s->state = XML_S_TEXT;
+        return;
+      }
+      s->prev_question = c == '?';
+      xml_stream_region_char(s, c);
+      return;
+    case XML_S_END_NAME:
+      if (xml_name_char(c)) {
+        xml_name_add(s, c);
+        return;
+      }
+      if (!s->name.length) {
+        s->refused = 1;
+        return;
+      }
+      if (xml_space(c)) {
+        s->state = XML_S_END_SPACE;
+        return;
+      }
+      if (c == '>') {
+        xml_stream_end_tag_done(s);
+        return;
+      }
+      s->refused = 1;
+      return;
+    case XML_S_END_SPACE:
+      if (xml_space(c)) return;
+      if (c == '>') {
+        xml_stream_end_tag_done(s);
+        return;
+      }
+      s->refused = 1;
+      return;
+    case XML_S_START_NAME:
+      if (xml_name_char(c)) {
+        xml_name_add(s, c);
+        return;
+      }
+      // The character after the name: whitespace, '>' or "/>".
+      if (c == '>') {
+        xml_stream_start_tag_done(s, 0);
+      } else if (c == '/') {
+        s->state = XML_S_TAG_SLASH;
+      } else if (xml_space(c)) {
+        s->state = XML_S_TAG;
+      } else {
+        s->refused = 1;
+      }
+      return;
+    case XML_S_TAG:
+      if (c == '>') {
+        xml_stream_start_tag_done(s, 0);
+        return;
+      }
+      if (c == '/') {
+        s->state = XML_S_TAG_SLASH;
+        return;
+      }
+      if (c == '<') {
+        s->refused = 1;
+        return;
+      }
+      if (c == '&') {
+        s->ref_mask = 0xfu;
+        s->ref_at = 0;
+        return;
+      }
+      if (c == '"' || c == '\'') {
+        s->quote = (char)c;
+        s->state = XML_S_TAG_QUOTE;
+      }
+      return;
+    case XML_S_TAG_SLASH:
+      if (c != '>') {
+        s->refused = 1;
+        return;
+      }
+      xml_stream_start_tag_done(s, 1);
+      return;
+    case XML_S_TAG_QUOTE:
+      if (c == (unsigned char)s->quote) {
+        s->state = XML_S_TAG;
+        return;
+      }
+      if (c == '<' || c == '>') {
+        s->refused = 1;
+        return;
+      }
+      if (c == '&') {
+        s->ref_mask = 0xfu;
+        s->ref_at = 0;
+      }
+      return;
+    default:
+      s->refused = 1;
+      return;
+  }
+}
+
+void gtav_custom_pack_xml_stream_init(GtavCustomPackXmlStream* stream, const char* list,
+                                      uint32_t generation) {
+  if (!stream) return;
+  memset(stream, 0, sizeof(*stream));
+  stream->list = list;
+  stream->generation = generation;
+  stream->prolog = 1;
+  stream->state = XML_S_TEXT;
+  const size_t length = list ? strlen(list) : 0;
+  // The tail keeps the list name and the ':' before it.
+  if (!list || !length || length + 1u > GTAV_CUSTOM_PACK_XML_NAME_KEEP || generation < 1u ||
+      generation > 2u)
+    stream->refused = 1;
+  stream->list_length = (uint32_t)length;
+}
+
+void gtav_custom_pack_xml_stream_feed(GtavCustomPackXmlStream* stream, const char* text,
+                                      size_t size) {
+  if (!stream || stream->refused) return;
+  if (!text) {
+    if (size) stream->refused = 1;
+    return;
+  }
+  for (size_t i = 0; i < size && !stream->refused; ++i)
+    xml_stream_step(stream, (unsigned char)text[i]);
+}
+
+uint32_t gtav_custom_pack_xml_stream_finish(GtavCustomPackXmlStream* stream) {
+  if (!stream || stream->refused) return UINT32_MAX;
+  // Inside a tag, region or reference, or unclosed elements: a truncated file.
+  if (stream->state != XML_S_TEXT || stream->ref_mask || stream->depth) return UINT32_MAX;
+  uint64_t count = stream->count;
+  if (stream->ambiguous && stream->flat > count) count = stream->flat;
+  return count < UINT32_MAX ? (uint32_t)count : UINT32_MAX;
 }
 
 static uint32_t audio_u32(const uint8_t* rel, size_t at) {
@@ -305,6 +673,10 @@ static const struct {
 } kUserReasons[] = {
     // The game build is not the pinned one (or its code was patched).
     {"pack data mounter anchors", 0, "Wrong game version (data loader)"},
+    {"pack data iface mismatch", 0, "Wrong game version (data loader)"},
+    {"pack data iface unreadable", 0, "Wrong game version (data loader)"},
+    {"pack data vtable mismatch", 0, "Wrong game version (data loader)"},
+    {"pack data load mismatch", 0, "Wrong game version (data loader)"},
     {"pack data pump anchors", 0, "Wrong game version (data loader)"},
     {"loose collection anchors", 0, "Wrong game version (data loader)"},
     {"memory device gate", 0, "Wrong game version (file device)"},
@@ -327,7 +699,6 @@ static const struct {
     // Capacity: too much loaded at once.
     {"vehicle model store headroom", 0, "Too many custom vehicles loaded"},
     {"ped model store headroom", 0, "Too many custom peds loaded"},
-    {"ped metadata store headroom", 0, "Too many custom peds loaded"},
     {"weapon model store headroom", 0, "Too many custom weapon models"},
     {"component info array is full", 0, "Too many weapon components"},
     {"component file items exceed", 0, "Too many weapon components"},
@@ -338,16 +709,30 @@ static const struct {
     {"pack pool memory query", 0, "Out of memory; load fewer packs"},
     {"pack buffer map failed", 0, "Out of memory; load fewer packs"},
     {"pack buffer needs PS5 direct memory", 0, "Out of memory; load fewer packs"},
+    {"pack data allocation failed", 0, "Out of memory; load fewer packs"},
     {"pack archive capacity gate", 0, "Game slots full; load fewer packs"},
+    // Store-headroom refusals name their store (gtav_custom_pack_store_reason); a malformed one:
     {"store headroom gate refused", 0, "Game slots full; load fewer packs"},
     // Pack files on the console.
     {"pack archive size gate", 0, "Pack files damaged; reinstall it"},
+    {"pack archive size/hash gate", 0, "Pack files damaged; reinstall it"},
     {"pack buffer hash gate", 0, "Pack files damaged; reinstall it"},
     {"pack buffer too small", 0, "Pack files damaged; reinstall it"},
+    {"pack archive toc layout", 0, "Pack files damaged; reinstall it"},
+    {"pack keyed toc count failed", 0, "Pack files damaged; reinstall it"},
     {"pack data file size/hash gate", 0, "Pack files damaged; reinstall it"},
     {"pack data read size", 0, "Pack files damaged; reinstall it"},
     {"pack archive open refused", 0, "Pack file missing; reinstall it"},
-    {"pack archive header gate", 0, "Pack archive is not a PS5 RPF"},
+    {"pack archive bulk open refused", 0, "Game could not open archive"},
+    {"pack archive path too long", 0, "Pack path too long; shorten it"},
+    {"pack cache path too long", 0, "Pack path too long; shorten it"},
+    {"pack data path too long", 0, "Pack path too long; shorten it"},
+    {"pack registered path too long", 0, "Pack path too long; shorten it"},
+    {"pack keyed archive copy failed", 0, "Could not prepare archive; retry"},
+    {"pack keyed archive rename failed", 0, "Could not prepare archive; retry"},
+    {"pack /data archive route gate", 0, "Wrong game version (file device)"},
+    {"pack data /data device gate", 0, "Wrong game version (file device)"},
+    {"pack archive header gate", 0, "Pack archive is not a valid RPF"},
     {"plain toc", 0, "Pack archive format not supported"},
     {"pack has no registered members", 0, "Pack archive has no usable files"},
     {"pack descriptor missing or invalid", 0, "A pack.cfg is invalid; reinstall"},
@@ -356,6 +741,7 @@ static const struct {
     {"pack descriptors busy", 0, "Menu busy; press Load again"},
     // Data files (meta XML).
     {"pack data type has no pinned mounter", 0, "Data file type not supported"},
+    {"pack data type is not supported on PS4", 0, "Data type not supported on PS4"},
     {"pack data memory name too long", 0, "Data file name too long"},
     {"timecycle file names no modifier", 0, "Screen effects: none or over 64"},
     // Audio game data (AUDIO_GAMEDATA .rel chunks).
@@ -392,6 +778,7 @@ static const struct {
     // Carcols growth gate: the one-press load waits on it (custom_pack_autoload.inc), then fails.
     {"carcols would free mod parts", 0, "Tuned car nearby (parked ones too)"},
     {"carcols gate wait timed out", 1, "Tuned car nearby (parked ones too)"},
+    {"Carcols kits unsupported on PS4", 1, "Carcols kits unavailable on PS4"},
     {"apparel file needs one pedName", 0, "Clothing file lacks ped/dlc names"},
     {"fullDlcName must be", 0, "fullDlcName must be ped_dlcName"},
     {"apparel file already loaded", 0, "Clothing already added"},
@@ -401,8 +788,15 @@ static const struct {
     {"ped model is in use", 0, "Ped in use; restart and load first"},
     {"pack labels added=", 0, "Game refused some text labels"},
     {"carcols wheels are not supported", 0, "Custom wheels are not supported"},
+    {"custom wheels need the PS4", 0, "Custom wheels unsupported on PS4"},
     {"pack has no labels", 1, "Pack has no labels"},
     // Stock overrides.
+    {"pack overrides are not supported on PS4", 0, "Overrides not supported on PS4"},
+    {"maps and typs are not supported on PS4", 0, "Maps and typs unsupported on PS4"},
+    {"has no PS4 data loader", 0, "Data type not supported on PS4"},
+    {"holds no PS4 resources", 0, "Not a PS4 pack (no .o* files)"},
+    {"already in this game", 0, "Model already in game; restart GTA"},
+    {"already registered in this game", 0, "Packs already loaded; restart GTA"},
     {"loaded or requested", 0, "Stock asset in use; restart GTA"},
     {"override member has no extension", 0, "Override target not found"},
     {"override type has no store", 0, "Override target not found"},
@@ -491,14 +885,173 @@ static const struct {
     {"streaming info unavailable", 0, "Game state unreadable; restart GTA"},
 };
 
+// The store-headroom gates' stores: the technical name in refusals and pack-notes, the player's
+// name and the selected packs that need it.
+static const struct {
+  const char* name;
+  const char* label;  // "<label> slots full (...)"
+  const char* text;   // the short menu text
+  int scope;
+} kStores[] = {
+    {"frag", "Fragment", "Fragment slots full", GTAV_CUSTOM_PACK_STORE_ANY},
+    {"drawable", "Drawable", "Drawable slots full", GTAV_CUSTOM_PACK_STORE_ANY},
+    {"txd", "Texture", "Texture slots full", GTAV_CUSTOM_PACK_STORE_ANY},
+    {"typ", "Archetype", "Archetype slots full", GTAV_CUSTOM_PACK_STORE_ANY},
+    {"mapdata", "Map data", "Map data slots full", GTAV_CUSTOM_PACK_STORE_ANY},
+    {"bounds", "Collision", "Collision slots full", GTAV_CUSTOM_PACK_STORE_ANY},
+    {"metadata", "Ped metadata", "Ped metadata slots full", GTAV_CUSTOM_PACK_STORE_PED},
+    {"dwd", "Ped drawable", "Ped drawable slots full", GTAV_CUSTOM_PACK_STORE_PED},
+    {"ptfx", "Particle", "Particle slots full", GTAV_CUSTOM_PACK_STORE_PTFX},
+    // Model and file tables the data rows add to (checked before Load, custom_pack_select.inc).
+    {"vehicle", "Vehicle", "Vehicle slots full", GTAV_CUSTOM_PACK_STORE_VEHICLE},
+    {"pedmodel", "Ped model", "Ped model slots full", GTAV_CUSTOM_PACK_STORE_PED},
+    {"wmodel", "Weapon model", "Weapon model slots full", GTAV_CUSTOM_PACK_STORE_WEAPON},
+    {"wcomp", "Component", "Component slots full", GTAV_CUSTOM_PACK_STORE_WEAPON},
+    {"winfo", "Weapon file", "Weapon file slots full", GTAV_CUSTOM_PACK_STORE_WEAPON},
+};
+static const char kStorePrefix[] = "pack ";
+static const char kStoreGate[] = " store headroom gate refused free=";
+static const char kStoreNeed[] = " need=";
+
+void gtav_custom_pack_store_refusal(char* out, size_t size, const char* store, uint32_t free_slots,
+                                    uint32_t need) {
+  if (!out || !size) return;
+  snprintf(out, size, "%s%.8s%s%u%s%u", kStorePrefix, store ? store : "", kStoreGate,
+           (unsigned)free_slots, kStoreNeed, (unsigned)need);
+}
+
+// Decimal u32 at *at (1..10 digits, no sign); advances *at. 0 when there is none or it overflows.
+static int store_number(const char** at, uint32_t* value) {
+  uint64_t n = 0;
+  const char* p = *at;
+  while (*p >= '0' && *p <= '9' && p - *at < 10) n = n * 10u + (uint64_t)(*p++ - '0');
+  if (p == *at || n > UINT32_MAX || (*p >= '0' && *p <= '9')) return 0;
+  *at = p;
+  *value = (uint32_t)n;
+  return 1;
+}
+
+const char* gtav_custom_pack_store_reason(const char* technical, char* detail, size_t size,
+                                          int* scope) {
+  if (!technical || strncmp(technical, kStorePrefix, sizeof(kStorePrefix) - 1u) != 0) return NULL;
+  const char* name = technical + sizeof(kStorePrefix) - 1u;
+  const char* gate = strstr(name, kStoreGate);
+  if (!gate) return NULL;
+  const size_t name_length = (size_t)(gate - name);
+  for (size_t i = 0; i < sizeof(kStores) / sizeof(kStores[0]); ++i) {
+    if (strlen(kStores[i].name) != name_length || strncmp(kStores[i].name, name, name_length) != 0)
+      continue;
+    const char* at = gate + sizeof(kStoreGate) - 1u;
+    uint32_t free_slots = 0, need = 0;
+    if (!store_number(&at, &free_slots) || strncmp(at, kStoreNeed, sizeof(kStoreNeed) - 1u) != 0)
+      return NULL;
+    at += sizeof(kStoreNeed) - 1u;
+    if (!store_number(&at, &need) || *at != '\0') return NULL;
+    if (detail && size)
+      snprintf(detail, size, "%s slots full (%u free, need %u)", kStores[i].label,
+               (unsigned)free_slots, (unsigned)need);
+    if (scope) *scope = kStores[i].scope;
+    return kStores[i].text;
+  }
+  return NULL;
+}
+
 const char* gtav_custom_pack_user_reason(const char* technical) {
   if (!technical) return "";
+  const char* store = gtav_custom_pack_store_reason(technical, NULL, 0, NULL);
+  if (store) return store;
   for (size_t i = 0; i < sizeof(kUserReasons) / sizeof(kUserReasons[0]); ++i) {
     const int hit = kUserReasons[i].exact ? strcmp(technical, kUserReasons[i].match) == 0
                                           : strstr(technical, kUserReasons[i].match) != NULL;
     if (hit) return kUserReasons[i].text;
   }
   return technical;
+}
+
+// Member extensions by GTAV_CUSTOM_PACK_MEMBER_* store (tools/gtavmenu_tools/rpf7.py mirrors it).
+static const char* const kMemberExtensions[GTAV_CUSTOM_PACK_MEMBER_KINDS] = {
+#if defined(__ORBIS__)
+    "oft", "odr", "otd", "otyp", "omap", "obn", "omt", "odd", "opt",
+#else
+    "pft", "pdr", "ptd", "ptyp", "pmap", "pbn", "pmt", "pdd", "ppt",
+#endif
+};
+// Free slots kept beyond a load's own adds: the game adds to these stores itself meanwhile.
+static const uint32_t kMemberMargins[GTAV_CUSTOM_PACK_MEMBER_KINDS] = {16, 16, 16, 8, 8,
+                                                                       8,  1,  16, 2};
+
+int gtav_custom_pack_member_store(const char* name, size_t length) {
+  if (!name) return -1;
+  size_t dot = length;
+  for (size_t i = length; i > 0; --i)
+    if (name[i - 1] == '.') {
+      dot = i - 1;
+      break;
+    }
+  if (dot == length) return -1;
+  const char* extension = name + dot + 1;
+  const size_t extension_length = length - dot - 1;
+  for (int kind = 0; kind < GTAV_CUSTOM_PACK_MEMBER_KINDS; ++kind) {
+    const char* want = kMemberExtensions[kind];
+    if (strlen(want) != extension_length) continue;
+    size_t i = 0;
+    while (i < extension_length &&
+           (extension[i] == want[i] ||
+            (extension[i] >= 'A' && extension[i] <= 'Z' && extension[i] - 'A' + 'a' == want[i])))
+      ++i;
+    if (i == extension_length) return kind;
+  }
+  return -1;
+}
+
+int gtav_custom_pack_toc_counts(const uint8_t* table, size_t bytes, uint32_t entries,
+                                GtavCustomPackTocCounts* out) {
+  if (!table || !out || entries < 2u || entries > bytes / 16u) return -1;
+  const size_t pool_offset = (size_t)entries * 16u;
+  const size_t pool_size = bytes - pool_offset;
+  if (pool_size == 0) return -1;
+  const uint8_t* pool = table + pool_offset;
+  GtavCustomPackTocCounts counts;
+  memset(&counts, 0, sizeof(counts));
+  uint64_t children_end = 1;  // the earlier directories' children end here (ascending, disjoint)
+  for (uint32_t i = 0; i < entries; ++i) {
+    const uint8_t* entry = table + (size_t)i * 16u;
+    uint64_t q = 0;
+    for (int b = 7; b >= 0; --b) q = q << 8 | entry[b];
+    const size_t name_offset = (size_t)(q & 0xffffu);
+    if (name_offset >= pool_size) return -1;
+    const uint8_t* name = pool + name_offset;
+    const void* end = memchr(name, 0, pool_size - name_offset);
+    if (!end) return -1;
+    const int directory = (q >> 32) == 0x7fffff00u;
+    if (i == 0 && !directory) return -1;
+    if (directory) {
+      const uint32_t first = (uint32_t)entry[8] | (uint32_t)entry[9] << 8 |
+                             (uint32_t)entry[10] << 16 | (uint32_t)entry[11] << 24;
+      const uint32_t children = (uint32_t)entry[12] | (uint32_t)entry[13] << 8 |
+                                (uint32_t)entry[14] << 16 | (uint32_t)entry[15] << 24;
+      if (children) {
+        if (first <= i || first < children_end || (uint64_t)first + children > entries) return -1;
+        children_end = (uint64_t)first + children;
+      }
+      continue;
+    }
+    counts.files++;
+    const int kind =
+        gtav_custom_pack_member_store((const char*)name, (size_t)((const uint8_t*)end - name));
+    if (kind >= 0)
+      counts.members[kind]++;
+    else
+      counts.other++;
+  }
+  *out = counts;
+  return 0;
+}
+
+uint32_t gtav_custom_pack_store_need(int kind, uint32_t adds) {
+  if (adds == 0 || kind < 0 || kind >= GTAV_CUSTOM_PACK_MEMBER_KINDS) return adds;
+  const uint32_t margin = kMemberMargins[kind];
+  return adds > UINT32_MAX - margin ? UINT32_MAX : adds + margin;
 }
 
 GtavCustomPackGateWait gtav_custom_pack_gate_wait(int waiting, int refused, int in_use,

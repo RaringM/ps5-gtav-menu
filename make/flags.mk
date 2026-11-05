@@ -158,14 +158,17 @@ ifeq ($(GTAV_MENU_ENABLE_WORKER_KLOG),1)
 FEATURE_MENU_CFLAGS += -DGTAV_MENU_ENABLE_WORKER_KLOG=1
 endif
 # The pack lane is only meaningful with the preview streaming natives, the phase draw list and
-# kernel breadcrumbs that survive a game crash. Checked here, after all those gates are final.
+# kernel breadcrumbs that survive a game crash. Checked here, after all those gates are final. This
+# make builds the PS5 lane only; the PS4 lane (make/ps4-plugin.mk) has no worker klog and its target
+# manifest gates its own needs.
 ifeq ($(GTAV_MENU_ENABLE_CUSTOM_PACKS),1)
-# The pack lane's live addresses are those of the 01.010.002 executables. PPSA04263 (EU) shares
-# PPSA04264's code byte for byte apart from 40 bytes of in-code data, and every lane anchor and the
-# archive TOC key table match (checked 2026-10-06).
-ifeq ($(filter $(GTAV_TARGET),ppsa04264-01.010.002 ppsa04263-01.010.002),)
-$(error CUSTOM_PACKS is pinned to the 01.010.002 executables (ppsa04264, ppsa04263); build with CUSTOM_PACKS=0)
+# The pack lane's live addresses are per-target, generated into a custom-lane header. PPSA04263
+# (EU) shares PPSA04264's code byte for byte apart from 40 bytes of in-code data, and every lane
+# anchor and the archive TOC key table match (checked 2026-10-06).
+ifeq ($(GTAV_TARGET_CUSTOM_LANE_HEADER),)
+$(error CUSTOM_PACKS=1 requires a customLane header in the target profile)
 endif
+FEATURE_MENU_CFLAGS += -include $(GTAV_TARGET_CUSTOM_LANE_HEADER)
 ifneq ($(GTAV_MENU_ENABLE_VEHICLE_PREVIEW)$(GTAV_MENU_PHASE_DRAW_LIST)$(GTAV_MENU_ENABLE_WORKER_KLOG),111)
 $(error CUSTOM_PACKS requires vehicle preview, the phase draw list and worker klog on; build with CUSTOM_PACKS=0)
 endif
@@ -373,8 +376,17 @@ ETAHEN_RUNTIME_ELF := $(ETAHEN_OUTPUT_DIR)/gtav-menu-etahen-runtime.elf
 ETAHEN_RUNTIME_PLUGIN := $(ETAHEN_OUTPUT_DIR)/$(ETAHEN_RUNTIME_ID).plugin
 ETAHEN_SUPERVISOR_ELF := $(ETAHEN_OUTPUT_DIR)/gtav-menu-etahen-supervisor.elf
 ETAHEN_PLUGIN := $(ETAHEN_OUTPUT_DIR)/$(ETAHEN_PLUGIN_ID).plugin
+# BOOT_POOLS=1 on the command line or in the environment also forces the phase for a target whose
+# manifest has not enabled it yet (hardware gating); the profile table still has to carry its pins.
+BOOT_POOLS ?= 0
+ifeq ($(filter 0 1,$(strip $(BOOT_POOLS))),)
+$(error BOOT_POOLS must be 0 or 1, not '$(BOOT_POOLS)')
+endif
+BOOT_POOLS_FORCE := $(if $(filter command line environment,$(origin BOOT_POOLS)),$(BOOT_POOLS),0)
+
 PAYLOAD_LOADER_SRCS := \
 	src/payload_loader/main.c \
+	src/payload_loader/boot_pool.c \
 	src/common/daemon_control.c \
 	src/payload_loader/cave_bootstrap.c \
 	src/common/proc_backend.c \

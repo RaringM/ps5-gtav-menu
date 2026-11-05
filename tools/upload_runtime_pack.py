@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """Upload a runtime pack to the console's pack root over FTP, optionally marking it active.
 
-The worker reads /data/gtavmenu/custom/packs/<id>/resources/{pack.cfg, <archives>, <data files>}
+The worker reads /data/GTAVMenu/custom/packs/<id>/resources/{pack.cfg, <archives>, <data files>}
 and lists every installed pack on the menu's Custom Packs page, where packs are selected and loaded.
 Every file named by pack.cfg is checked against its descriptor hash, uploaded read-only and verified
 by download. Without --activate/--activate-add nothing else changes: select the pack in the menu.
 
   --activate      write packs/active = this pack only
-  --activate-add  add this pack to packs/active (the worker loads up to 8 active packs together)
+  --activate-add  add this pack to packs/active (the worker loads up to 16 active packs together)
   --activate-only skip uploads; verify the remote copy byte-for-byte, then activate
   --uninstall ID  remove pack ID from packs/active and packs/installed (its files stay)
   --purge         with --uninstall: also delete the pack's directory on the console
@@ -19,12 +19,15 @@ leftover pack.cfg.uninstalled is deleted. A local pack directory that holds only
 pack.cfg.uninstalled (copied back from the console) uploads it as pack.cfg.
 
 packs/active is written last and only after every upload or remote check verified. Before an
-upload the pack is validated like tools/validate_runtime_pack.py does, and with --activate-add
-it must also merge with the packs already active on the console (including the carcols id rules:
-the other active packs' carcols/carvariations rows are read back and no kit, light, siren or wheel key
-may repeat, gtavmenu_tools.carcols_ids; and together they must fit the fixed engine tables their model,
-weapon and components rows fill, gtavmenu_tools.engine_caps); --no-validate skips both. The
-FTP endpoint defaults to $PS5_HOST and $PS5_FTP_PORT (2121), as in menu-ctl.sh.
+upload the pack's descriptor and files are checked, and its PS4 resources (the skinned vertex
+declarations and Thin1D textures of .oft/.otd members, gtavmenu_tools.ps4_resource_checks), as
+tools/validate_runtime_pack.py checks them; with --activate-add it must also merge with the packs
+already active on the console (including the carcols id rules: the other active packs'
+carcols/carvariations rows are read back and no kit, light, siren or wheel key may repeat,
+gtavmenu_tools.carcols_ids). The pack, with --activate-add together with those packs, must fit the
+fixed engine tables its model, weapon and components rows fill (gtavmenu_tools.engine_caps, for the
+game version --target or $GTAV_TARGET names, else the strictest known baseline). --no-validate skips
+all of these. The FTP endpoint defaults to $PS5_HOST and $PS5_FTP_PORT (2121), as in menu-ctl.sh.
 """
 
 from __future__ import annotations
@@ -39,14 +42,15 @@ import tempfile
 from collections.abc import Callable, Sequence
 from pathlib import Path
 
-from gtavmenu_tools import carcols_ids, engine_caps, runtime_pack
+from gtavmenu_tools import carcols_ids, engine_caps, ps4_resource_checks, runtime_pack
+from gtavmenu_tools.custom_pack_schema import CONSOLE_ROOT
 
-PACK_ROOT = "/data/gtavmenu/custom/packs"
+PACK_ROOT = f"{CONSOLE_ROOT}/packs"
 ACTIVE = f"{PACK_ROOT}/active"
 # One pack id per line, sorted: the menu's installed-pack list when the game cannot list the
 # directory itself (MULTIPACK-run2: in-game opendir found nothing while fopen worked).
 INSTALLED = f"{PACK_ROOT}/installed"
-INSTALLED_MAX = 64  # custom_pack_select.inc GTAV_PACK_INSTALLED_MAX; the menu pages the list
+INSTALLED_MAX = 128  # custom_pack_select.inc GTAV_PACK_INSTALLED_MAX; the menu pages the list
 DEFAULT_FTP_PORT = 2121
 
 Curl = Callable[..., bytes]
@@ -218,7 +222,9 @@ def _read_ids(run: Curl, base: str, remote: str) -> list[str] | None:
         return None
 
 
-def check_active_merge(run: Curl, base: str, pack: runtime_pack.RuntimePack, pack_dir: Path) -> list[str]:
+def check_active_merge(
+    run: Curl, base: str, pack: runtime_pack.RuntimePack, pack_dir: Path, target: str | None = None
+) -> list[str]:
     """Why `pack` would not load together with the packs active on the console (empty when it would)."""
     others: list[runtime_pack.RuntimePack] = []
     problems: list[str] = []
@@ -234,15 +240,21 @@ def check_active_merge(run: Curl, base: str, pack: runtime_pack.RuntimePack, pac
         problems
         + runtime_pack.merge_conflicts([*others, pack])
         + carcols_merge(run, base, others, pack, pack_dir)
-        + engine_merge(run, base, others, pack, pack_dir)
+        + engine_merge(run, base, others, pack, pack_dir, target)
     )
 
 
 def engine_merge(
-    run: Curl, base: str, others: Sequence[runtime_pack.RuntimePack], pack: runtime_pack.RuntimePack, pack_dir: Path
+    run: Curl,
+    base: str,
+    others: Sequence[runtime_pack.RuntimePack],
+    pack: runtime_pack.RuntimePack,
+    pack_dir: Path,
+    target: str | None = None,
 ) -> list[str]:
-    """Fixed engine tables the active packs plus `pack` would overfill (gtavmenu_tools.engine_caps),
-    reading back the active packs' model and components rows (only when `pack` adds to a table)."""
+    """Fixed engine tables the active packs plus `pack` would overfill on `target` (gtavmenu_tools.
+    engine_caps; None: the strictest baseline), reading back the active packs' model and components
+    rows (only when `pack` adds to a table)."""
     if not any(row.type in engine_caps.ROW_TYPES for row in pack.data):
         return []
     usages, problems = [], []
@@ -269,7 +281,7 @@ def engine_merge(
     ]
     usage, errors = engine_caps.pack_usage(pack.pack_id, local)
     usages.append((pack.pack_id, usage))
-    return problems + errors + [f"engine table: {p}" for p in engine_caps.problems(usages)]
+    return problems + errors + [f"engine table: {p}" for p in engine_caps.problems(usages, target)]
 
 
 def carcols_merge(
@@ -301,12 +313,20 @@ def carcols_merge(
 
 
 def validate_upload(run: Curl, base: str, args: argparse.Namespace) -> None:
-    """Refuse an invalid pack, or with --activate-add one that cannot join the console's active set."""
+    """Refuse an invalid pack (descriptor, files, PS4 resources, stock vehicle names), or with
+    --activate-add one that cannot join the console's active set."""
     pack, errors, warnings = runtime_pack.check_directory(args.pack)
-    if pack is not None and args.activate_add and not errors:
-        errors = [f"with the active packs: {p}" for p in check_active_merge(run, base, pack, args.pack)]
-    elif pack is not None and not errors:
-        errors = engine_merge(run, base, [], pack, args.pack)  # a pack that cannot load even alone
+    if pack is not None and not errors:
+        # Broken PS4 fragments or textures pass every descriptor check and still draw wrong.
+        resource_errors, resource_warnings = ps4_resource_checks.pack_problems(args.pack / "resources", pack)
+        warnings += resource_warnings
+        if args.activate_add:
+            errors = [
+                f"with the active packs: {p}" for p in check_active_merge(run, base, pack, args.pack, args.target)
+            ]
+        else:
+            errors = engine_merge(run, base, [], pack, args.pack, args.target)  # a pack that cannot load even alone
+        errors = resource_errors + runtime_pack.stock_name_problems(args.pack / "resources", pack) + errors
     for warning in warnings:
         print(f"warning: {args.pack}: {warning}", file=sys.stderr)
     if errors:
@@ -431,7 +451,9 @@ def parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
     parser.add_argument("pack", type=Path, nargs="?", help="pack directory (contains resources/pack.cfg)")
     parser.add_argument("--activate", action="store_true", help="write packs/active = this pack id")
     parser.add_argument(
-        "--activate-add", action="store_true", help="add this pack id to packs/active (at most 8 active packs)"
+        "--activate-add",
+        action="store_true",
+        help=f"add this pack id to packs/active (at most {runtime_pack.ACTIVE_MAX} active packs)",
     )
     parser.add_argument(
         "--activate-only", action="store_true", help="skip uploads; activate after verifying the remote pack"
@@ -451,7 +473,17 @@ def parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
         default=int(os.environ.get("PS5_FTP_PORT") or DEFAULT_FTP_PORT),
         help=f"FTP port (default: $PS5_FTP_PORT or {DEFAULT_FTP_PORT})",
     )
+    parser.add_argument(
+        "--target",
+        default=engine_caps.target_from_env(),
+        metavar="STEM",
+        help="game version whose engine baseline the checks use (default: $GTAV_TARGET, else the strictest known)",
+    )
     args = parser.parse_args(argv)
+    try:
+        args.target = engine_caps.canonical_target(args.target)
+    except ValueError as exc:
+        parser.error(str(exc))
     if args.list:
         others = (args.uninstall, args.activate, args.activate_add, args.activate_only, args.no_validate, args.purge)
         if args.pack is not None or any(o not in (None, False) for o in others):

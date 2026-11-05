@@ -18,6 +18,9 @@ except ModuleNotFoundError:
     from generate_loader_profiles import ROOT, SUPPORTED_TARGETS, generate, write_changed
 
 DELIVERIES = ("standalone", "onionhen", "etahen")
+# The loader links once against this target's build settings; every live address comes from the registry.
+LINK_TARGET = "ppsa04264-01.010.002"
+assert LINK_TARGET in SUPPORTED_TARGETS
 WATCH_SETTINGS = (
     "WORKER_REQUIRE_CONTEXT=1",
     "PAYLOAD_LOADER_WAIT_FOR_GAME=1",
@@ -32,12 +35,16 @@ WATCH_SETTINGS = (
 )
 
 
+# Parent make's selected target or -j settings must not leak across worker builds, and an
+# environment BOOT_POOLS would force boot pools into worker stamps their manifests do not enable.
+STRIPPED_ENVIRONMENT = frozenset({"MAKEFLAGS", "MFLAGS", "MAKEOVERRIDES", "BOOT_POOLS", "BOOT_POOLS_FORCE"})
+
+
 def make_environment() -> dict[str, str]:
-    # Parent make's selected target or -j settings must not leak across worker builds.
-    return {key: value for key, value in os.environ.items() if key not in {"MAKEFLAGS", "MFLAGS", "MAKEOVERRIDES"}}
+    return {key: value for key, value in os.environ.items() if key not in STRIPPED_ENVIRONMENT}
 
 
-def build_config(registry: dict, registry_path: Path, delivery: str) -> dict:
+def build_config(registry: dict, registry_path: Path, delivery: str, *, boot_pools: int = 1) -> dict:
     worker_config = json.loads(Path(registry["supportedTargets"][0]["workerBuildConfig"]["path"]).read_text())
     return {
         "schemaVersion": 1,
@@ -55,6 +62,7 @@ def build_config(registry: dict, registry_path: Path, delivery: str) -> dict:
         "worker_context": 1,
         "verify_writes": 1,
         "native_pins": 1,
+        "boot_pools": boot_pools,
         "registrySha256": sha256_file(registry_path),
         "inventorySha256": registry["inventorySha256"],
         "compilerVersion": worker_config["compilerVersion"],
@@ -70,7 +78,12 @@ def main() -> int:
     parser.add_argument("--package-dir", type=Path, default=ROOT / "build/pkg/universal")
     parser.add_argument("--onion-version", default="1.03")
     parser.add_argument("--eta-version", default="1.00")
+    parser.add_argument(
+        "--boot-pools", type=int, choices=(0, 1), default=1, help="apply each enabled row's boot-pool profile"
+    )
     args = parser.parse_args()
+    if args.package and not args.boot_pools:
+        parser.error("--package requires --boot-pools 1; a stock-pool loader is diagnostic only")
     build_dir = args.build_dir.resolve()
     output = build_dir / "universal/production"
     make_base = [
@@ -104,7 +117,7 @@ def main() -> int:
         registry = generate(ROOT, build_dir, output)
         for delivery in args.deliveries:
             directory = output / delivery
-            config = build_config(registry, output / "registry.json", delivery)
+            config = build_config(registry, output / "registry.json", delivery, boot_pools=args.boot_pools)
             write_changed(directory / "build-config.json", json.dumps(config, indent=2, sort_keys=True) + "\n")
             write_changed(
                 directory / "universal_identity.h",
@@ -120,11 +133,12 @@ def main() -> int:
             subprocess.run(
                 [
                     *make_base,
-                    f"GTAV_TARGET={SUPPORTED_TARGETS[1]}",
+                    f"GTAV_TARGET={LINK_TARGET}",
                     f"GTAV_DELIVERY={delivery}",
                     f"ONIONHEN_PLUGIN_VERSION={args.onion_version}",
                     f"ETAHEN_PLUGIN_VERSION={args.eta_version}",
                     f"ETAHEN_RUNTIME_VERSION={args.eta_version}",
+                    f"UNIVERSAL_BOOT_POOLS={args.boot_pools}",
                     "_universal-link",
                 ],
                 cwd=ROOT,

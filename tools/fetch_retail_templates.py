@@ -10,7 +10,7 @@ are kept, so a second run transfers nothing.
 
   fetch_retail_templates.py --source ftp://PS5:2121/mnt/sandbox/PPSA04264_000/app0 --cache DIR
   fetch_retail_templates.py --source file:///path/to/app0 --cache DIR
-  fetch_retail_templates.py --exports ftp://PS5:2121/data/gtavmenu/custom/exports --cache DIR
+  fetch_retail_templates.py --exports ftp://PS5:2121/data/GTAVMenu/custom/exports --cache DIR
   fetch_retail_templates.py --cache DIR --check          (verify the cache only, no source)
   fetch_retail_templates.py --list | --exportable
 

@@ -24,6 +24,7 @@ import contextlib
 import re
 import sys
 import xml.dom.minidom
+import xml.etree.ElementTree as ET
 from pathlib import Path
 
 _HERE = Path(__file__).resolve().parent
@@ -124,6 +125,42 @@ def check_output(path: Path) -> None:
         raise SystemExit(f"refusing existing or symlink output: {path}")
 
 
+def prune_unused(layouts: str, vehicles: str) -> tuple[str, int]:
+    """Keep the named layout records reachable from this vehicle, including transitive dependencies."""
+    root = ET.fromstring(layouts)
+    records = []
+    for array in root:
+        if array.tag == "Item" and array.find("Name") is not None:
+            records.append((root, array))
+        else:
+            for item in array:
+                if item.tag != "Item" or not (item.findtext("Name") or "").strip():
+                    raise SystemExit(f"cannot prune unnamed layout record in {array.tag}")
+                records.append((array, item))
+    by_name = {}
+    for _, item in records:
+        by_name.setdefault(item.findtext("Name").strip(), []).append(item)
+
+    def tokens(element):
+        return {
+            value for node in element.iter() for value in ((node.text or "").strip(), *node.attrib.values()) if value
+        }
+
+    needed = tokens(ET.fromstring(vehicles)) & by_name.keys()
+    pending = list(needed)
+    while pending:
+        for item in by_name[pending.pop()]:
+            more = (tokens(item) & by_name.keys()) - needed
+            needed.update(more)
+            pending.extend(more)
+    dropped = 0
+    for parent, item in records:
+        if item.findtext("Name").strip() not in needed:
+            parent.remove(item)
+            dropped += 1
+    return ET.tostring(root, encoding="unicode"), dropped
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--model", required=True)
@@ -133,6 +170,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--retail", type=Path, required=True, help="retail vehiclelayouts.meta (decrypted)")
     parser.add_argument("--out-layouts", type=Path, required=True)
     parser.add_argument("--out-vehicles", type=Path, required=True)
+    parser.add_argument(
+        "--prune-unused", action="store_true", help="keep only definitions reachable from the selected vehicle"
+    )
     args = parser.parse_args(argv)
 
     prefix = args.prefix or f"GTAVMENU_{args.model.upper()}_"
@@ -143,13 +183,35 @@ def main(argv: list[str] | None = None) -> int:
     check_output(args.out_layouts)
     check_output(args.out_vehicles)
     layouts, vehicles = read_xml(args.layouts), read_xml(args.vehicles)
-    retail = set(NAME.findall(read_xml(args.retail)))
+    retail_xml = read_xml(args.retail)
+    retail = set(NAME.findall(retail_xml))
+    if args.prune_unused:
+        layouts, dropped = prune_unused(layouts, vehicles)
+        print(f"pruned {dropped} layout definitions unrelated to the selected vehicle")
     names = defined_names(layouts)
     mapping = {n: prefix + n for n in names}
     collisions = sorted(n for n in names if n in retail)
     out_layouts, out_vehicles = rename(layouts, mapping), rename(vehicles, mapping)
     defined = set(mapping.values()) | retail
-    unresolved = sorted({r for r in REF.findall(out_layouts) if r not in defined and r != "NULL"})
+    # ModelSet is a separate engine registry, not a CVehicleMetadataMgr array.
+    # Accept only target-native external references observed in the supplied retail file.
+    external = {(node.tag, node.get("ref")) for node in ET.fromstring(retail_xml).iter("ModelSet") if node.get("ref")}
+    unresolved = sorted(
+        {
+            node.get("ref")
+            for node in ET.fromstring(out_layouts).iter()
+            if node.get("ref")
+            and node.get("ref") not in defined | {"NULL"}
+            and (node.tag, node.get("ref")) not in external
+        }
+    )
+    unresolved += sorted(
+        {
+            (node.text or "").strip()
+            for node in ET.fromstring(out_vehicles).iter("layout")
+            if (node.text or "").strip() not in defined
+        }
+    )
     if any(len(name) > 127 or not IDENTIFIER.fullmatch(name) for name in mapping.values()):
         raise SystemExit("renamed layout definitions must be identifiers of at most 127 characters")
     if retail & set(mapping.values()):

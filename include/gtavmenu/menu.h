@@ -27,6 +27,12 @@ void gtav_menu_frame_tick(void);
 int gtav_menu_render_phase_tick(unsigned long long epoch);
 // Monotonic worker-tick count since init (does not reset while the worker runs).
 unsigned long long gtav_menu_tick_count(void);
+// Request an orderly worker shutdown. This is safe before initialization has
+// completed; managed module workers retain a separate stop latch so init cannot
+// erase an unload request.
+void gtav_menu_request_stop(const char* reason);
+// True after either an in-menu stop command or an owning module requested stop.
+int gtav_menu_stop_requested(void);
 
 #ifdef __cplusplus
 }

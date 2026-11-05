@@ -20,7 +20,9 @@ from typing import NoReturn
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 TARGET = "ppsa04264-01.010.002"
-TARGETS = ("ppsa04264-01.005.000", TARGET, "ppsa04263-01.010.002")
+# Mirrors gtavmenu_tools.universal_package.TARGETS (kept literal: the release workflow imports this
+# module before the package is installed). assemble_universal and the tests check they agree.
+TARGETS = ("ppsa04264-01.005.000", TARGET, "ppsa04263-01.010.002", "ppsa04264-01.011.001")
 TAG_RE = re.compile(r"v[A-Za-z0-9][A-Za-z0-9._-]*\Z")
 ZIP_TIMESTAMP = (1980, 1, 1, 0, 0, 0)
 PACKAGE_LAYOUTS = {
@@ -38,6 +40,23 @@ PACKAGE_LAYOUTS = {
         "README.md": "documentation",
     },
 }
+
+
+# The PS4 Legacy plugin (make ps4-plugin-release), an optional asset of the universal release.
+PS4_PLUGIN_TARGET = "cusa00411-01.57"
+PS4_PLUGIN_DELIVERY = "ps4-plugin"
+PS4_PLUGIN_ASSET = "GTAVMenu-PS4-CUSA00411-v01.57-plugin.zip"
+PS4_PLUGIN_KIND = "gtavmenu-ps4-plugin-hardware-candidate"
+PS4_PLUGIN_SELF_MAGIC = bytes.fromhex("4f153d1d")
+# The staged package's inventory by member and role; package-manifest.json is the inventory itself.
+PS4_PLUGIN_LAYOUT = {
+    "gtav_menu.prx": "ps4-plugin",
+    "goldhen-plugins.ini.example": "installation-config",
+    "nexhen-plugins.ini.example": "installation-config",
+    "validation.json": "validation",
+    "README.md": "instructions",
+}
+PS4_PLUGIN_MANIFEST = "package-manifest.json"
 
 
 class ReleaseError(RuntimeError):
@@ -187,9 +206,18 @@ def validate_tag(tag: str, *, require_head: bool = True) -> None:
             fail(f"tag {tag} resolves to {tagged}, but HEAD is {head}")
 
 
-def assemble(tag: str, output: Path, package_root: Path, targets: tuple[str, ...] | None = None) -> Path:
+def assemble(
+    tag: str,
+    output: Path,
+    package_root: Path,
+    targets: tuple[str, ...] | None = None,
+    *,
+    ps4_plugin: bool = False,
+) -> Path:
     if targets is None:
-        return assemble_universal(tag, output, package_root)
+        return assemble_universal(tag, output, package_root, ps4_plugin=ps4_plugin)
+    if ps4_plugin:
+        fail("the PS4 plugin ships only with a universal release")
     validate_tag(tag)
     if not targets or len(set(targets)) != len(targets):
         fail("release targets must be nonempty and unique")
@@ -246,19 +274,205 @@ def assemble(tag: str, output: Path, package_root: Path, targets: tuple[str, ...
     return output
 
 
-def assemble_universal(tag: str, output: Path, package_root: Path) -> Path:
+def ps4_plugin_identity() -> dict[str, object]:
+    """The PS4 plugin's target identity, read from its target manifest."""
+    path = REPO_ROOT / "data/targets/ps4" / f"{PS4_PLUGIN_TARGET}.json"
+    manifest = load_json(path)
+    title, version = PS4_PLUGIN_TARGET.split("-", 1)
+    if (
+        manifest.get("platform") != "ps4"
+        or manifest.get("targetId") != PS4_PLUGIN_TARGET
+        or manifest.get("titleId") != title.upper()
+        or manifest.get("contentVersion") != version
+    ):
+        fail(f"PS4 target manifest identity mismatch: {PS4_PLUGIN_TARGET}")
+    return {
+        "target": PS4_PLUGIN_TARGET,
+        "targetId": manifest["targetId"],
+        "titleId": manifest["titleId"],
+        "contentId": manifest["contentId"],
+        "contentVersion": manifest["contentVersion"],
+        "targetManifestSha256": sha256_file(path),
+    }
+
+
+def ps4_plugin_llvm_major() -> int:
+    """The LLVM major the PS4 target manifest pins for the plugin build (build.toolchain.llvmMajor)."""
+    manifest = load_json(REPO_ROOT / "data/targets/ps4" / f"{PS4_PLUGIN_TARGET}.json")
+    build = manifest.get("build")
+    toolchain = build.get("toolchain") if isinstance(build, dict) else None
+    major = toolchain.get("llvmMajor") if isinstance(toolchain, dict) else None
+    if not isinstance(major, int) or isinstance(major, bool):
+        fail(f"PS4 target manifest pins no LLVM major: {PS4_PLUGIN_TARGET}")
+    return major
+
+
+def verify_ps4_plugin_toolchain(validation: dict) -> None:
+    """The validation report names the pinned OpenOrbis files and the pinned LLVM's compiler and linker."""
+    from inspect_ps4_plugin import OPENORBIS_SHA256
+
+    toolchain = validation.get("toolchain")
+    open_orbis = toolchain.get("openOrbis") if isinstance(toolchain, dict) else None
+    if not isinstance(open_orbis, dict) or open_orbis.get("files") != OPENORBIS_SHA256:
+        fail("PS4 plugin was not built with the pinned OpenOrbis v0.5.4 toolchain")
+    major = ps4_plugin_llvm_major()
+    compiler = toolchain.get("compiler")
+    lines = [line for line in compiler if isinstance(line, str)] if isinstance(compiler, list) else []
+    # Vendors may prefix both lines ("Ubuntu clang version 20.1.8 ...", "Linker: Ubuntu LLD 20.1.8").
+    clang = re.compile(rf"(?:^|\s)clang version {major}\.")
+    lld = re.compile(rf"^Linker:(?:.*\s)?LLD {major}\.")
+    if not any(clang.search(line) for line in lines) or not any(lld.search(line) for line in lines):
+        fail(f"PS4 plugin was not compiled and linked by LLVM {major}: {compiler}")
+
+
+def verify_ps4_plugin_package(package_root: Path, *, source_commit: str) -> dict[str, object]:
+    """A staged PS4 plugin release package: full boot pools, a clean source at source_commit, the exact
+    inventory, a validation report naming this PRX, and the pinned toolchains."""
+    identity = ps4_plugin_identity()
+    manifest = load_json(package_root / PS4_PLUGIN_MANIFEST)
+    required = {
+        "schemaVersion": 1,
+        "kind": PS4_PLUGIN_KIND,
+        "targetId": identity["targetId"],
+        "titleId": identity["titleId"],
+        "contentVersion": identity["contentVersion"],
+        "bootPoolsMode": "full",
+        "probeBuild": False,
+        "sourceCommit": source_commit,
+        "sourceDirty": False,
+        "targetManifestSha256": identity["targetManifestSha256"],
+    }
+    for key, expected in required.items():
+        if manifest.get(key) != expected:
+            fail(f"PS4 plugin package has {key}={manifest.get(key)!r}, expected {expected!r}")
+    entries = manifest.get("files")
+    if not isinstance(entries, list) or not entries:
+        fail("PS4 plugin package has no file inventory")
+    layout = {}
+    for entry in entries:
+        if not isinstance(entry, dict):
+            fail("PS4 plugin package contains a malformed file entry")
+        relative = safe_path(entry.get("path"))
+        if relative in layout:
+            fail(f"PS4 plugin package declares {relative} more than once")
+        layout[relative] = entry.get("role")
+        member = package_root / relative
+        if member.is_symlink() or not member.is_file():
+            fail(f"PS4 plugin package member is missing: {relative}")
+        if entry.get("size") != member.stat().st_size or entry.get("sha256") != sha256_file(member):
+            fail(f"PS4 plugin package hash/size mismatch: {relative}")
+    if layout != PS4_PLUGIN_LAYOUT:
+        fail(f"PS4 plugin package has an unexpected layout: {layout}")
+    actual = {path.relative_to(package_root).as_posix() for path in package_root.rglob("*") if not path.is_dir()}
+    if actual != set(PS4_PLUGIN_LAYOUT) | {PS4_PLUGIN_MANIFEST}:
+        fail(f"PS4 plugin package inventory mismatch: {sorted(actual)}")
+    from inspect_ps4_plugin import ValidationError, boot_pools_mode
+
+    prx = package_root / "gtav_menu.prx"
+    prx_bytes = prx.read_bytes()
+    if prx_bytes[:4] != PS4_PLUGIN_SELF_MAGIC:
+        fail("PS4 plugin PRX is not a fake SELF")
+    # The mode the PRX was built with, from its own marker: the manifest and report only claim it.
+    try:
+        built_mode = boot_pools_mode(prx_bytes, "PS4 plugin PRX")
+    except ValidationError as exc:
+        fail(str(exc))
+    if built_mode != "full":
+        fail(f"PS4 plugin PRX was built with boot pools {built_mode}, not full")
+    validation = load_json(package_root / "validation.json")
+    artifacts = validation.get("artifacts")
+    prx_record = artifacts.get("prx") if isinstance(artifacts, dict) else None
+    if (
+        validation.get("kind") != "gtavmenu-ps4-plugin-validation"
+        or validation.get("targetId") != identity["targetId"]
+        or validation.get("bootPoolsMode") != "full"
+        or validation.get("probeBuild") is not False
+        or not isinstance(prx_record, dict)
+        or prx_record.get("sha256") != sha256_file(prx)
+    ):
+        fail("PS4 plugin validation report does not match its PRX")
+    verify_ps4_plugin_toolchain(validation)
+    return manifest
+
+
+def ps4_plugin_artifact(output: Path, package_root: Path, *, source_commit: str) -> dict[str, object]:
+    """Verify the staged PS4 plugin package and write its deterministic release archive."""
+    root = package_root / PS4_PLUGIN_TARGET / PS4_PLUGIN_DELIVERY
+    manifest = verify_ps4_plugin_package(root, source_commit=source_commit)
+    archive = output / PS4_PLUGIN_ASSET
+    deterministic_zip(root, archive, archive_root=None, members=[*PS4_PLUGIN_LAYOUT, PS4_PLUGIN_MANIFEST])
+    identity = ps4_plugin_identity()
+    return {
+        **identity,
+        "delivery": PS4_PLUGIN_DELIVERY,
+        "file": PS4_PLUGIN_ASSET,
+        "size": archive.stat().st_size,
+        "sha256": sha256_file(archive),
+        "sourceCommit": source_commit,
+        "prxSha256": sha256_file(root / "gtav_menu.prx"),
+        "bootPoolsMode": "full",
+        "packageManifest": manifest,
+    }
+
+
+def verify_ps4_plugin_artifact(assets: Path, entry: object, *, source_commit: str) -> None:
+    """Re-verify a released PS4 plugin archive from its bytes, as verify_ps4_plugin_package does."""
+    import tempfile
+
+    identity = ps4_plugin_identity()
+    if not isinstance(entry, dict):
+        fail("malformed PS4 plugin release entry")
+    required = {
+        **identity,
+        "delivery": PS4_PLUGIN_DELIVERY,
+        "file": PS4_PLUGIN_ASSET,
+        "sourceCommit": source_commit,
+        "bootPoolsMode": "full",
+    }
+    if any(entry.get(key) != value for key, value in required.items()):
+        fail("PS4 plugin release entry identity, provenance, or mode mismatch")
+    path = assets / PS4_PLUGIN_ASSET
+    if path.is_symlink() or not path.is_file():
+        fail(f"release asset missing: {PS4_PLUGIN_ASSET}")
+    if path.stat().st_size != entry.get("size") or sha256_file(path) != entry.get("sha256"):
+        fail(f"release asset hash/size mismatch: {PS4_PLUGIN_ASSET}")
+    with tempfile.TemporaryDirectory(prefix="gtavmenu-release-verify-") as temporary:
+        root = Path(temporary)
+        try:
+            with zipfile.ZipFile(path) as archive:
+                infos = archive.infolist()
+                if {info.filename for info in infos} != set(PS4_PLUGIN_LAYOUT) | {PS4_PLUGIN_MANIFEST} or len(
+                    infos
+                ) != len(PS4_PLUGIN_LAYOUT) + 1:
+                    fail(f"unexpected PS4 plugin archive layout: {PS4_PLUGIN_ASSET}")
+                for info in infos:
+                    mode = info.external_attr >> 16
+                    if stat.S_ISLNK(mode) or info.is_dir():
+                        fail(f"unsafe PS4 plugin archive member: {info.filename}")
+                    (root / info.filename).write_bytes(archive.read(info))
+        except zipfile.BadZipFile as exc:
+            fail(f"invalid release archive {PS4_PLUGIN_ASSET}: {exc}")
+        manifest = verify_ps4_plugin_package(root, source_commit=source_commit)
+        if manifest != entry.get("packageManifest") or sha256_file(root / "gtav_menu.prx") != entry.get("prxSha256"):
+            fail("PS4 plugin release entry does not match its archive")
+
+
+def verify_universal_packages(package_root: Path) -> list[tuple[str, Path, dict]]:
+    """Every universal delivery under package_root, verified at HEAD and sharing one worker inventory."""
     from gtavmenu_tools.universal_package import LAYOUTS
+    from gtavmenu_tools.universal_package import TARGETS as UNIVERSAL_TARGETS
     from gtavmenu_tools.universal_package import verify_package as verify_universal_package
 
-    validate_tag(tag)
-    if output.exists() and any(output.iterdir()):
-        fail(f"release output must be empty: {output}")
+    if tuple(UNIVERSAL_TARGETS) != TARGETS:
+        fail("release targets differ from the universal registry targets")
     commit = git_output("rev-parse", "HEAD")
     packages = []
     for delivery in LAYOUTS:
         root = package_root / "universal" / delivery
         manifest = load_json(package_manifest_path(root))
         verify_universal_package(root, manifest, delivery=delivery, source_commit=commit)
+        if [entry.get("target") for entry in manifest["supportedTargets"]] != list(TARGETS):
+            fail(f"universal {delivery} package does not embed the release targets in order")
         packages.append((delivery, root, manifest))
     # A mixed worker inventory across delivery wrappers is never a single release.
     inventories = [
@@ -271,6 +485,18 @@ def assemble_universal(tag: str, output: Path, package_root: Path) -> Path:
     ]
     if any(inventory != inventories[0] for inventory in inventories[1:]):
         fail("universal deliveries contain different worker inventories")
+    return packages
+
+
+def assemble_universal(tag: str, output: Path, package_root: Path, *, ps4_plugin: bool = False) -> Path:
+    validate_tag(tag)
+    if output.exists() and any(output.iterdir()):
+        fail(f"release output must be empty: {output}")
+    packages = verify_universal_packages(package_root)
+    commit = git_output("rev-parse", "HEAD")
+    if ps4_plugin:
+        # Validate it before creating any release assets, as for the universal deliveries.
+        verify_ps4_plugin_package(package_root / PS4_PLUGIN_TARGET / PS4_PLUGIN_DELIVERY, source_commit=commit)
     output.mkdir(parents=True, exist_ok=True)
     artifacts = []
     for delivery, root, manifest in packages:
@@ -295,9 +521,13 @@ def assemble_universal(tag: str, output: Path, package_root: Path) -> Path:
         "requiresHardwareValidation": True,
         "artifacts": artifacts,
     }
+    files = [entry["file"] for entry in artifacts]
+    if ps4_plugin:
+        manifest["ps4Plugin"] = ps4_plugin_artifact(output, package_root, source_commit=commit)
+        files.append(PS4_PLUGIN_ASSET)
     manifest_path = output / "release-manifest.json"
     manifest_path.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    checksum_paths = sorted([manifest_path, *(output / entry["file"] for entry in artifacts)])
+    checksum_paths = sorted([manifest_path, *(output / name for name in files)])
     (output / "SHA256SUMS").write_text(
         "".join(f"{sha256_file(path)}  {path.name}\n" for path in checksum_paths), encoding="utf-8"
     )
@@ -368,6 +598,9 @@ def verify_universal_release(tag: str, assets: Path, manifest: dict) -> dict:
     if any(inventory != inventories[0] for inventory in inventories[1:]):
         fail("universal deliveries contain different worker inventories")
     names = seen | {"release-manifest.json", "SHA256SUMS"}
+    if "ps4Plugin" in manifest:
+        verify_ps4_plugin_artifact(assets, manifest["ps4Plugin"], source_commit=commit)
+        names.add(PS4_PLUGIN_ASSET)
     if {path.name for path in assets.iterdir()} != names or any((assets / name).is_symlink() for name in names):
         fail("release asset inventory mismatch")
     checksums = "".join(
@@ -466,6 +699,12 @@ def release_body(tag: str, manifest: dict[str, object]) -> str:
         if item["releaseChannel"] == "local-development-candidate"
     ]
     note = f"\n\nDevelopment candidates: {', '.join(development)}." if development else ""
+    plugin = manifest.get("ps4Plugin")
+    if isinstance(plugin, dict):
+        note += (
+            f"\n\n{plugin['file']}: the PS4 Legacy plugin for {plugin['titleId']} v{plugin['contentVersion']} "
+            "(GoldHEN 2.3+ or nexHEN PS4 v1.00). Its README installs it under either host."
+        )
     selection = (
         "Choose the Universal ZIP for standalone, OnionHEN, or etaHEN. The runtime selects the supported title/build automatically. "
         if manifest.get("mode") == "universal"
@@ -546,12 +785,19 @@ def parse_args() -> argparse.Namespace:
         "--legacy-per-target", action="store_true", help="assemble existing exact-target packages"
     )
     assemble_parser.add_argument(
+        "--ps4-plugin",
+        action="store_true",
+        help=f"also ship the staged PS4 plugin (build/pkg/{PS4_PLUGIN_TARGET}/{PS4_PLUGIN_DELIVERY}, make ps4-plugin-release)",
+    )
+    assemble_parser.add_argument(
         "--targets",
         nargs="+",
         choices=TARGETS,
         default=None,
         help="legacy exact-target subset (implies --legacy-per-target)",
     )
+    packages_parser = sub.add_parser("verify-packages", help="verify built universal packages before assembly")
+    packages_parser.add_argument("--package-root", type=Path, default=REPO_ROOT / "build/pkg")
     verify_parser = sub.add_parser("verify")
     verify_parser.add_argument("--tag", required=True)
     verify_parser.add_argument("--assets", type=Path, default=REPO_ROOT / "build/release")
@@ -571,8 +817,13 @@ def main() -> int:
                 args.output.expanduser().resolve(),
                 args.package_root.expanduser().resolve(),
                 tuple(args.targets or TARGETS) if args.legacy_per_target or args.targets else None,
+                ps4_plugin=args.ps4_plugin,
             )
             print(f"release assets assembled: {output}")
+        elif args.command == "verify-packages":
+            packages = verify_universal_packages(args.package_root.expanduser().resolve())
+            for delivery, root, manifest in packages:
+                print(f"universal {delivery}: {root} ({len(manifest['supportedTargets'])} targets)")
         elif args.command == "verify":
             validate_tag(args.tag)
             verify_release(args.tag, args.assets.expanduser().resolve())

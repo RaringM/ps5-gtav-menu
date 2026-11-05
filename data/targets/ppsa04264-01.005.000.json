@@ -21,7 +21,7 @@
   "build": {
     "channel": "primary",
     "toolchain": {
-      "payloadSdk": "0.43",
+      "payloadSdk": "0.44",
       "llvmMajor": 20
     },
     "nativeAddresses": {

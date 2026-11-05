@@ -731,12 +731,12 @@ def main(argv: list[str] | None = None) -> int:
             item = re.sub(r'<id value="\d+"\s*/>', f'<id value="{kit_ids[-1]}" />', item, count=1)
             visible = re.search(r"<visibleMods>(.*?)</visibleMods>", item, re.S)
             if visible:
-                keep = [
-                    visible.group(1)[s:e]
-                    for s, e in items(visible.group(1))
-                    if re.search(r"<modelName>\s*([^<]+?)\s*</modelName>", visible.group(1)[s:e]).group(1)
-                    in args.ship_model
-                ]
+                keep = []
+                for mod_start, mod_end in items(visible.group(1)):
+                    mod = visible.group(1)[mod_start:mod_end]
+                    model = re.search(r"<modelName>\s*([^<]+?)\s*</modelName>", mod)
+                    if model is not None and model.group(1) in args.ship_model:
+                        keep.append(mod)
                 if args.shop_label_prefix is not None:
                     for index, mod in enumerate(keep):
                         keep[index], key, text = relabel(mod, args.shop_label_prefix, counters, texts)

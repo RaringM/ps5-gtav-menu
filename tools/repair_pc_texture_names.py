@@ -54,6 +54,8 @@ RESOURCE_LIMIT = 512 * 1024 * 1024
 def fixed(name: str) -> str:
     """The identifier spelling of a texture name (same length); refuses one that cannot start right."""
     new = re.sub(r"[^A-Za-z0-9_]", "_", name)
+    if new.startswith("_"):
+        new = "t" + new[1:]
     if not IDENTIFIER.fullmatch(new):
         raise SystemExit(f"texture name {name!r} does not become an identifier ({new!r})")
     return new
@@ -166,7 +168,7 @@ def main(argv: list[str] | None = None) -> int:
         records.append({"member": row["member"], "renames": renames})
     manifest["textureNameRepairs"] = {
         "tool": "tools/repair_pc_texture_names.py",
-        "reason": "texture names with spaces/hyphens: other bytes -> '_' in dictionaries and references alike",
+        "reason": "texture names: punctuation -> '_', leading '_' -> 't', in dictionaries and references alike",
         "sourceFixtureManifestSha256": hashlib.sha256((args.fixture / "manifest.json").read_bytes()).hexdigest(),
         "materialReportSha256": hashlib.sha256(args.material_report.read_bytes()).hexdigest(),
         "resources": records,

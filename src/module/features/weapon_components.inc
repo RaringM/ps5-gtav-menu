@@ -15,7 +15,7 @@
 // weapon manager, like Apply Attachments). DOES_WEAPON_TAKE_WEAPON_COMPONENT is not in the reviewed
 // native table, so the meta (or the table) is the list.
 
-#if GTAV_MENU_ENABLE_CUSTOM_PACKS && (defined(__PROSPERO__) || defined(__ORBIS__))
+#if GTAV_MENU_ENABLE_CUSTOM_PACKS && GTAV_MENU_CUSTOM_PACK_ENGINE
 #define GTAV_WCOMP_PACK_LANE 1
 #else
 // No pack lane: no pack weapons.
@@ -198,7 +198,7 @@ static void give_max_ammo_extra(int ped) {
   }
 }
 
-#if GTAV_MENU_ENABLE_CUSTOM_PACKS
+#if GTAV_MENU_ENABLE_CUSTOM_PACKS && GTAV_MENU_CUSTOM_PACK_ENGINE
 // A pack weapon was given (game thread): its wheel slot, for pack-notes and the toast.
 static const char* weapon_given_note(uint32_t weapon) {
   const int slot = pack_weapon_wheel_slot(weapon);

@@ -38,12 +38,15 @@ def package_manifest_path(output: Path) -> Path:
 
 
 def render_readme(delivery: str) -> str:
-    opening = """Automatically selects **PPSA04264 01.005.000**, **PPSA04264 01.010.002**, or
-**PPSA04263 01.010.002**. Other title/build combinations refuse. Custom asset packs
-require 01.010.002 and the console `/data` shared with GTA through ShadowMountPlus or the HEN setup.
-Without shared game `/data`, the regular menu remains usable, with custom assets unavailable.
-All three workers are embedded; no separate worker upload is needed.
-Selection has been tested on both 01.010.002 titles; 01.005.000 selection remains untested on hardware.
+    opening = """Automatically selects **PPSA04264 01.005.000**, **PPSA04264 01.010.002**,
+**PPSA04263 01.010.002**, or **PPSA04264 01.011.001**. Other title/build combinations refuse.
+Custom asset packs require 01.010.002 or 01.011.001 and the console `/data` shared with GTA through
+ShadowMountPlus or the HEN setup. Without shared game `/data`, the regular menu remains usable, with
+custom assets unavailable. On 01.011.001 the loader also raises the game's asset-pool limits for
+larger packs, provided it is running before GTA starts; started after GTA, it keeps the stock limits.
+All four workers are embedded; no separate worker upload is needed.
+Selection has been tested on both 01.010.002 titles; 01.005.000 and 01.011.001 selection remain
+untested on hardware.
 """
     steps = {
         "standalone": """1. Deploy `gtav-menu-daemon.elf` with a PS5 payload manager before starting GTA V.
@@ -133,6 +136,7 @@ def stage_package(
         "worker_context": 1,
         "verify_writes": 1,
         "native_pins": 1,
+        "boot_pools": 1,
         "registrySha256": sha256(inventory.read_bytes()),
     }
     for key, value in required_config.items():

@@ -20,6 +20,7 @@
 #include "gtavmenu/daemon_lifecycle.h"
 #include "gtavmenu/elf_inject.h"
 #include "gtavmenu/inject_lock.h"
+#include "gtavmenu/sp_wait_lifecycle.h"
 // Build pins are consumed only by injection-time version verification.
 #if GTAV_MENU_PAYLOAD_INJECT && GTAV_LOADER_VERIFY_VERSION && !GTAV_LOADER_UNIVERSAL
 #if GTAV_LOADER_TARGET_PIN_OVERRIDE
@@ -63,6 +64,27 @@ static const GtavBuildPin gtav_build_pins[] = {{
 #include "gtavmenu/sha256.h"
 #include "loader_profiles.h"
 #include "universal_identity.h"
+#endif
+#if GTAV_PAYLOAD_BOOT_POOLS
+#include "gtavmenu/boot_pool.h"
+#if GTAV_LOADER_UNIVERSAL
+// Each universal registry row carries its own reviewed profile (loader_profiles.h); a row without
+// one keeps stock pools.
+#ifdef GTAV_BOOT_POOL_PROFILE_HEADER
+#error "the universal loader takes boot-pool profiles from its registry, not a per-target header"
+#endif
+#else
+// The target's generated profile (make passes build.bootPools.header). A loader without one keeps
+// stock pools and says so.
+#ifdef GTAV_BOOT_POOL_PROFILE_HEADER
+#include GTAV_BOOT_POOL_PROFILE_HEADER
+static const GtavBootPoolProfile gtav_boot_pool_profiles[] = {GTAV_BOOT_POOL_PROFILE};
+#define GTAV_BOOT_POOL_PROFILE_COUNT 1u
+#else
+static const GtavBootPoolProfile gtav_boot_pool_profiles[1];
+#define GTAV_BOOT_POOL_PROFILE_COUNT 0u
+#endif
+#endif
 #endif
 
 #include <errno.h>
@@ -121,6 +143,30 @@ static const GtavBuildPin gtav_build_pins[] = {{
 // on an already-served instance; boot/readiness polling keeps its existing cadence.
 #ifndef GTAV_PAYLOAD_PERSISTENT_IDLE_POLL_USEC
 #define GTAV_PAYLOAD_PERSISTENT_IDLE_POLL_USEC 500000
+#endif
+
+// Boot-time pool growth (gtavmenu/boot_pool.h): once per fresh instance, after the build is bound
+// and before SP-ready, the LoadGameConfig call is detoured through the boot-pool stub. That call
+// comes about 400 ms after GTA becomes the foreground app, so while this is on the waits for a
+// game poll the running big-app id every GTAV_BOOT_POOL_WATCH_USEC (one system-service call) and
+// run the full title + pid discovery when it changes. FORCE applies a profile whose manifest has
+// not enabled it yet (hardware gating).
+#ifndef GTAV_PAYLOAD_BOOT_POOLS
+#define GTAV_PAYLOAD_BOOT_POOLS 0
+#endif
+#ifndef GTAV_PAYLOAD_BOOT_POOLS_FORCE
+#define GTAV_PAYLOAD_BOOT_POOLS_FORCE 0
+#endif
+#if GTAV_LOADER_UNIVERSAL && GTAV_PAYLOAD_BOOT_POOLS_FORCE
+#error "the universal loader applies only boot-pool profiles its manifests have enabled"
+#endif
+#ifndef GTAV_BOOT_POOL_WATCH_USEC
+#define GTAV_BOOT_POOL_WATCH_USEC 10000UL
+#endif
+// After an app change, keep retrying discovery this often for a second: the title and pid can
+// lag the app id by a few milliseconds.
+#ifndef GTAV_BOOT_POOL_SETTLE_POLL_USEC
+#define GTAV_BOOT_POOL_SETTLE_POLL_USEC 50000UL
 #endif
 
 // Persistent (dormant daemon) injection: instead of injecting once and exiting,
@@ -301,6 +347,9 @@ static const GtavBuildPin gtav_build_pins[] = {{
 #endif
 #if GTAV_LOADER_CAVE_INJECT && GTAV_LOADER_CLASSIC_INJECT
 #error "select exactly one loader injection lane"
+#endif
+#if GTAV_PAYLOAD_BOOT_POOLS && !(GTAV_LOADER_CAVE_INJECT && GTAV_MENU_PAYLOAD_INJECT)
+#error "BOOT_POOLS needs the ptrace-free cave lane (it shares the cave and the strict write path)"
 #endif
 #if GTAV_LOADER_CAVE_INJECT
 #if !GTAV_LOADER_CAVE_BOOTSTRAP
@@ -2862,6 +2911,100 @@ static void daemon_release(void) {
 }
 #endif  // GTAV_MENU_PAYLOAD_INJECT && GTAV_PAYLOAD_PERSISTENT
 
+#if GTAV_PAYLOAD_BOOT_POOLS && (GTAV_PAYLOAD_WAIT_FOR_GAME || GTAV_PAYLOAD_PERSISTENT)
+// Sleep up to wait_us, waking early when the running big-app id changes (a launch or an exit).
+// Returns 1 on a change, 0 after the full wait, -1 on a daemon stop request. *slept_us gets the
+// time actually slept. The persistent lease and stop flag are checked at their usual 100 ms
+// cadence, not every slice.
+static int boot_pool_watch_wait(unsigned long wait_us, unsigned long* slept_us) {
+  const uint64_t app = gtav_proc_foreground_app_id();
+  unsigned long slept = 0;
+  int changed = 0;
+  while (slept < wait_us) {
+    const unsigned long slice =
+        wait_us - slept < GTAV_BOOT_POOL_WATCH_USEC ? wait_us - slept : GTAV_BOOT_POOL_WATCH_USEC;
+#if GTAV_MENU_PAYLOAD_INJECT && GTAV_PAYLOAD_PERSISTENT
+    if (slept % 100000UL < slice && daemon_wait_interruptible(0) != 0) {
+      *slept_us = slept;
+      return -1;
+    }
+#endif
+    usleep((useconds_t)slice);
+    slept += slice;
+    if (gtav_proc_foreground_app_id() != app) {
+      changed = 1;
+      break;
+    }
+  }
+  *slept_us = slept;
+  return changed;
+}
+#endif
+
+#if GTAV_PAYLOAD_BOOT_POOLS
+// The boot-pool stub waits ask these once a second: a daemon-stop, and whether `pid` is still the
+// game (gtavmenu/boot_pool.h GtavBootPoolHooks).
+static int boot_pool_stop_requested(void* context) {
+  (void)context;
+#if GTAV_MENU_PAYLOAD_INJECT && GTAV_PAYLOAD_PERSISTENT
+  return daemon_should_stop();
+#else
+  return 0;
+#endif
+}
+
+static int boot_pool_target_live(void* context, int pid) {
+  (void)context;
+#if GTAV_LOADER_TARGET_TRANSACTION && (GTAV_MENU_INSTALL_PATCH_BROKER || GTAV_PAYLOAD_SP_READY)
+  return loader_target_is_live(pid);
+#else
+  (void)pid;
+  return 1;
+#endif
+}
+
+// Apply the bound build's boot-pool profile to a fresh instance. Returns the GTAV_BOOT_POOL_*
+// status; only GTAV_BOOT_POOL_UNSAFE (code or cave not restored) must stop the menu inject.
+static int loader_boot_pools(int pid, const GtavBuildPin* pin) {
+  GtavBootPoolReport report;
+  char line[384];
+#if GTAV_LOADER_UNIVERSAL
+  // Only the row bound to this exact instance may supply the profile, and it must name that
+  // row's build and cave.
+  if (!pin || !g_loader_profile || pin != &g_loader_profile->pin ||
+      !loader_instance_token_matches(pid, g_loader_profile_token, "boot pools")) {
+    gtav_logf("boot-pool: no bound universal row for pid=%d; stock pools", pid);
+    return GTAV_BOOT_POOL_REFUSED;
+  }
+  const GtavBootPoolProfile* profile = g_loader_profile->boot_pools;
+  if (profile && (!profile->target_id || strcmp(profile->target_id, pin->target_id) != 0 ||
+                  profile->cave_address != (uint64_t)g_loader_profile->cave_address)) {
+    gtav_logf("boot-pool: refused for %s: profile names another build or cave; stock pools",
+              pin->target_id);
+    return GTAV_BOOT_POOL_REFUSED;
+  }
+#else
+  const GtavBootPoolProfile* profile =
+      pin ? gtav_boot_pool_find(gtav_boot_pool_profiles, GTAV_BOOT_POOL_PROFILE_COUNT,
+                                pin->target_id)
+          : NULL;
+#endif
+  if (!profile) {
+    gtav_logf("boot-pool: no profile for %s; stock pools", pin ? pin->target_id : "unbound");
+    return GTAV_BOOT_POOL_REFUSED;
+  }
+  if (!profile->enabled && !GTAV_PAYLOAD_BOOT_POOLS_FORCE) {
+    gtav_logf("boot-pool: not enabled for %s yet; stock pools", profile->target_id);
+    return GTAV_BOOT_POOL_REFUSED;
+  }
+  const GtavBootPoolHooks hooks = {boot_pool_stop_requested, boot_pool_target_live, NULL};
+  gtav_boot_pool_apply(pid, profile, &report, &hooks);
+  gtav_boot_pool_format(profile, &report, line, sizeof(line));
+  gtav_logf("boot-pool: target=%s pid=%d %s", profile->target_id, pid, line);
+  return report.status;
+}
+#endif
+
 // Find the game, optionally waiting for it to appear (Phase 1 wait-for-game).
 // Returns 0 with *pid_out set once found. With waiting off this is a single probe
 // (classic one-shot behaviour); with waiting on it polls every
@@ -2896,6 +3039,9 @@ static int find_game_wait(const char* title_id, int* pid_out) {
   const unsigned long timeout_us = (unsigned long)GTAV_PAYLOAD_WAIT_TIMEOUT_SEC * 1000000UL;
   unsigned long waited_us = 0;
   unsigned long next_log_us = 0;  // log a heartbeat on the first miss, then every 30s
+#if GTAV_PAYLOAD_BOOT_POOLS
+  unsigned long settle_us = 0;  // after an app change, retry discovery at the settle cadence
+#endif
 
   for (;;) {
     if (loader_find_game(title_id, pid_out) == 0) {
@@ -2917,6 +3063,19 @@ static int find_game_wait(const char* title_id, int* pid_out) {
       gtav_logf("gave up waiting for %s after %lus", title_id, waited_us / 1000000UL);
       return -1;
     }
+#if GTAV_PAYLOAD_BOOT_POOLS
+    {
+      unsigned long slept_us = 0;
+      const int woke = boot_pool_watch_wait(
+          settle_us ? GTAV_BOOT_POOL_SETTLE_POLL_USEC : GTAV_PAYLOAD_WAIT_POLL_USEC, &slept_us);
+      if (woke < 0) {
+        gtav_logf("persistent: stop requested while waiting for %s; leaving daemon", title_id);
+        return -1;
+      }
+      settle_us = woke ? 1000000UL : (settle_us > slept_us ? settle_us - slept_us : 0);
+      waited_us += slept_us;
+    }
+#else
 #if GTAV_MENU_PAYLOAD_INJECT && GTAV_PAYLOAD_PERSISTENT
     // Persistent daemon: keep the single-instance lease fresh while GTA is closed, and let a
     // daemon-stop interrupt this relaunch-wait sleep instead of waiting for the next whole poll.
@@ -2928,6 +3087,7 @@ static int find_game_wait(const char* title_id, int* pid_out) {
     usleep(GTAV_PAYLOAD_WAIT_POLL_USEC);
 #endif
     waited_us += GTAV_PAYLOAD_WAIT_POLL_USEC;
+#endif
   }
 #else
   int result = loader_find_game(title_id, pid_out);
@@ -2951,11 +3111,13 @@ static int find_game_wait(const char* title_id, int* pid_out) {
 
 // Block until the configured player-world/load readiness predicate is stable (see
 // GTAV_PAYLOAD_SP_READY), then return GTAV_SP_READY_OK so the caller may inject. Returns OK
-// immediately when the gate is off. Returns GTAV_SP_READY_GAVE_UP only if a finite timeout elapses
-// without the anchor satisfying, or GTAV_SP_READY_TARGET_GONE if the target pid dies/recycles while
-// we wait. A persistent read failure is checked against the cheap non-ptrace liveness probe, so a
-// vanished target is never injected.
-static int wait_for_sp_ready(int pid, const GtavBuildPin* pin) {
+// immediately when the gate is off. Returns GTAV_SP_READY_GAVE_UP when a finite timeout (or the
+// one-shot watchdog) elapses without the anchor satisfying, or GTAV_SP_READY_TARGET_GONE if the
+// target pid dies or is recycled while we wait. `bound_token` is the app id of the instance the
+// caller bound to (0 = take the current one). Every GTAV_SP_WAIT_RECHECK_USEC of waiting, whatever
+// the reads did, the cheap non-ptrace liveness probe and the app id prove the pid is still that
+// instance: a recycled pid can keep answering reads, so read failures alone never decide.
+static int wait_for_sp_ready(int pid, const GtavBuildPin* pin, uint64_t bound_token) {
 #if GTAV_PAYLOAD_SP_READY
   // The ready anchor comes from the bound build pin when one is selected (per-version
   // player-ped anchor), falling back to the compile-time default for bare/research builds.
@@ -2971,8 +3133,16 @@ static int wait_for_sp_ready(int pid, const GtavBuildPin* pin) {
   const unsigned long timeout_us = (unsigned long)GTAV_PAYLOAD_SP_READY_TIMEOUT_SEC * 1000000UL;
   unsigned long waited_us = 0;
   unsigned long next_log_us = 0;
+  unsigned long last_recheck_us = 0;
   unsigned consecutive_fail = 0u;
   unsigned consecutive_ready = 0u;
+  const uint64_t instance = bound_token ? bound_token : gtav_proc_app_id(pid);
+#if GTAV_PAYLOAD_PERSISTENT
+  const unsigned long watchdog_us = 0;  // the daemon re-arms on its own
+#else
+  const unsigned long watchdog_us =
+      timeout_us ? 0 : (unsigned long)GTAV_PAYLOAD_ONESHOT_SP_WATCHDOG_SEC * 1000000UL;
+#endif
 #if GTAV_PAYLOAD_SP_READY_GENTLE
   unsigned long poll_us = (unsigned long)GTAV_PAYLOAD_SP_READY_POLL_USEC;  // adaptive; backs off
 #else
@@ -3002,6 +3172,17 @@ static int wait_for_sp_ready(int pid, const GtavBuildPin* pin) {
         !loader_instance_token_matches(pid, g_loader_profile_token, "player-world readiness"))
       return GTAV_SP_READY_TARGET_GONE;
 #endif
+    if (gtav_sp_wait_recheck_due(waited_us, last_recheck_us, GTAV_SP_WAIT_RECHECK_USEC)) {
+      last_recheck_us = waited_us;
+      if (!gtav_sp_wait_same_instance(loader_target_is_live(pid), instance,
+                                      gtav_proc_app_id(pid))) {
+        gtav_logf(
+            "sp-ready: pid=%d is no longer the instance this wait bound to (after %lus); "
+            "abandoning the wait",
+            pid, waited_us / 1000000UL);
+        return GTAV_SP_READY_TARGET_GONE;
+      }
+    }
     uint64_t raw = 0;
     uintptr_t value_addr = ready_addr;
     int reachable;       // the anchor/base read reached the target (vs. a ptrace failure)
@@ -3112,6 +3293,11 @@ static int wait_for_sp_ready(int pid, const GtavBuildPin* pin) {
       gtav_logf("sp-ready: timed out after %lus; not injecting", waited_us / 1000000UL);
       return GTAV_SP_READY_GAVE_UP;
     }
+    if (gtav_sp_wait_expired(waited_us, watchdog_us)) {
+      gtav_logf("sp-ready: no player world after %lus; not injecting (run watch again)",
+                waited_us / 1000000UL);
+      return GTAV_SP_READY_GAVE_UP;
+    }
 #if GTAV_PAYLOAD_PERSISTENT
     if (daemon_wait_interruptible(poll_us) != 0) {
       gtav_logf("sp-ready: stop requested during readiness backoff for pid=%d", pid);
@@ -3137,6 +3323,7 @@ static int wait_for_sp_ready(int pid, const GtavBuildPin* pin) {
 #else
   (void)pid;
   (void)pin;
+  (void)bound_token;
   return GTAV_SP_READY_OK;  // no load-readiness gate compiled in: caller injects directly
 #endif
 }
@@ -3303,8 +3490,17 @@ int main(void) {
           served_token = cur_token;
           goto persistent_wait_instance;
         }
+#if GTAV_PAYLOAD_BOOT_POOLS
+        if (loader_boot_pools(pid, pin) == GTAV_BOOT_POOL_UNSAFE) {
+          gtav_logf("persistent: boot-pool left pid=%d's code changed; not injecting it", pid);
+          gtav_notify("GTAVMenu: boot pools could not restore the game code");
+          served_pid = pid;
+          served_token = cur_token;
+          goto persistent_wait_instance;
+        }
+#endif
         loader_profile_storage_mount(pid);
-        sp = wait_for_sp_ready(pid, pin);
+        sp = wait_for_sp_ready(pid, pin, cur_token);
         if (sp == GTAV_SP_READY_OK) {
           uint64_t inject_token = gtav_proc_app_id(pid);
           uint64_t quarantine_token = inject_token;
@@ -3453,10 +3649,21 @@ int main(void) {
         }
 #endif
         // Still the instance we served: idle, but let daemon-stop break the poll immediately.
+#if GTAV_PAYLOAD_BOOT_POOLS
+        {
+          // Wake on an app change too, so a quick relaunch is still seen before its parse.
+          unsigned long slept_us = 0;
+          if (boot_pool_watch_wait(GTAV_PAYLOAD_PERSISTENT_IDLE_POLL_USEC, &slept_us) < 0) {
+            gtav_logf("persistent: stop requested while idling; entering exact retirement");
+            continue;
+          }
+        }
+#else
         if (daemon_wait_interruptible(GTAV_PAYLOAD_PERSISTENT_IDLE_POLL_USEC) != 0) {
           gtav_logf("persistent: stop requested while idling; entering exact retirement");
           continue;
         }
+#endif
       }
     persistent_wait_instance:;
       // Wait for the foreground GTA for the next iteration. In the persistent build find_game_wait
@@ -3512,9 +3719,22 @@ int main(void) {
     }
 #endif
 
+#if GTAV_PAYLOAD_BOOT_POOLS
+    if (loader_boot_pools(pid, pin) == GTAV_BOOT_POOL_UNSAFE) {
+      gtav_logf("boot-pool left pid=%d's code changed; not injecting", pid);
+      gtav_notify("GTAVMenu: boot pools could not restore the game code");
+      gtav_log_close();
+      return 1;
+    }
+#endif
 #if GTAV_MENU_PAYLOAD_INJECT
     loader_profile_storage_mount(pid);
-    if (wait_for_sp_ready(pid, pin) != GTAV_SP_READY_OK) {
+#if GTAV_LOADER_VERIFY_VERSION
+    const uint64_t wait_token = bind_token;  // the instance the build pin was bound to
+#else
+    const uint64_t wait_token = gtav_proc_app_id(pid);
+#endif
+    if (wait_for_sp_ready(pid, pin, wait_token) != GTAV_SP_READY_OK) {
       gtav_logf("sp-ready gave up; not injecting");
       gtav_notify("GTAVMenu payload: player world not ready");
       gtav_log_close();

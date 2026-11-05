@@ -1,4 +1,5 @@
 #include "gtavmenu/pad_input.h"
+#include "gtavmenu/menu_timing.h"
 
 #include "gtavmenu/abi.h"
 #include "gtavmenu/native_bridge.h"
@@ -16,10 +17,10 @@
 // short settle delay before the first repeat, then a steady scroll. Both are
 // overridable at build time.
 #ifndef GTAV_MENU_PAD_REPEAT_DELAY_TICKS
-#define GTAV_MENU_PAD_REPEAT_DELAY_TICKS 14u
+#define GTAV_MENU_PAD_REPEAT_DELAY_TICKS GTAV_MENU_TICKS_60(14u)
 #endif
 #ifndef GTAV_MENU_PAD_REPEAT_RATE_TICKS
-#define GTAV_MENU_PAD_REPEAT_RATE_TICKS 4u
+#define GTAV_MENU_PAD_REPEAT_RATE_TICKS GTAV_MENU_TICKS_60(4u)
 #endif
 // Auto-repeat acceleration: the longer a direction is held, the shorter the effective repeat
 // interval, so long single-direction runs through a big list speed up. The interval sheds one
@@ -28,11 +29,11 @@
 #define GTAV_MENU_PAD_REPEAT_RATE_MIN 1u
 #endif
 #ifndef GTAV_MENU_PAD_REPEAT_ACCEL_TICKS
-#define GTAV_MENU_PAD_REPEAT_ACCEL_TICKS 30u
+#define GTAV_MENU_PAD_REPEAT_ACCEL_TICKS GTAV_MENU_TICKS_60(30u)
 #endif
 // Circle hold (polls) for the BACK_ROOT collapse. At ~60 Hz polling, 24 ~= 400 ms.
 #ifndef GTAV_MENU_PAD_CIRCLE_HOLD_POLLS
-#define GTAV_MENU_PAD_CIRCLE_HOLD_POLLS 24u
+#define GTAV_MENU_PAD_CIRCLE_HOLD_POLLS GTAV_MENU_TICKS_60(24u)
 #endif
 
 // Active keybind table (combo -> action). Set via gtav_pad_input_set_binds and read by both
@@ -70,6 +71,16 @@ static uint32_t g_repeat_rate = GTAV_MENU_PAD_REPEAT_RATE_TICKS;
 void gtav_pad_input_set_repeat(uint32_t delay_ticks, uint32_t rate_ticks) {
   g_repeat_delay = delay_ticks;
   g_repeat_rate = rate_ticks;
+}
+
+uint32_t gtav_pad_input_map_live(GtavPadMapState* state, uint32_t buttons, int visible,
+                                 int selected_is_cycler) {
+  // Selected-row capabilities: Left/Right auto-repeat only on a value cycler (elsewhere they are
+  // one-shots -- a toggle's Off/On, or Back, where a repeated Left would walk the user out of the
+  // menu). L1/R1 jump to the top / bottom row on every row while open (no row capability).
+  int row_caps = 0;
+  if (visible && selected_is_cycler) row_caps |= GTAV_PAD_ROW_CYCLER;
+  return gtav_pad_input_map(state, buttons, visible, g_repeat_delay, g_repeat_rate, row_caps);
 }
 
 // Touchpad gesture thresholds in raw touch units. PROVISIONAL: the DualSense touch coordinate range
@@ -605,6 +616,7 @@ static int pad_original_is_executable(uintptr_t fn) {
 typedef struct {
   volatile uintptr_t* slot;
   uintptr_t original;
+  uintptr_t replacement;
 } GtavPadHookSlot;
 
 static GtavPadHookSlot g_pad_hook_slots[GTAV_PAD_HOOK_MAX_SLOTS];
@@ -634,6 +646,7 @@ static int swap_pad_slot(volatile uintptr_t* slot, uintptr_t original, uintptr_t
   }
   g_pad_hook_slots[g_pad_hook_slot_count].slot = slot;
   g_pad_hook_slots[g_pad_hook_slot_count].original = original;
+  g_pad_hook_slots[g_pad_hook_slot_count].replacement = hook;
   *slot = hook;  // atomic aligned qword store
   ++g_pad_hook_slot_count;
   return 1;
@@ -716,20 +729,32 @@ static int install_pad_hook(void) {
   return g_pad_hook_slot_count > 0 ? 0 : -1;
 }
 
-static void restore_pad_hook(void) {
+static int restore_pad_hook(void) {
   if (!g_pad_hook_installed) {
-    return;
+    return 0;
   }
+  int result = 0;
   for (uint32_t i = 0; i < g_pad_hook_slot_count; ++i) {
     if (g_pad_hook_slots[i].slot) {
-      *g_pad_hook_slots[i].slot = g_pad_hook_slots[i].original;
+      const uintptr_t current = *g_pad_hook_slots[i].slot;
+      if (current == g_pad_hook_slots[i].replacement) {
+        *g_pad_hook_slots[i].slot = g_pad_hook_slots[i].original;
+        __atomic_thread_fence(__ATOMIC_SEQ_CST);
+      } else if (current != g_pad_hook_slots[i].original) {
+        result = -1;
+        continue;
+      }
+      if (*g_pad_hook_slots[i].slot != g_pad_hook_slots[i].original) result = -1;
     }
   }
-  gtav_status_eventf(GTAV_MENU_EVENT_NATIVE_BRIDGE, "pad hook restored slots=%u",
-                     g_pad_hook_slot_count);
-  g_pad_hook_installed = 0;
-  g_pad_hook_slot_count = 0;
-  g_pad_hook_skipped = 0;
+  gtav_status_eventf(GTAV_MENU_EVENT_NATIVE_BRIDGE, "pad hook restore slots=%u result=%d",
+                     g_pad_hook_slot_count, result);
+  if (result == 0) {
+    g_pad_hook_installed = 0;
+    g_pad_hook_slot_count = 0;
+    g_pad_hook_skipped = 0;
+  }
+  return result;
 }
 
 static int pad_hook_installed_flag(void) {
@@ -744,7 +769,9 @@ static uint32_t pad_hook_slot_count(void) {
 static int install_pad_hook(void) {
   return -1;
 }
-static void restore_pad_hook(void) {}
+static int restore_pad_hook(void) {
+  return 0;
+}
 static int pad_hook_installed_flag(void) {
   return 0;
 }
@@ -886,13 +913,8 @@ uint32_t gtav_pad_input_poll_command(int visible) {
     }
   }
 
-  // Selected-row capabilities: Left/Right auto-repeat only on a value cycler (elsewhere they are
-  // one-shots -- a toggle's Off/On, or Back, where a repeated Left would walk the user out of the
-  // menu). L1/R1 jump to the top / bottom row on every row while open (no row capability).
-  int row_caps = 0;
-  if (visible && gtav_native_bridge_selected_is_cycler()) row_caps |= GTAV_PAD_ROW_CYCLER;
-  uint32_t cmd =
-      gtav_pad_input_map(&g_pad_state, buttons, visible, g_repeat_delay, g_repeat_rate, row_caps);
+  uint32_t cmd = gtav_pad_input_map_live(&g_pad_state, buttons, visible,
+                                         visible && gtav_native_bridge_selected_is_cycler());
   // Optional touchpad gesture lane (default off; the Menu Settings "Touchpad" toggle), layered on
   // top of the d-pad: only consulted when the button mapper produced nothing this poll, so the
   // d-pad always wins. fingers>0 = a finger is on the pad; the TOUCH_PAD bit is a physical click.
@@ -937,10 +959,10 @@ void gtav_pad_input_wait_menu_buttons_released(uint32_t max_wait_usec) {
                      (unsigned)g_pad_hook_buttons);
 }
 
-void gtav_pad_input_shutdown(void) {
+int gtav_pad_input_shutdown(void) {
   // Restore GTA's GOT slot(s) before the payload's threads exit so the game
   // never calls into a hook that is about to be unmapped.
-  restore_pad_hook();
+  return restore_pad_hook();
 }
 
 void gtav_pad_input_park(void) {
@@ -950,7 +972,7 @@ void gtav_pad_input_park(void) {
   g_pad_parked = 1;
   // Restore the scePad GOT swap NOW (no-op on a non-GOT-swap build) so a teardown/suspend cannot
   // call a hook that is about to unmap. install_pad_hook() refuses to re-install while parked.
-  restore_pad_hook();
+  (void)restore_pad_hook();
   gtav_status_eventf(GTAV_MENU_EVENT_NATIVE_BRIDGE,
                      "pad input PARKED: GOT restored, live input stood down (teardown/suspend)");
 }
@@ -1001,7 +1023,9 @@ void gtav_pad_input_wait_menu_buttons_released(uint32_t max_wait_usec) {
   (void)max_wait_usec;
 }
 
-void gtav_pad_input_shutdown(void) {}
+int gtav_pad_input_shutdown(void) {
+  return 0;
+}
 
 void gtav_pad_input_park(void) {}
 

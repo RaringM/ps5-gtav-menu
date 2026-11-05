@@ -8,6 +8,7 @@ void gtav_job_queue_init(GtavNativeJobQueue* q) {
   q->head = 0;
   q->tail = 0;
   q->dropped = 0;
+  q->push_lock = 0;
   for (uint32_t i = 0; i < GTAV_JOB_QUEUE_CAPACITY; ++i) {
     q->slots[i].action = 0;
     q->slots[i].param = 0;
@@ -31,18 +32,27 @@ int gtav_job_queue_is_full(const GtavNativeJobQueue* q) {
 
 int gtav_job_queue_push(GtavNativeJobQueue* q, uint32_t action, uint32_t param) {
   if (!q) return 0;
+  // Two producers could otherwise claim the same slot (one job lost, or one run twice).
+  while (__atomic_exchange_n(&q->push_lock, 1u, __ATOMIC_ACQUIRE) != 0u) {
+#if defined(__x86_64__) || defined(__i386__)
+    __builtin_ia32_pause();
+#endif
+  }
+  int pushed = 0;
   if (gtav_job_queue_is_full(q)) {
     q->dropped++;
-    return 0;
+  } else {
+    const uint32_t tail = q->tail;
+    const uint32_t slot = tail & GTAV_JOB_QUEUE_MASK;
+    q->slots[slot].action = action;
+    q->slots[slot].param = param;
+    // Publish the slot contents before advancing tail so the consumer never reads
+    // a half-written job.
+    __atomic_store_n(&q->tail, tail + 1u, __ATOMIC_RELEASE);
+    pushed = 1;
   }
-  const uint32_t slot = q->tail & GTAV_JOB_QUEUE_MASK;
-  q->slots[slot].action = action;
-  q->slots[slot].param = param;
-  // Publish the slot contents before advancing tail so the consumer never reads
-  // a half-written job.
-  __atomic_thread_fence(__ATOMIC_RELEASE);
-  q->tail = q->tail + 1u;
-  return 1;
+  __atomic_store_n(&q->push_lock, 0u, __ATOMIC_RELEASE);
+  return pushed;
 }
 
 uint32_t gtav_job_queue_drain(GtavNativeJobQueue* q, uint32_t max_jobs, GtavNativeJobFn fn,
@@ -59,9 +69,8 @@ uint32_t gtav_job_queue_drain(GtavNativeJobQueue* q, uint32_t max_jobs, GtavNati
   // by the entry tail makes "one job run == one hook fire", so a requeued job
   // correctly waits for the next fire. Jobs genuinely queued before entry are all
   // still drained (subject to max_jobs).
-  const uint32_t tail_at_entry = q->tail;
-  // Acquire the slot contents the producer published before it advanced tail.
-  __atomic_thread_fence(__ATOMIC_ACQUIRE);
+  // Acquire the slot contents the producers published before they advanced tail.
+  const uint32_t tail_at_entry = __atomic_load_n(&q->tail, __ATOMIC_ACQUIRE);
   uint32_t drained = 0;
   // tail_at_entry - head is the count present at entry; both advance monotonically
   // so the unsigned subtraction is correct across wraps.
@@ -70,10 +79,11 @@ uint32_t gtav_job_queue_drain(GtavNativeJobQueue* q, uint32_t max_jobs, GtavNati
     const uint32_t slot = q->head & GTAV_JOB_QUEUE_MASK;
     const uint32_t action = q->slots[slot].action;
     const uint32_t param = q->slots[slot].param;
+    // The slot is free again once head passes it: a producer may reuse it after this store.
+    __atomic_store_n(&q->head, q->head + 1u, __ATOMIC_RELEASE);
     if (fn) {
       fn(action, param, context);
     }
-    q->head = q->head + 1u;
     ++drained;
   }
   return drained;

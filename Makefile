@@ -32,6 +32,10 @@ endif
 
 include make/flags.mk
 include make/targets.mk
+include make/nexhen.mk
+# PS4 Legacy plugin (make ps4-plugin*); the source tree adds the ps4debug-NG worker lane.
+include make/ps4-plugin.mk
+-include make/ps4.mk
 
 # Private development targets are present on dev and deliberately absent from
 # publication branches. The optional include keeps the production Makefile

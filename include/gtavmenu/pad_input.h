@@ -120,6 +120,11 @@ uint32_t gtav_pad_input_map(GtavPadMapState* state, uint32_t buttons, int visibl
 // so the scroll feel is tunable + persisted. Affects only the live poll path (gtav_pad_input_poll_
 // command); the pure gtav_pad_input_map still takes delay/rate as explicit parameters.
 void gtav_pad_input_set_repeat(uint32_t delay_ticks, uint32_t rate_ticks);
+// Map one poll of button bits from any platform source (PS5 scePad, PS4 game-control natives) with
+// the live Nav Delay / Nav Speed cadence. selected_is_cycler lets Left/Right auto-repeat
+// (gtav_native_bridge_selected_is_cycler()).
+uint32_t gtav_pad_input_map_live(GtavPadMapState* state, uint32_t buttons, int visible,
+                                 int selected_is_cycler);
 
 // Install the active keybind table (combo -> action). Copied into file-local storage that
 // both gtav_pad_input_map (detection while closed) and the game-input suppression hook read.
@@ -154,7 +159,8 @@ void gtav_pad_input_wait_menu_buttons_released(uint32_t max_wait_usec);
 // Restore any installed scePadReadState GOT swap. MUST be called on shutdown
 // before the payload unmaps, or the game will call into freed memory. No-op if
 // no hook was installed.
-void gtav_pad_input_shutdown(void);
+// Returns 0 only when every owned slot contains its original pointer afterward.
+int gtav_pad_input_shutdown(void);
 
 // Teardown/suspend guard. gtav_pad_input_park() defensively restores the scePadReadState GOT swap
 // and stands the live input path down (poll returns NONE, the hook is not re-installed), so a

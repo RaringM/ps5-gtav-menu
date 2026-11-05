@@ -1,0 +1,270 @@
+{
+  "target": "ppsa04264-01.011.001",
+  "consts": [
+    {
+      "name": "kConfigManager",
+      "file": "boot_pool_payload.c",
+      "value": "0x62aec68",
+      "method": "global CConfigManager*: published at n0x1996572 (mov [rip], r14), zeroed at teardown n0x4bbb9e; 433 qword rip references"
+    },
+    {
+      "name": "kConfigMgrBuckets",
+      "file": "boot_pool_payload.c",
+      "value": "0x8",
+      "method": "manager +8 node** buckets (n0x4d16ca)"
+    },
+    {
+      "name": "kConfigMgrSlots",
+      "file": "boot_pool_payload.c",
+      "value": "0x10",
+      "method": "manager +0x10 u16 bucket count (n0x4d16bf; rehash sets 11 at n0x1996fc4, to 191)"
+    },
+    {
+      "name": "kConfigMgrCfg",
+      "file": "boot_pool_payload.c",
+      "value": "0x18",
+      "method": "manager +0x18 parsed config struct (set at n0x199657e)"
+    },
+    {
+      "name": "kConfigNodeValue",
+      "file": "boot_pool_payload.c",
+      "value": "0x4",
+      "method": "node {u32 hash, i32 value @+4, next* @+8} (n0x4d16f0..0x4d1705)"
+    },
+    {
+      "name": "kConfigNodeNext",
+      "file": "boot_pool_payload.c",
+      "value": "0x8",
+      "method": "node next pointer (n0x4d16f4)"
+    },
+    {
+      "name": "kMetaDataStoreHash",
+      "file": "boot_pool_payload.c",
+      "value": "0x983a6ef3",
+      "method": "joaat('MetaDataStore'), case folded; name string at n0x3813871; InitStores lookup at n0x4d16b8"
+    },
+    {
+      "name": "kMetaDataStoreObj",
+      "file": "boot_pool_payload.c",
+      "value": "0x61a8910",
+      "method": "MetaDataStore object (live); vtable set by static ctor n0x30a7d79; +0x50 pool size after InitStores"
+    },
+    {
+      "name": "kMetaDataStoreSize",
+      "file": "boot_pool_payload.c",
+      "value": "0x50",
+      "method": "store +0x50 pool size (pool +0x18, pool init n0x30b6d37)"
+    },
+    {
+      "name": "kConfigDoneFlag",
+      "file": "boot_pool_payload.c",
+      "value": "0x5ee4e28",
+      "method": "u8 set to 1 at n0x1998388 under lock n0x5ae4e20 before the LoadGameConfig epilogue (only writer)"
+    },
+    {
+      "name": "kInitStoresEnteredFlag",
+      "file": "boot_pool_payload.c",
+      "value": "0x6115f90",
+      "method": "u8 set to 1 at n0x4cfb0e in CStreaming_InitStoresA before the first store config read; cleared only at teardown n0x2d62d98"
+    },
+    {
+      "name": "kCfgPedCap",
+      "file": "boot_pool_payload.c",
+      "value": "0x318",
+      "method": "cfg +0x318 ped model-info capacity (CModelInfo_Init mode 8, n0xfc37d4)"
+    },
+    {
+      "name": "kCfgVehicleCap",
+      "file": "boot_pool_payload.c",
+      "value": "0x31c",
+      "method": "cfg +0x31c vehicle model-info capacity (n0xfc37b8)"
+    },
+    {
+      "name": "kCfgWeaponCap",
+      "file": "boot_pool_payload.c",
+      "value": "0x320",
+      "method": "cfg +0x320 weapon model-info capacity (n0xfc37a5)"
+    },
+    {
+      "name": "kCaveAddress",
+      "file": "boot_pool_payload.c",
+      "value": "0x37bf000",
+      "method": ".text tail padding start (= kEbootTextEnd); zero-filled; same cave the production bootstrap uses"
+    },
+    {
+      "name": "kLoadGameConfigCallSite",
+      "file": "boot_pool_payload.c",
+      "value": "0x8ba261",
+      "method": "live address of call CGame_LoadGameConfig in CGame_Init initMode 0 (n0x4ba261; only direct caller)"
+    },
+    {
+      "name": "kLoadGameConfigTarget",
+      "file": "boot_pool_payload.c",
+      "value": "0x1d95d30",
+      "method": "live address of CGame_LoadGameConfig (n0x1995d30 + 0x400000)"
+    },
+    {
+      "name": "kLoadGameConfigContinuation",
+      "file": "boot_pool_payload.c",
+      "value": "0x8ba266",
+      "method": "instruction after the call: mov rax, cs:qword_5DFBD78 (n0x4ba266)"
+    },
+    {
+      "name": "kInitStoresCallSite",
+      "file": "boot_pool_payload.c",
+      "value": "0x8b9398",
+      "method": "live address of call CStreaming_InitStoresA in CGame_Init initMode 1 (n0x4b9398; only direct caller)"
+    },
+    {
+      "name": "kInitStoresTarget",
+      "file": "boot_pool_payload.c",
+      "value": "0x8cfa00",
+      "method": "live address of CStreaming_InitStoresA (n0x4cfa00 + 0x400000)"
+    },
+    {
+      "name": "kModuleCount",
+      "file": "boot_pool_payload.c",
+      "value": "0x627d550",
+      "method": "u16 streaming module count (AddModule n0x31838e1 read, n0x3183aac ++)"
+    },
+    {
+      "name": "kCavePageMask",
+      "file": "boot_pool_payload.c",
+      "value": "0x3fff",
+      "method": "16 KiB page alignment for protection changes (PS5 superpages)"
+    },
+    {
+      "name": "kCaveCapacity",
+      "file": "boot_pool_payload.c",
+      "value": "0x1000",
+      "method": "bytes from the cave n0x33bf000 to the end of the mapped text range n0x33c0000 (text LOAD memsz ends n0x33bee3c, next LOAD at n0x33c0000; 16 KiB pages); all zero in the normalized ELF"
+    },
+    {
+      "name": "kDwdStoreHash",
+      "file": "boot_pool_payload.c",
+      "value": "0x68065b7a",
+      "method": "joaat(\"dwdstore\") (case-folding, as InitStores hashes [store+0x18]); the PoolSizes key read live in a fresh Story Mode census (2026-11-01)"
+    },
+    {
+      "name": "kDrawableStoreHash",
+      "file": "boot_pool_payload.c",
+      "value": "0x941f03c9",
+      "method": "joaat(\"drawablestore\") (case-folding, as InitStores hashes [store+0x18]); the PoolSizes key read live in a fresh Story Mode census (2026-11-01)"
+    },
+    {
+      "name": "kTxdStoreHash",
+      "file": "boot_pool_payload.c",
+      "value": "0x528acb56",
+      "method": "joaat(\"txdstore\") (case-folding, as InitStores hashes [store+0x18]); the PoolSizes key read live in a fresh Story Mode census (2026-11-01)"
+    },
+    {
+      "name": "kFragmentStoreHash",
+      "file": "boot_pool_payload.c",
+      "value": "0x3066500c",
+      "method": "joaat(\"fragmentstore\") (case-folding, as InitStores hashes [store+0x18]); the PoolSizes key read live in a fresh Story Mode census (2026-11-01)"
+    },
+    {
+      "name": "kPtFxAssetStoreHash",
+      "file": "boot_pool_payload.c",
+      "value": "0x999869f1",
+      "method": "joaat(\"ptfxassetstore\") (case-folding, as InitStores hashes [store+0x18]); the PoolSizes key read live in a fresh Story Mode census (2026-11-01)"
+    },
+    {
+      "name": "kMapTypesStoreHash",
+      "file": "boot_pool_payload.c",
+      "value": "0xb4419501",
+      "method": "joaat(\"maptypesstore\") (case-folding, as InitStores hashes [store+0x18]); the PoolSizes key read live in a fresh Story Mode census (2026-11-01)"
+    },
+    {
+      "name": "kStockMetaDataStore",
+      "file": "boot_pool_payload.c",
+      "value": "0xc80",
+      "method": "stock PoolSizes MetaDataStore = 3200, read live (fresh Story Mode, 2026-11-01); equals the live store/factory sizes (E0)"
+    },
+    {
+      "name": "kStockDwdStore",
+      "file": "boot_pool_payload.c",
+      "value": "0x5014",
+      "method": "stock PoolSizes DwdStore = 20500, read live (fresh Story Mode, 2026-11-01); equals the live store/factory sizes (E0)"
+    },
+    {
+      "name": "kStockTxdStore",
+      "file": "boot_pool_payload.c",
+      "value": "0x13948",
+      "method": "stock PoolSizes TxdStore = 80200, read live (fresh Story Mode, 2026-11-01); equals the live store/factory sizes (E0)"
+    },
+    {
+      "name": "kStockFragmentStore",
+      "file": "boot_pool_payload.c",
+      "value": "0xa410",
+      "method": "stock PoolSizes FragmentStore = 42000, read live (fresh Story Mode, 2026-11-01); equals the live store/factory sizes (E0)"
+    },
+    {
+      "name": "kStockPtFxAssetStore",
+      "file": "boot_pool_payload.c",
+      "value": "0x190",
+      "method": "stock PoolSizes PtFxAssetStore = 400, read live (fresh Story Mode, 2026-11-01); equals the live store/factory sizes (E0)"
+    },
+    {
+      "name": "kStockMapTypesStore",
+      "file": "boot_pool_payload.c",
+      "value": "0x6a4",
+      "method": "stock PoolSizes MapTypesStore = 1700, read live (fresh Story Mode, 2026-11-01); equals the live store/factory sizes (E0)"
+    },
+    {
+      "name": "kStockCfgPedCap",
+      "file": "boot_pool_payload.c",
+      "value": "0x1b8",
+      "method": "stock ConfigModelInfo cfg+0x318 (ped) = 440, read live (fresh Story Mode, 2026-11-01); equals the live store/factory sizes (E0)"
+    },
+    {
+      "name": "kStockCfgVehicleCap",
+      "file": "boot_pool_payload.c",
+      "value": "0x280",
+      "method": "stock ConfigModelInfo cfg+0x31c (vehicle) = 640, read live (fresh Story Mode, 2026-11-01); equals the live store/factory sizes (E0)"
+    },
+    {
+      "name": "kStockCfgWeaponCap",
+      "file": "boot_pool_payload.c",
+      "value": "0x262",
+      "method": "stock ConfigModelInfo cfg+0x320 (weapon) = 610, read live (fresh Story Mode, 2026-11-01); equals the live store/factory sizes (E0)"
+    }
+  ],
+  "arrays": [
+    {
+      "name": "kLoadGameConfigCallBytes",
+      "file": "boot_pool_payload.c",
+      "hex": "e8caba4d01",
+      "len": 5,
+      "method": "5-byte call at n0x4ba261: E8 rel32 to CGame_LoadGameConfig n0x1995d30; read from the normalized ELF"
+    },
+    {
+      "name": "kInitStoresCallBytes",
+      "file": "boot_pool_payload.c",
+      "hex": "e863660100",
+      "len": 5,
+      "method": "5-byte call at n0x4b9398: E8 rel32 to CStreaming_InitStoresA n0x4cfa00; read from the normalized ELF"
+    },
+    {
+      "name": "kCaveZeroBytes",
+      "file": "boot_pool_payload.c",
+      "hex": "0000000000000000",
+      "len": 8,
+      "method": "first 8 bytes of the .text tail cave at n0x33bf000; must be zero before any write"
+    },
+    {
+      "name": "kLoadGameConfigCallContext",
+      "file": "boot_pool_payload.c",
+      "hex": "e8caba4d01488b050b1b9405488d0dcc",
+      "len": 16,
+      "method": "16-byte context at n0x4ba261: the call + following mov rax + lea rcx prefix; stronger identity check"
+    },
+    {
+      "name": "kInitStoresCallContext",
+      "file": "boot_pool_payload.c",
+      "hex": "e863660100bf01000000e86959c401bf",
+      "len": 16,
+      "method": "16-byte context at n0x4b9398: the call + following mov edi,1 + next call prefix; stronger identity check"
+    }
+  ]
+}

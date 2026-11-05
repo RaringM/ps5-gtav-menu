@@ -1,0 +1,1696 @@
+{
+  "target": "ppsa04264-01.010.002",
+  "consts": [
+    {
+      "name": "kFiDeviceGetDevice",
+      "file": "custom_engine.inc",
+      "line": 12,
+      "value": "0x2f24d90"
+    },
+    {
+      "name": "kFiLocalVtable",
+      "file": "custom_engine.inc",
+      "line": 13,
+      "value": "0x4071f80"
+    },
+    {
+      "name": "kTextureStore",
+      "file": "custom_engine.inc",
+      "line": 26,
+      "value": "0x621f260"
+    },
+    {
+      "name": "kTextureStoreInitialized",
+      "file": "custom_engine.inc",
+      "line": 27,
+      "value": "0x621f2f8"
+    },
+    {
+      "name": "kTextureAdapterCache",
+      "file": "custom_engine.inc",
+      "line": 28,
+      "value": "0x5c85b10"
+    },
+    {
+      "name": "kTextureStores",
+      "file": "custom_engine.inc",
+      "line": 29,
+      "value": "0x62271c8"
+    },
+    {
+      "name": "kTextureEntries",
+      "file": "custom_engine.inc",
+      "line": 30,
+      "value": "0x6227018"
+    },
+    {
+      "name": "kAssetPhaseObject",
+      "file": "custom_engine.inc",
+      "line": 31,
+      "value": "0x43433b0"
+    },
+    {
+      "name": "kTextureCacheAnchor",
+      "file": "custom_engine.inc",
+      "line": 32,
+      "value": "0x355bc13"
+    },
+    {
+      "name": "kTextureStoreAnchor",
+      "file": "custom_engine.inc",
+      "line": 33,
+      "value": "0x8d0e98"
+    },
+    {
+      "name": "kTextureRequestAnchor",
+      "file": "custom_engine.inc",
+      "line": 34,
+      "value": "0x1aa86b2"
+    },
+    {
+      "name": "kAssetPhaseAnchor",
+      "file": "custom_engine.inc",
+      "line": 35,
+      "value": "0x348e6d6"
+    },
+    {
+      "name": "kHddStreamer",
+      "file": "custom_engine.inc",
+      "line": 102,
+      "value": "0x5c81618"
+    },
+    {
+      "name": "kHddStreamerPoolArray",
+      "file": "custom_engine.inc",
+      "line": 103,
+      "value": "0x34a8"
+    },
+    {
+      "name": "kDataFileInterfaces",
+      "file": "custom_pack_data.inc",
+      "line": 11,
+      "value": "0x598a350"
+    },
+    {
+      "name": "kVehicleModelFactory",
+      "file": "custom_pack_data.inc",
+      "line": 71,
+      "value": "0x45a36d8"
+    },
+    {
+      "name": "kVehicleModelFactoryVtable",
+      "file": "custom_pack_data.inc",
+      "line": 72,
+      "value": "0x3f8ffe8"
+    },
+    {
+      "name": "kVehicleModelMapTypeDef",
+      "file": "custom_pack_data.inc",
+      "line": 73,
+      "value": "0xf000"
+    },
+    {
+      "name": "kArchetypePoolFree",
+      "file": "custom_pack_data.inc",
+      "line": 74,
+      "value": "0x6177260"
+    },
+    {
+      "name": "kHandlingCount",
+      "file": "custom_pack_data.inc",
+      "line": 75,
+      "value": "0x5584c10"
+    },
+    {
+      "name": "kVehicleVariationGlobals",
+      "file": "custom_pack_data.inc",
+      "line": 86,
+      "value": "0x5a8b380"
+    },
+    {
+      "name": "kRegisterLoose",
+      "file": "custom_pack_data.inc",
+      "line": 131,
+      "value": "0x2f18730"
+    },
+    {
+      "name": "kParserPump",
+      "file": "custom_pack_data.inc",
+      "line": 132,
+      "value": "0x2f5ef30"
+    },
+    {
+      "name": "kLockMutex",
+      "file": "custom_pack_data.inc",
+      "line": 133,
+      "value": "0x3790430"
+    },
+    {
+      "name": "kUnlockMutex",
+      "file": "custom_pack_data.inc",
+      "line": 134,
+      "value": "0x3790440"
+    },
+    {
+      "name": "kLooseLock",
+      "file": "custom_pack_data.inc",
+      "line": 135,
+      "value": "0x5c815d0"
+    },
+    {
+      "name": "kLooseCollectionPtr",
+      "file": "custom_pack_data.inc",
+      "line": 136,
+      "value": "0x5c85b10"
+    },
+    {
+      "name": "kPackLooseVtable",
+      "file": "custom_pack_data.inc",
+      "line": 137,
+      "value": "0x4071208"
+    },
+    {
+      "name": "kParserPtr",
+      "file": "custom_pack_data.inc",
+      "line": 138,
+      "value": "0x6258910"
+    },
+    {
+      "name": "kParserPumpGuard",
+      "file": "custom_pack_data.inc",
+      "line": 139,
+      "value": "0x5eaf308"
+    },
+    {
+      "name": "kPedModelFactory",
+      "file": "custom_pack_data.inc",
+      "line": 207,
+      "value": "0x45a36f0"
+    },
+    {
+      "name": "kPedModelFactoryVtable",
+      "file": "custom_pack_data.inc",
+      "line": 208,
+      "value": "0x3f90088"
+    },
+    {
+      "name": "kWeaponModelFactory",
+      "file": "custom_pack_data.inc",
+      "line": 209,
+      "value": "0x45a36c0"
+    },
+    {
+      "name": "kWeaponModelFactoryVtable",
+      "file": "custom_pack_data.inc",
+      "line": 210,
+      "value": "0x3f8ff48"
+    },
+    {
+      "name": "kArchetypeMap",
+      "file": "custom_pack_data.inc",
+      "line": 243,
+      "value": "0x6166ae8"
+    },
+    {
+      "name": "kWeaponInfoBlobs",
+      "file": "custom_pack_data.inc",
+      "line": 261,
+      "value": "0x5a8a000"
+    },
+    {
+      "name": "kWeaponInfoByHash",
+      "file": "custom_pack_data.inc",
+      "line": 262,
+      "value": "0x5a89ff0"
+    },
+    {
+      "name": "kComponentInfos",
+      "file": "custom_pack_data.inc",
+      "line": 290,
+      "value": "0x5a8b3f0"
+    },
+    {
+      "name": "kComponentInfoCount",
+      "file": "custom_pack_data.inc",
+      "line": 291,
+      "value": "0x5a8c2a0"
+    },
+    {
+      "name": "kComponentBlobs",
+      "file": "custom_pack_data.inc",
+      "line": 292,
+      "value": "0x5a8c2a8"
+    },
+    {
+      "name": "kComponentFunctorVtable",
+      "file": "custom_pack_data.inc",
+      "line": 294,
+      "value": "0x403cc78"
+    },
+    {
+      "name": "kComponentRefill",
+      "file": "custom_pack_data.inc",
+      "line": 295,
+      "value": "0x296b820"
+    },
+    {
+      "name": "kTcModifiers",
+      "file": "custom_pack_data.inc",
+      "line": 426,
+      "value": "0x577de20"
+    },
+    {
+      "name": "kTcMapSorted",
+      "file": "custom_pack_data.inc",
+      "line": 427,
+      "value": "0x577de30"
+    },
+    {
+      "name": "kTcModifierMap",
+      "file": "custom_pack_data.inc",
+      "line": 428,
+      "value": "0x577de38"
+    },
+    {
+      "name": "kTcWeights",
+      "file": "custom_pack_data.inc",
+      "line": 429,
+      "value": "0x577dde8"
+    },
+    {
+      "name": "kTcVarsReady",
+      "file": "custom_pack_data.inc",
+      "line": 430,
+      "value": "0x6210c60"
+    },
+    {
+      "name": "kTcCurrentIndex",
+      "file": "custom_pack_data.inc",
+      "line": 433,
+      "value": "0x57805b0"
+    },
+    {
+      "name": "kModRenderDataPool",
+      "file": "custom_pack_data.inc",
+      "line": 600,
+      "value": "0x45a57d0"
+    },
+    {
+      "name": "kWheelMergeCode",
+      "file": "custom_pack_data.inc",
+      "line": 602,
+      "value": "0x1423d7a"
+    },
+    {
+      "name": "kWheelGrowCode",
+      "file": "custom_pack_data.inc",
+      "line": 607,
+      "value": "0x1423e90"
+    },
+    {
+      "name": "kWheelGfxFrontCode",
+      "file": "custom_pack_data.inc",
+      "line": 610,
+      "value": "0x13f4f03"
+    },
+    {
+      "name": "kWheelGfxRearCode",
+      "file": "custom_pack_data.inc",
+      "line": 614,
+      "value": "0x13f4f59"
+    },
+    {
+      "name": "kEbootTextStart",
+      "file": "custom_pack_data.inc",
+      "line": 792,
+      "value": "0x400000"
+    },
+    {
+      "name": "kEbootTextEnd",
+      "file": "custom_pack_data.inc",
+      "line": 793,
+      "value": "0x3798000"
+    },
+    {
+      "name": "kApparel137CaseSite",
+      "file": "custom_pack_data.inc",
+      "value": "0x1a449e0"
+    },
+    {
+      "name": "kApparelFileListSite",
+      "file": "custom_pack_data.inc",
+      "value": "0x1a44a3c"
+    },
+    {
+      "name": "kApparelModelPoolSite",
+      "file": "custom_pack_data.inc",
+      "value": "0x1a4b7f2"
+    },
+    {
+      "name": "kApparelStreamedSkipSite",
+      "file": "custom_pack_data.inc",
+      "value": "0x1a4b845"
+    },
+    {
+      "name": "kApparelPmtLookupSite",
+      "file": "custom_pack_data.inc",
+      "value": "0x1a4c600"
+    },
+    {
+      "name": "kApparelSlotAppendSite",
+      "file": "custom_pack_data.inc",
+      "value": "0x1a4c67a"
+    },
+    {
+      "name": "kApparelStreamedCheck",
+      "file": "custom_pack_data.inc",
+      "value": "0x19b4280"
+    },
+    {
+      "name": "kApparelFunctorVtable",
+      "file": "custom_pack_data.inc",
+      "line": 810,
+      "value": "0x3fa8598"
+    },
+    {
+      "name": "kApparelPostParse",
+      "file": "custom_pack_data.inc",
+      "line": 811,
+      "value": "0x1a4b600"
+    },
+    {
+      "name": "kApparelManagerPtr",
+      "file": "custom_pack_data.inc",
+      "line": 812,
+      "value": "0x54566c8"
+    },
+    {
+      "name": "kMetaDataStore",
+      "file": "custom_pack_data.inc",
+      "line": 813,
+      "value": "0x6173230"
+    },
+    {
+      "name": "kMetaDataStoreVtable",
+      "file": "custom_pack_data.inc",
+      "value": "0x408ec50",
+      "method": "object read: qword at kMetaDataStore in the process dump"
+    },
+    {
+      "name": "kModelInfoPool",
+      "file": "custom_pack_data.inc",
+      "line": 814,
+      "value": "0x6177250"
+    },
+    {
+      "name": "kApparelModelModuleId",
+      "file": "custom_pack_data.inc",
+      "line": 815,
+      "value": "0x6210f30"
+    },
+    {
+      "name": "kApparelStreamEntries",
+      "file": "custom_pack_data.inc",
+      "line": 816,
+      "value": "0x6227018"
+    },
+    {
+      "name": "kAudioGameObjects",
+      "file": "custom_pack_data.inc",
+      "line": 1086,
+      "value": "0x57ef0c8"
+    },
+    {
+      "name": "kAudioChunkStride",
+      "file": "custom_pack_data.inc",
+      "line": 1087,
+      "value": "0x78"
+    },
+    {
+      "name": "kAudioModelHash",
+      "file": "custom_pack_data.inc",
+      "line": 1089,
+      "value": "0x4e4"
+    },
+    {
+      "name": "kAudioChunkNameSite",
+      "file": "custom_pack_data.inc",
+      "value": "0x98e865"
+    },
+    {
+      "name": "kAudioLoadCallSite",
+      "file": "custom_pack_data.inc",
+      "value": "0x98ea6f"
+    },
+    {
+      "name": "kAudioDedupeSite",
+      "file": "custom_pack_data.inc",
+      "value": "0x2e9138c"
+    },
+    {
+      "name": "kAudioLookupBucketsSite",
+      "file": "custom_pack_data.inc",
+      "value": "0x2e907b0"
+    },
+    {
+      "name": "kAudioLookupSearchSite",
+      "file": "custom_pack_data.inc",
+      "value": "0x2e907fb"
+    },
+    {
+      "name": "kDrawableStore",
+      "file": "custom_pack_data.inc",
+      "line": 1399,
+      "value": "0x61a6cd8"
+    },
+    {
+      "name": "kDrawableStoreVtable",
+      "file": "custom_pack_data.inc",
+      "line": 1400,
+      "value": "0x40934c0"
+    },
+    {
+      "name": "kSfMovies",
+      "file": "custom_pack_data.inc",
+      "line": 1486,
+      "value": "0x458dc00"
+    },
+    {
+      "name": "kSfMovieCount",
+      "file": "custom_pack_data.inc",
+      "line": 1487,
+      "value": "0x458dc08"
+    },
+    {
+      "name": "kSfMovieLocks",
+      "file": "custom_pack_data.inc",
+      "line": 1488,
+      "value": "0x458ef08"
+    },
+    {
+      "name": "kHudContainerMovie",
+      "file": "custom_pack_data.inc",
+      "line": 1489,
+      "value": "0x54581a8"
+    },
+    {
+      "name": "kSfStoreSlots",
+      "file": "custom_pack_data.inc",
+      "line": 1490,
+      "value": "0x459c968"
+    },
+    {
+      "name": "kSfMovieStride",
+      "file": "custom_pack_data.inc",
+      "line": 1491,
+      "value": "0x1e0"
+    },
+    {
+      "name": "kSfMovieMax",
+      "file": "custom_pack_data.inc",
+      "line": 1492,
+      "value": "0x32"
+    },
+    {
+      "name": "kGfxMovieRootVtable",
+      "file": "custom_pack_data.inc",
+      "line": 1494,
+      "value": "0x409cc08"
+    },
+    {
+      "name": "kGfxGetMovieDef",
+      "file": "custom_pack_data.inc",
+      "line": 1495,
+      "value": "0x36a9140"
+    },
+    {
+      "name": "kGfxMovieDefImplVtable",
+      "file": "custom_pack_data.inc",
+      "line": 1496,
+      "value": "0x409c8d0"
+    },
+    {
+      "name": "kGfxGetResource",
+      "file": "custom_pack_data.inc",
+      "line": 1497,
+      "value": "0x369a0e0"
+    },
+    {
+      "name": "kGfxSpriteDefVtable",
+      "file": "custom_pack_data.inc",
+      "line": 1498,
+      "value": "0x409d3d0"
+    },
+    {
+      "name": "kGfxGetLabeledFrame",
+      "file": "custom_pack_data.inc",
+      "line": 1499,
+      "value": "0x36d56f0"
+    },
+    {
+      "name": "kGfxTranslateFrame",
+      "file": "custom_pack_data.inc",
+      "line": 1500,
+      "value": "0x3692000"
+    },
+    {
+      "name": "kGfxFrameNameAdd",
+      "file": "custom_pack_data.inc",
+      "line": 1501,
+      "value": "0x3695610"
+    },
+    {
+      "name": "kGfxNamedFrames",
+      "file": "custom_pack_data.inc",
+      "line": 1502,
+      "value": "0x28"
+    },
+    {
+      "name": "kSirenIdMap",
+      "file": "custom_pack_data.inc",
+      "line": 1852,
+      "value": "0x45a50e0"
+    },
+    {
+      "name": "kSirenIdMapCode",
+      "file": "custom_pack_data.inc",
+      "line": 1853,
+      "value": "0x1423c8b"
+    },
+    {
+      "name": "kVariationLightSirenCode",
+      "file": "custom_pack_data.inc",
+      "line": 1856,
+      "value": "0x1421797"
+    },
+    {
+      "name": "kPtfxStore",
+      "file": "custom_pack_data.inc",
+      "line": 2106,
+      "value": "0x6226148"
+    },
+    {
+      "name": "kPtfxStoreVtable",
+      "file": "custom_pack_data.inc",
+      "line": 2107,
+      "value": "0x4097eb0"
+    },
+    {
+      "name": "kPtfxDefStride",
+      "file": "custom_pack_data.inc",
+      "line": 2108,
+      "value": "0x18"
+    },
+    {
+      "name": "kTextGet",
+      "file": "custom_pack_labels.inc",
+      "line": 13,
+      "value": "0x24d8ea0"
+    },
+    {
+      "name": "kTheText",
+      "file": "custom_pack_labels.inc",
+      "line": 17,
+      "value": "0x5a806d0"
+    },
+    {
+      "name": "kTextLock",
+      "file": "custom_pack_labels.inc",
+      "line": 18,
+      "value": "0x54f7250"
+    },
+    {
+      "name": "kTypStore",
+      "file": "custom_pack_world.inc",
+      "line": 35,
+      "value": "0x6210a10"
+    },
+    {
+      "name": "kTypStoreVtable",
+      "file": "custom_pack_world.inc",
+      "line": 36,
+      "value": "0x4093b08"
+    },
+    {
+      "name": "kTypFindSlot",
+      "file": "custom_pack_world.inc",
+      "line": 37,
+      "value": "0x353bdd0"
+    },
+    {
+      "name": "kMapStore",
+      "file": "custom_pack_world.inc",
+      "line": 250,
+      "value": "0x61a9aa0"
+    },
+    {
+      "name": "kMapStoreVtable",
+      "file": "custom_pack_world.inc",
+      "line": 251,
+      "value": "0x4093970"
+    },
+    {
+      "name": "kMapFindSlot",
+      "file": "custom_pack_world.inc",
+      "line": 252,
+      "value": "0x353b9e0"
+    },
+    {
+      "name": "kMapEnableIpl",
+      "file": "custom_pack_world.inc",
+      "line": 253,
+      "value": "0x3515530"
+    },
+    {
+      "name": "kRemoveObject",
+      "file": "custom_pack_world.inc",
+      "line": 254,
+      "value": "0x35502c0"
+    },
+    {
+      "name": "kBoundsStore",
+      "file": "custom_pack_world.inc",
+      "line": 333,
+      "value": "0x61a9740"
+    },
+    {
+      "name": "kBoundsStoreVtable",
+      "file": "custom_pack_world.inc",
+      "line": 334,
+      "value": "0x4093ff0"
+    },
+    {
+      "name": "kBoundsFindSlot",
+      "file": "custom_pack_world.inc",
+      "line": 335,
+      "value": "0x353d320"
+    },
+    {
+      "name": "kInteriorProxyPool",
+      "file": "custom_pack_world.inc",
+      "line": 443,
+      "value": "0x5753cb0"
+    },
+    {
+      "name": "kInteriorBoundsBinder",
+      "file": "custom_pack_world.inc",
+      "line": 444,
+      "value": "0x1999500"
+    },
+    {
+      "name": "kMapBoxStreamer",
+      "file": "custom_pack_world.inc",
+      "line": 454,
+      "value": "0x61a9b50"
+    },
+    {
+      "name": "kMapBoxStreamerVtable",
+      "file": "custom_pack_world.inc",
+      "line": 455,
+      "value": "0x4094938"
+    },
+    {
+      "name": "kMapBoxRebuild",
+      "file": "custom_pack_world.inc",
+      "line": 456,
+      "value": "0x3511aa0"
+    },
+    {
+      "name": "kBoundsBoxStreamer",
+      "file": "custom_pack_world.inc",
+      "line": 460,
+      "value": "0x61a97f0"
+    },
+    {
+      "name": "kBoundsBoxStreamerVtable",
+      "file": "custom_pack_world.inc",
+      "line": 461,
+      "value": "0x40948f8"
+    },
+    {
+      "name": "kBoundsBoxRebuild",
+      "file": "custom_pack_world.inc",
+      "line": 462,
+      "value": "0x3510660"
+    },
+    {
+      "name": "kRetailExportBufferBytes",
+      "file": "custom_retail_export.inc",
+      "line": 99,
+      "value": "0x200000"
+    },
+    {
+      "name": "kRetailCommonPackfile",
+      "file": "custom_retail_export.inc",
+      "line": 101,
+      "value": "0x548d850"
+    },
+    {
+      "name": "kRetailPackfileVtable",
+      "file": "custom_retail_export.inc",
+      "line": 102,
+      "value": "0x4071950"
+    },
+    {
+      "name": "kRetailCommonMountSite",
+      "file": "custom_retail_export.inc",
+      "line": 103,
+      "value": "0x1d6ba19"
+    },
+    {
+      "name": "kRetailCommonPrefix",
+      "file": "custom_retail_export.inc",
+      "line": 104,
+      "value": "0x3bd6272"
+    },
+    {
+      "name": "kRetailUpdatePackfile",
+      "file": "custom_retail_export.inc",
+      "line": 105,
+      "value": "0x53fa2f0"
+    },
+    {
+      "name": "kRetailUpdateMountSite",
+      "file": "custom_retail_export.inc",
+      "line": 106,
+      "value": "0x1d6d313"
+    },
+    {
+      "name": "kRetailUpdatePrefix",
+      "file": "custom_retail_export.inc",
+      "line": 107,
+      "value": "0x3bdf6ed"
+    },
+    {
+      "name": "kRetailPackOpen",
+      "file": "custom_retail_export.inc",
+      "line": 108,
+      "value": "0x2f38f10"
+    },
+    {
+      "name": "kRetailPackRead",
+      "file": "custom_retail_export.inc",
+      "line": 109,
+      "value": "0x2f39990"
+    },
+    {
+      "name": "kRetailPackClose",
+      "file": "custom_retail_export.inc",
+      "line": 110,
+      "value": "0x2f39820"
+    },
+    {
+      "name": "kRetailPackGetFileSize",
+      "file": "custom_retail_export.inc",
+      "line": 111,
+      "value": "0x2f3a1a0"
+    },
+    {
+      "name": "kRetailPackFindEntry",
+      "file": "custom_retail_export.inc",
+      "line": 112,
+      "value": "0x2f39610"
+    },
+    {
+      "name": "kRetailHandleFreeList",
+      "file": "custom_retail_export.inc",
+      "line": 113,
+      "value": "0x5eaa748"
+    },
+    {
+      "name": "kRetailHandlePoolInit",
+      "file": "custom_retail_export.inc",
+      "line": 114,
+      "value": "0x5eaa750"
+    },
+    {
+      "name": "kRetailMountTableSite",
+      "file": "custom_retail_export.inc",
+      "line": 115,
+      "value": "0x2f24f49"
+    },
+    {
+      "name": "kRetailMountTable",
+      "file": "custom_retail_export.inc",
+      "line": 116,
+      "value": "0x5ca9bd8"
+    },
+    {
+      "name": "kRetailMountCount",
+      "file": "custom_retail_export.inc",
+      "line": 117,
+      "value": "0x5ca9be0"
+    },
+    {
+      "name": "kAddImageToList",
+      "file": "custom_rpf.inc",
+      "line": 26,
+      "value": "0x35563e0"
+    },
+    {
+      "name": "kLoadImage",
+      "file": "custom_rpf.inc",
+      "line": 27,
+      "value": "0x3557250"
+    },
+    {
+      "name": "kHashToString",
+      "file": "custom_rpf.inc",
+      "line": 28,
+      "value": "0x2f08060"
+    },
+    {
+      "name": "kCloseArchiveToc",
+      "file": "custom_rpf.inc",
+      "line": 29,
+      "value": "0x3559f30"
+    },
+    {
+      "name": "kRequestObject",
+      "file": "custom_rpf.inc",
+      "line": 30,
+      "value": "0x355aa20"
+    },
+    {
+      "name": "kStreamingModules",
+      "file": "custom_rpf.inc",
+      "line": 31,
+      "value": "0x62271c8"
+    },
+    {
+      "name": "kRpfModuleIndex",
+      "file": "custom_rpf.inc",
+      "line": 32,
+      "value": "0x620f768"
+    },
+    {
+      "name": "kArchiveTable",
+      "file": "custom_rpf.inc",
+      "line": 33,
+      "value": "0x620f758"
+    },
+    {
+      "name": "kArchiveHeaderCache",
+      "file": "custom_rpf.inc",
+      "line": 34,
+      "value": "0x620f810"
+    },
+    {
+      "name": "kCollectionTable",
+      "file": "custom_rpf.inc",
+      "line": 35,
+      "value": "0x6210f40"
+    },
+    {
+      "name": "kCollectionSlots",
+      "file": "custom_rpf.inc",
+      "line": 40,
+      "value": "7000"
+    },
+    {
+      "name": "kFiMemoryDevice",
+      "file": "custom_rpf.inc",
+      "line": 52,
+      "value": "0x5ca9c10"
+    },
+    {
+      "name": "kFiMemoryVtable",
+      "file": "custom_rpf.inc",
+      "line": 53,
+      "value": "0x4072168"
+    },
+    {
+      "name": "kStreamerQueues",
+      "file": "custom_rpf.inc",
+      "line": 54,
+      "value": "0x5c85b20"
+    },
+    {
+      "name": "kRpfMagic",
+      "file": "custom_rpf.inc",
+      "line": 55,
+      "value": "0x52504637"
+    },
+    {
+      "name": "kRpfKeyedTable",
+      "file": "custom_rpf.inc",
+      "line": 56,
+      "value": "0x0ffeffff"
+    },
+    {
+      "name": "kRpfTocKeyTable",
+      "file": "custom_rpf.inc",
+      "line": 276,
+      "value": "0x4307060"
+    },
+    {
+      "name": "kValidArchiveBits",
+      "file": "custom_rpf.inc",
+      "line": 417,
+      "value": "0x620f798"
+    },
+    {
+      "name": "kValidArchiveBound",
+      "file": "custom_rpf.inc",
+      "line": 418,
+      "value": "0x620f7a2"
+    },
+    {
+      "name": "kOverlayBuckets",
+      "file": "custom_rpf.inc",
+      "line": 419,
+      "value": "0x6227170"
+    },
+    {
+      "name": "kOverlayEntries",
+      "file": "custom_rpf.inc",
+      "line": 420,
+      "value": "0x622717a"
+    },
+    {
+      "name": "kOverlayRemove",
+      "file": "custom_rpf.inc",
+      "line": 442,
+      "value": "0x3558c60"
+    },
+    {
+      "name": "kMounter_handling_iface",
+      "value": "0x5584be8",
+      "file": "custom_pack_data.inc"
+    },
+    {
+      "name": "kMounter_handling_vtable",
+      "value": "0x4032b48",
+      "file": "custom_pack_data.inc"
+    },
+    {
+      "name": "kMounter_handling_load",
+      "value": "0x27b6150",
+      "file": "custom_pack_data.inc"
+    },
+    {
+      "name": "kMounter_carcols_iface",
+      "value": "0x45a4790",
+      "file": "custom_pack_data.inc"
+    },
+    {
+      "name": "kMounter_carcols_vtable",
+      "value": "0x3f90ec0",
+      "file": "custom_pack_data.inc"
+    },
+    {
+      "name": "kMounter_carcols_load",
+      "value": "0x14138e0",
+      "file": "custom_pack_data.inc"
+    },
+    {
+      "name": "kMounter_vehicle_metadata_iface",
+      "value": "0x45a4780",
+      "file": "custom_pack_data.inc"
+    },
+    {
+      "name": "kMounter_vehicle_metadata_vtable",
+      "value": "0x3f90e20",
+      "file": "custom_pack_data.inc"
+    },
+    {
+      "name": "kMounter_vehicle_metadata_load",
+      "value": "0x1413370",
+      "file": "custom_pack_data.inc"
+    },
+    {
+      "name": "kMounter_vehicle_variation_iface",
+      "value": "0x45a4788",
+      "file": "custom_pack_data.inc"
+    },
+    {
+      "name": "kMounter_vehicle_variation_vtable",
+      "value": "0x3f90e90",
+      "file": "custom_pack_data.inc"
+    },
+    {
+      "name": "kMounter_vehicle_variation_load",
+      "value": "0x14137d0",
+      "file": "custom_pack_data.inc"
+    },
+    {
+      "name": "kMounter_vehicle_layouts_iface",
+      "value": "0x5618338",
+      "file": "custom_pack_data.inc"
+    },
+    {
+      "name": "kMounter_vehicle_layouts_vtable",
+      "value": "0x4032fe0",
+      "file": "custom_pack_data.inc"
+    },
+    {
+      "name": "kMounter_vehicle_layouts_load",
+      "value": "0x27b6dd0",
+      "file": "custom_pack_data.inc"
+    },
+    {
+      "name": "kMounter_ped_metadata_iface",
+      "value": "0x45a41c0",
+      "file": "custom_pack_data.inc"
+    },
+    {
+      "name": "kMounter_ped_metadata_vtable",
+      "value": "0x3f90df0",
+      "file": "custom_pack_data.inc"
+    },
+    {
+      "name": "kMounter_ped_metadata_load",
+      "value": "0x1412590",
+      "file": "custom_pack_data.inc"
+    },
+    {
+      "name": "kMounter_weapon_metadata_iface",
+      "value": "0x53fb1f8",
+      "file": "custom_pack_data.inc"
+    },
+    {
+      "name": "kMounter_weapon_metadata_vtable",
+      "value": "0x3fa7e60",
+      "file": "custom_pack_data.inc"
+    },
+    {
+      "name": "kMounter_weapon_metadata_load",
+      "value": "0x1a46f40",
+      "file": "custom_pack_data.inc"
+    },
+    {
+      "name": "kMounter_weaponinfo_iface",
+      "value": "0x578e5f8",
+      "file": "custom_pack_data.inc"
+    },
+    {
+      "name": "kMounter_weaponinfo_vtable",
+      "value": "0x403cce8",
+      "file": "custom_pack_data.inc"
+    },
+    {
+      "name": "kMounter_weaponinfo_load",
+      "value": "0x296bac0",
+      "file": "custom_pack_data.inc"
+    },
+    {
+      "name": "kMounter_weaponcomponentsinfo_iface",
+      "value": "0x578d360",
+      "file": "custom_pack_data.inc"
+    },
+    {
+      "name": "kMounter_weaponcomponentsinfo_vtable",
+      "value": "0x403cc48",
+      "file": "custom_pack_data.inc"
+    },
+    {
+      "name": "kMounter_weaponcomponentsinfo_load",
+      "value": "0x296b770",
+      "file": "custom_pack_data.inc"
+    },
+    {
+      "name": "kMounter_weapon_animations_iface",
+      "value": "0x578dc50",
+      "file": "custom_pack_data.inc"
+    },
+    {
+      "name": "kMounter_weapon_animations_vtable",
+      "value": "0x403ccb8",
+      "file": "custom_pack_data.inc"
+    },
+    {
+      "name": "kMounter_weapon_animations_load",
+      "value": "0x296ba00",
+      "file": "custom_pack_data.inc"
+    },
+    {
+      "name": "kMounter_shop_ped_apparel_iface",
+      "value": "0x53fa8f8",
+      "file": "custom_pack_data.inc"
+    },
+    {
+      "name": "kMounter_shop_ped_apparel_vtable",
+      "value": "0x3fa7e00",
+      "file": "custom_pack_data.inc"
+    },
+    {
+      "name": "kMounter_shop_ped_apparel_load",
+      "value": "0x1a448e0",
+      "file": "custom_pack_data.inc"
+    },
+    {
+      "name": "kMounter_timecyclemod_iface",
+      "value": "0x54fbd20",
+      "file": "custom_pack_data.inc"
+    },
+    {
+      "name": "kMounter_timecyclemod_vtable",
+      "value": "0x4017ec0",
+      "file": "custom_pack_data.inc"
+    },
+    {
+      "name": "kMounter_timecyclemod_load",
+      "value": "0x24fe640",
+      "file": "custom_pack_data.inc"
+    },
+    {
+      "name": "kMounter_audio_gamedata_iface",
+      "value": "0x435a0b0",
+      "file": "custom_pack_data.inc"
+    },
+    {
+      "name": "kMounter_audio_gamedata_vtable",
+      "value": "0x3f51198",
+      "file": "custom_pack_data.inc"
+    },
+    {
+      "name": "kMounter_audio_gamedata_load",
+      "value": "0x98e840",
+      "file": "custom_pack_data.inc"
+    },
+    {
+      "name": "kTextureStoreBase",
+      "file": "custom_engine.inc",
+      "value": "108361"
+    },
+    {
+      "name": "kFragmentStore",
+      "value": "0x61a6d78",
+      "file": "custom_rpf.inc"
+    },
+    {
+      "name": "kFragmentStoreVtable",
+      "value": "0x40937e0",
+      "file": "custom_rpf.inc"
+    },
+    {
+      "name": "kTextureStoreVtable",
+      "value": "0x40943d0",
+      "file": "custom_rpf.inc"
+    },
+    {
+      "name": "kDwdStore",
+      "value": "0x61a6e18",
+      "file": "custom_rpf.inc"
+    },
+    {
+      "name": "kDwdStoreVtable",
+      "value": "0x4093650",
+      "file": "custom_rpf.inc"
+    },
+    {
+      "name": "kTxdFindSlot",
+      "value": "0x114eef0",
+      "file": "custom_rpf.inc"
+    },
+    {
+      "name": "kFragmentFindSlot",
+      "value": "0x353b160",
+      "file": "custom_rpf.inc"
+    },
+    {
+      "name": "kDrawableFindSlot",
+      "value": "0x353a230",
+      "file": "custom_rpf.inc"
+    },
+    {
+      "name": "kDwdFindSlot",
+      "value": "0x353a9d0",
+      "file": "custom_rpf.inc"
+    },
+    {
+      "name": "kItypMounterIface",
+      "value": "0x53fb200",
+      "file": "custom_pack_world.inc"
+    },
+    {
+      "name": "kItypMounterVtable",
+      "value": "0x3fa7e90",
+      "file": "custom_pack_world.inc"
+    },
+    {
+      "name": "kItypMounterLoad",
+      "value": "0x1a46fa0",
+      "file": "custom_pack_world.inc"
+    }
+  ],
+  "arrays": [
+    {
+      "name": "kFiDeviceGetDeviceBytes",
+      "file": "custom_engine.inc",
+      "line": 22,
+      "len": 32,
+      "hex": "554889e54157415641554154534881ec18010000488b05b5ac18014189f6be3a"
+    },
+    {
+      "name": "kTextureCacheAnchorBytes",
+      "file": "custom_engine.inc",
+      "line": 36,
+      "len": 7,
+      "hex": "4c8b35f69e7202"
+    },
+    {
+      "name": "kTextureStoreAnchorBytes",
+      "file": "custom_engine.inc",
+      "line": 37,
+      "len": 14,
+      "hex": "c60559e4940501488d3dbae39405"
+    },
+    {
+      "name": "kTextureRequestAnchorBytes",
+      "file": "custom_engine.inc",
+      "line": 39,
+      "len": 13,
+      "hex": "488b050feb77048b0dad6b7704"
+    },
+    {
+      "name": "kAssetPhaseAnchorBytes",
+      "file": "custom_engine.inc",
+      "line": 41,
+      "len": 13,
+      "hex": "0fbf73100fb743126639c675cd"
+    },
+    {
+      "name": "kRegisterLooseBytes",
+      "file": "custom_pack_data.inc",
+      "line": 140,
+      "len": 32,
+      "hex": "554889e54157415641554154534881ec18020000488b1d157319014989fe488d"
+    },
+    {
+      "name": "kParserPumpBytes",
+      "file": "custom_pack_data.inc",
+      "line": 143,
+      "len": 32,
+      "hex": "554889e54157415641554154534881ece80000004c8b35150b1501498b064889"
+    },
+    {
+      "name": "kLockMutexBytes",
+      "file": "custom_pack_data.inc",
+      "line": 146,
+      "len": 11,
+      "hex": "ff25e2f791006809000000"
+    },
+    {
+      "name": "kUnlockMutexBytes",
+      "file": "custom_pack_data.inc",
+      "line": 148,
+      "len": 11,
+      "hex": "ff25daf79100680a000000"
+    },
+    {
+      "name": "kComponentRefillBytes",
+      "file": "custom_pack_data.inc",
+      "line": 297,
+      "len": 36,
+      "hex": "c705760a1203000000000fb7057f0a12034885c00f840a01000053488d35aefb110331d2"
+    },
+    {
+      "name": "kWheelMergeCodeBytes",
+      "file": "custom_pack_data.inc",
+      "line": 603,
+      "len": 42,
+      "hex": "4883f80d0f84580c00004989c748898540ffffff488b8570ffffff49c1e704420fb74438706685c074cc"
+    },
+    {
+      "name": "kWheelGrowCodeBytes",
+      "file": "custom_pack_data.inc",
+      "line": 608,
+      "len": 11,
+      "hex": "66443b730a0f8596050000"
+    },
+    {
+      "name": "kWheelGfxFrontCodeBytes",
+      "file": "custom_pack_data.inc",
+      "line": 611,
+      "len": 20,
+      "hex": "4c6bf23848c1e7044c03743e684d89b2480b0000"
+    },
+    {
+      "name": "kWheelGfxRearCodeBytes",
+      "file": "custom_pack_data.inc",
+      "line": 615,
+      "len": 20,
+      "hex": "48c1e004486bc93848034c026849898a500b0000"
+    },
+    {
+      "name": "kGfxGetMovieDefBytes",
+      "file": "custom_pack_data.inc",
+      "line": 1503,
+      "len": 5,
+      "hex": "488b4758c3"
+    },
+    {
+      "name": "kGfxGetLabeledFrameBytes",
+      "file": "custom_pack_data.inc",
+      "line": 1504,
+      "len": 9,
+      "hex": "4883c728e907c9fbff"
+    },
+    {
+      "name": "kGfxGetResourceBytes",
+      "file": "custom_pack_data.inc",
+      "line": 1506,
+      "len": 32,
+      "hex": "554889e54157415641554154534883ec48488b1d6859a100488b03488945d048"
+    },
+    {
+      "name": "kGfxTranslateFrameBytes",
+      "file": "custom_pack_data.inc",
+      "line": 1509,
+      "len": 32,
+      "hex": "554889e54157415641554154534881ec88010000488b1d45daa100488b034889"
+    },
+    {
+      "name": "kGfxFrameNameAddBytes",
+      "file": "custom_pack_data.inc",
+      "line": 1512,
+      "len": 32,
+      "hex": "554889e54157415641554154534883ec48488b074989cd4889d34989fe4885c0"
+    },
+    {
+      "name": "kSirenIdMapCodeBytes",
+      "file": "custom_pack_data.inc",
+      "line": 1854,
+      "len": 14,
+      "hex": "498b4a484963c7488d3547141803"
+    },
+    {
+      "name": "kVariationLightSirenCodeBytes",
+      "file": "custom_pack_data.inc",
+      "line": 1857,
+      "len": 24,
+      "hex": "430fb644344888833a050000430fb644344988833b050000"
+    },
+    {
+      "name": "kApparel137CaseSiteBytes",
+      "file": "custom_pack_data.inc",
+      "hex": "488b1de11ca103488d05aa3b56024c89e766c783a0000000000066c783b00000",
+      "len": 32
+    },
+    {
+      "name": "kApparelFileListSiteBytes",
+      "file": "custom_pack_data.inc",
+      "hex": "0fb74b784885c90f842d010000498b3631d26690488b3cd63947200f841101000048ffc24839d175",
+      "len": 40
+    },
+    {
+      "name": "kApparelPostParseBytes",
+      "file": "custom_pack_data.inc",
+      "hex": "554889e54157415641554154534883ec78488b1e4885db0f84c91500004c8b6f",
+      "len": 32
+    },
+    {
+      "name": "kApparelModelPoolSiteBytes",
+      "file": "custom_pack_data.inc",
+      "hex": "0fb740043b055cba72040f8de4130000488b0d77ba720489c2c1ea058b0c910fa3c10f83cc130000488b0d2fba720448",
+      "len": 48
+    },
+    {
+      "name": "kApparelStreamedSkipSiteBytes",
+      "file": "custom_pack_data.inc",
+      "hex": "3dffff00000f84961300008db80000ff0fe8258af6ff84c0",
+      "len": 24
+    },
+    {
+      "name": "kApparelPmtLookupSiteBytes",
+      "file": "custom_pack_data.inc",
+      "hex": "488b0da96c72048b35ab6c720431d24489c0f7f68b14918b7d9483faff0f846f03000048",
+      "len": 36
+    },
+    {
+      "name": "kApparelSlotAppendSiteBytes",
+      "file": "custom_pack_data.inc",
+      "hex": "0fb799e80000004c8bb1e0000000663b99ea000000",
+      "len": 21
+    },
+    {
+      "name": "kApparelStreamedCheckBytes",
+      "file": "custom_pack_data.inc",
+      "hex": "8b05aacc8504488b0d3b2f8704baffffffff488b04c10fb7cf81f9ffff00000f45d1b90e000000035008488b05672d87040fb644",
+      "len": 52
+    },
+    {
+      "name": "kAudioChunkNameSiteBytes",
+      "file": "custom_pack_data.inc",
+      "hex": "488975a8be2f000000e80d1de0024989c7be5f00000049ffc74c89ffe88a1de0024c29f8b920000000",
+      "len": 41
+    },
+    {
+      "name": "kAudioLoadCallSiteBytes",
+      "file": "custom_pack_data.inc",
+      "hex": "498b7e08488b55a8488d75b031c94531c0e83b2850024189c7488b5da881bb900000008c0000000f85d5000000488d3d2506e604",
+      "len": 52
+    },
+    {
+      "name": "kAudioDedupeSiteBytes",
+      "file": "custom_pack_data.inc",
+      "hex": "410fb744240889cbc1e30f01cb4885c07430498b0c24beffffffff31d2eb110f1f44000048ffc24883c1784839d07417391975f080797100",
+      "len": 56
+    },
+    {
+      "name": "kAudioLookupBucketsSiteBytes",
+      "file": "custom_pack_data.inc",
+      "hex": "486bd078837c111c0074e5807c11710074de488b7c1128448b4cf7044585c97ecf4c6304f7488b54112041ffc94531d2",
+      "len": 48
+    },
+    {
+      "name": "kAudioLookupSearchSiteBytes",
+      "file": "custom_pack_data.inc",
+      "hex": "478d1c1141d1fb4963fb4c01c7443964fa0472e10f867affffff",
+      "len": 26
+    },
+    {
+      "name": "kTextGetBytes",
+      "file": "custom_pack_labels.inc",
+      "line": 14,
+      "len": 32,
+      "hex": "554889e541565389fb488d3da0e30103e87b752b01c705a17a5a03ffffffff85"
+    },
+    {
+      "name": "kTypFindSlotBytes",
+      "file": "custom_pack_world.inc",
+      "line": 38,
+      "len": 32,
+      "hex": "554889e54157415653504889fb4889f74989f7ff157f427402bf0100000089c6"
+    },
+    {
+      "name": "kRemoveObjectBytes",
+      "file": "custom_pack_world.inc",
+      "line": 255,
+      "len": 20,
+      "hex": "554889e54157415641554154534881ec480c0000"
+    },
+    {
+      "name": "kMapFindSlotBytes",
+      "file": "custom_pack_world.inc",
+      "line": 258,
+      "len": 16,
+      "hex": "554889e54157415653504889fb4889f7"
+    },
+    {
+      "name": "kMapEnableIplBytes",
+      "file": "custom_pack_world.inc",
+      "line": 260,
+      "len": 16,
+      "hex": "554889e541574156535083ffff0f84d6"
+    },
+    {
+      "name": "kBoundsFindSlotBytes",
+      "file": "custom_pack_world.inc",
+      "line": 336,
+      "len": 32,
+      "hex": "554889e553504889fb4889f7ff15062d7402488bb38000000089c131d2f7b388"
+    },
+    {
+      "name": "kInteriorBoundsBinderBytes",
+      "file": "custom_pack_world.inc",
+      "line": 445,
+      "len": 32,
+      "hex": "554889e54157415641554154534881ecd8000000488b1d45657102488b034889"
+    },
+    {
+      "name": "kMapBoxRebuildBytes",
+      "file": "custom_pack_world.inc",
+      "line": 457,
+      "len": 32,
+      "hex": "554889e54157415641554154534883ec18488b05a8dfb9004889fb488b004889"
+    },
+    {
+      "name": "kBoundsBoxRebuildBytes",
+      "file": "custom_pack_world.inc",
+      "line": 463,
+      "len": 32,
+      "hex": "554889e54157415641554154534883ec184c8b25e8f3b9004889fb498b042448"
+    },
+    {
+      "name": "kRetailCommonMountSiteBytes",
+      "file": "custom_retail_export.inc",
+      "line": 119,
+      "len": 45,
+      "hex": "488d1d301e7203488d3d4ba8e601ba010000004889dee81c1d1c0184c00f8430010000c7056a1e720308000000"
+    },
+    {
+      "name": "kRetailUpdateMountSiteBytes",
+      "file": "custom_retail_export.inc",
+      "line": 125,
+      "len": 71,
+      "hex": "488d1dd6cf6803488d3dcc23e701ba010000004889dee822041c0184c00f84a80c00004c8dbdd0feffff488d15788ce301488d0d91fa0d02be00010000c705f6cf680308000000"
+    },
+    {
+      "name": "kRetailPackOpenBytes",
+      "file": "custom_retail_export.inc",
+      "line": 151,
+      "len": 153,
+      "hex": "486347604801c6e904000000cccccccc554889e54157415641554154534883ec184c8b2d286b170148c7c3ffffffff498b4500488945d085d20f848a030000488b074989f6ff90400200004885c00f84750300004989c7488b0048c1e8283dfeff7f000f8760030000488d3d3815d702e8ab748500488b1dbc17f7028b05be17f7024885db751285c0740ecd4148c7c3ffffffffe924030000"
+    },
+    {
+      "name": "kRetailPackReadBytes",
+      "file": "custom_retail_export.inc",
+      "line": 162,
+      "len": 48,
+      "hex": "e90b000000cccccccccccccccccccccc554889e54157415641554154534883ec48488b86200008004989d6894dd44989"
+    },
+    {
+      "name": "kRetailPackCloseBytes",
+      "file": "custom_retail_export.inc",
+      "line": 166,
+      "len": 32,
+      "hex": "554889e5415741565350488d3d870cd7024889f3e8f76b8500488b8320000800"
+    },
+    {
+      "name": "kRetailPackGetFileSizeBytes",
+      "file": "custom_retail_export.inc",
+      "line": 170,
+      "len": 56,
+      "hex": "554889e5486347604801c6488b07ff90400200004885c0741b488b104889c14889d048c1e81025ffffff004885d20f4941085dc331c05dc3"
+    },
+    {
+      "name": "kRetailMountTableSiteBytes",
+      "file": "custom_retail_export.inc",
+      "line": 176,
+      "len": 35,
+      "hex": "488d3db04cd802e8dbb486000fb705844cd8024885c00f84190100004c8b2d6c4cd802"
+    },
+    {
+      "name": "kAddImageToListBytes",
+      "file": "custom_rpf.inc",
+      "line": 37,
+      "len": 16,
+      "hex": "554889e54157415641554154534881ec"
+    },
+    {
+      "name": "kLoadImageBytes",
+      "file": "custom_rpf.inc",
+      "line": 39,
+      "len": 24,
+      "hex": "554889e54157415641554154534881ec580200004c8b3df5"
+    },
+    {
+      "name": "kCloseArchiveTocBytes",
+      "file": "custom_rpf.inc",
+      "line": 42,
+      "len": 16,
+      "hex": "554889e54157415641554154535089f8"
+    },
+    {
+      "name": "kRequestObjectBytes",
+      "file": "custom_rpf.inc",
+      "line": 44,
+      "len": 16,
+      "hex": "554889e54157415641554154534881ec"
+    },
+    {
+      "name": "kHashToStringBytes",
+      "file": "custom_rpf.inc",
+      "line": 46,
+      "len": 10,
+      "hex": "31c085f60f840d010000"
+    },
+    {
+      "name": "kRpfTocKeyTableSha256",
+      "file": "custom_rpf.inc",
+      "line": 277,
+      "len": 32,
+      "hex": "7f96da7feb730cf419309d878b927608e812753cad348f1b9334387a2cf3de8a"
+    },
+    {
+      "name": "kOverlayRemoveBytes",
+      "file": "custom_rpf.inc",
+      "line": 443,
+      "len": 32,
+      "hex": "0fb70d11e5cc0285c97479554889e5535089f831d2f7f1488b05f2e4cc02488b"
+    },
+    {
+      "name": "kMounter_handling_pin",
+      "hex": "554889e54157415641554154534883ec78488b05f8988f014889b560ffffff48",
+      "file": "custom_pack_data.inc"
+    },
+    {
+      "name": "kMounter_carcols_pin",
+      "hex": "554889e54157415641554154534881ec88000000488b0565c1c9024889b558ff",
+      "file": "custom_pack_data.inc"
+    },
+    {
+      "name": "kMounter_vehicle_metadata_pin",
+      "hex": "554889e54156534883ec404c8b35dec6c902488d0dc7dab702488d5db04889f7",
+      "file": "custom_pack_data.inc"
+    },
+    {
+      "name": "kMounter_vehicle_variation_pin",
+      "hex": "554889e541574156534883ec784c8b357cc2c902488d5db04c8d7d80488d15ca",
+      "file": "custom_pack_data.inc"
+    },
+    {
+      "name": "kMounter_vehicle_layouts_pin",
+      "hex": "554889e541574156534883ec784c8b357c8c8f01488d5db04c8d7d80488d15e9",
+      "file": "custom_pack_data.inc"
+    },
+    {
+      "name": "kMounter_ped_metadata_pin",
+      "hex": "554889e54157415641554154534881ec880000004c8b3db5d4c902498b074889",
+      "file": "custom_pack_data.inc"
+    },
+    {
+      "name": "kMounter_weapon_metadata_pin",
+      "hex": "554889e54889f7ba00f0000031f6e80d38f7ffb0015dc3cccccccccccccccccc",
+      "file": "custom_pack_data.inc"
+    },
+    {
+      "name": "kMounter_weaponinfo_pin",
+      "hex": "554889e54157415641554154534881ec480100004c8b35853f74014989f7498b",
+      "file": "custom_pack_data.inc"
+    },
+    {
+      "name": "kMounter_weaponcomponentsinfo_pin",
+      "hex": "554889e54156534883ec404c8b35de427401488d5db04889f7488d0de8146d01",
+      "file": "custom_pack_data.inc"
+    },
+    {
+      "name": "kMounter_weapon_animations_pin",
+      "hex": "554889e54156534883ec404c8b354e407401488d5db0488d0dc3156d014889da",
+      "file": "custom_pack_data.inc"
+    },
+    {
+      "name": "kMounter_shop_ped_apparel_pin",
+      "hex": "554889e54157415641554154534881ec480100004c8b2d65b16602b97affffff",
+      "file": "custom_pack_data.inc"
+    },
+    {
+      "name": "kMounter_timecyclemod_pin",
+      "hex": "554889e54156534881ec100100004c8b350b14bb01498b06488945e883be9000",
+      "file": "custom_pack_data.inc"
+    },
+    {
+      "name": "kMounter_audio_gamedata_pin",
+      "hex": "554889e54157415641554154534883ec38488b05081272034989fe4889f7488b",
+      "file": "custom_pack_data.inc"
+    },
+    {
+      "name": "kItypMounterLoadBytes",
+      "file": "custom_pack_world.inc",
+      "hex": "554889e54156534881ec100100004c8b35ab8a6602c5f857c0b96f72793a4889",
+      "len": 32
+    }
+  ]
+}

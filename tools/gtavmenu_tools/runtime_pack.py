@@ -21,7 +21,7 @@ ID_MAX = 64
 NAME_MAX = 63
 CARD_MAX = 8
 ARCHIVE_MAX = 4
-ACTIVE_MAX = 8  # packs listed in packs/active and merged by the worker
+ACTIVE_MAX = 16  # packs listed in packs/active and merged by the worker
 MENU_LABEL_MAX = 47  # characters of a pack id the Custom Packs page shows
 # Optional `description` / `author` / `version` rows (Manage Packs shows them): at most this many
 # characters, printable ASCII without '~' (a format token to the game's text renderer).
@@ -47,21 +47,22 @@ SPAWN_KINDS = ("vehicle", "object", "ped", "weapon", "timecycle", "ptfx", "compo
 PAIR_SPAWN_KINDS = ("ptfx", "component")
 DATA_MAX = 16
 OVERRIDE_MAX = 16  # stock members replaced by `overlay` archives
-OVERRIDE_EXTENSIONS = ("ptd", "pft", "pdr", "pdd")
+# PS5 packs replace the .p* forms, PS4 packs the .o* ones (each platform's worker takes its own).
+OVERRIDE_EXTENSIONS = ("ptd", "pft", "pdr", "pdd", "otd", "oft", "odr", "odd")
 # `wicon` rows: a pack weapon shows a retail donor's weapon wheel icon (hud.gfx label alias)
 WICON_MAX = 8
 # `tints WEAPON palette|none` rows (one per `spawn weapon` row at most): whether the weapon's model reads a tint
 # palette (the retail palette shader); with `none` the menu's Weapon Tint skips the setter ("no tint palette").
 TINTS_VALUES = ("palette", "none")
 # Merged-set capacities when several packs are active together (gtav_custom_pack_merge).
-ARCHIVE_CAP = 16
+ARCHIVE_CAP = 32
 CARD_CAP = 16
 DATA_CAP = 64
-TYP_CAP = 48
-MAP_CAP = 16
+TYP_CAP = 64
+MAP_CAP = 32
 BOUNDS_CAP = 32
-LABEL_CAP = 192
-SPAWN_CAP = 64
+LABEL_CAP = 256
+SPAWN_CAP = 96
 OVERRIDE_CAP = 64
 PLACE_CAP = 32
 HIDE_CAP = 64
@@ -106,7 +107,7 @@ _FILE = re.compile(r"[a-z0-9_]+\.meta")
 _AUDIO_FILE = re.compile(rf"([a-z0-9]{{1,{AUDIO_CHUNK_MAX}}})_game\.rel")
 # override member: [<folder>/]<stem>.<ext>; one folder level, the member's folder inside its stock
 # archive (the engine names the store slot after the path, e.g. player_one/uppr_014_u).
-_OVERRIDE = re.compile(r"(?:[a-z0-9_]+/)?[a-z0-9_+]+\.(?:ptd|pft|pdr|pdd)")
+_OVERRIDE = re.compile(rf"(?:[a-z0-9_]+/)?[a-z0-9_+]+\.(?:{'|'.join(OVERRIDE_EXTENSIONS)})")
 _SHA = re.compile(r"[0-9a-f]{64}")
 _SIZE = re.compile(r"[1-9][0-9]*")
 _COORD = re.compile(r"-?(0|[1-9][0-9]{0,4})")
@@ -728,3 +729,52 @@ def describe_directory(
         pack.data.append(DataFile(type_name, path.stat().st_size, sha256_file(path), name))
     validate(pack)
     return pack
+
+
+STOCK_VEHICLE_NAMES = Path(__file__).resolve().parents[2] / "data/vehicles/gtav-vehicle-names.txt"
+_HANDLING_NAME = re.compile(rb"<handlingName>\s*([^<\s]+)\s*</handlingName>")
+
+
+def stock_vehicle_models(path: Path = STOCK_VEHICLE_NAMES) -> frozenset[str]:
+    """Lowercase stock vehicle model names (a superset over game versions; empty when the list is absent)."""
+    try:
+        lines = path.read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return frozenset()
+    return frozenset(line.split("\t")[0].strip().lower() for line in lines if line.strip() and not line.startswith("#"))
+
+
+def stock_name_problems(resources: Path, pack: RuntimePack, stock: frozenset[str] | None = None) -> list[str]:
+    """Names a stock vehicle already has, which the game refuses for new content.
+
+    A spawned vehicle with a stock model name is no add-on: the PS4 Load refuses it ("Model name already used";
+    attempt 052, ps4-dl-gt500-v4), and only an override pack, which replaces that car, may spawn one. A stock
+    handlingName adds no handling entry, so the load stops at that file after registering the archives (attempt
+    053, ps4-dl-vicechee-v3's CHEETAH2). Stock handling names are taken to be the stock model names, the usual
+    case."""
+    stock = stock_vehicle_models() if stock is None else stock
+    if not stock:
+        return []
+    problems: list[str] = []
+    if not pack.overrides:
+        problems += [
+            f"spawn vehicle {model}: a stock vehicle's model name; an add-on needs its own name "
+            "(or convert the mod as a replacement with convert-replace)"
+            for kind, model, _label in pack.spawns
+            if kind == "vehicle" and model.lower() in stock
+        ]
+    for row in pack.data:
+        if row.type != "HANDLING_FILE":
+            continue
+        try:
+            text = (resources / row.file).read_bytes()
+        except OSError:
+            continue  # check_directory reports the missing file
+        for found in _HANDLING_NAME.finditer(text):
+            name = found.group(1).decode("ascii", "replace")
+            if name.lower() in stock:
+                problems.append(
+                    f"{row.file}: handlingName {name} is a stock vehicle's; give the car its own (here and as "
+                    "handlingId in its vehicles.meta), or the game adds no handling entry and the load stops here"
+                )
+    return problems

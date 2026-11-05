@@ -1,0 +1,234 @@
+{
+  "schemaVersion": 2,
+  "kind": "gtavmenu-target-capabilities",
+  "targetId": "cusa00411-01.57",
+  "defaultAction": {
+    "support": "supported",
+    "requires": ["nativeFeatures"],
+    "threadClass": "unreviewed",
+    "hostStatus": "missing",
+    "evidence": [],
+    "menuPath": [],
+    "natives": []
+  },
+  "lockedGroups": [
+    {
+      "reason": "the PS4 menu runs once per game frame, so there is no worker loop rate to set; the PS4 build omits the row",
+      "actions": ["CYCLE_WORKER_HZ"]
+    },
+    {
+      "reason": "not implemented on the PS4 vehicle pack lane: parser pump (vehicle data is synchronous), typ/map/bounds, weapon components and retail export",
+      "requires": ["customPacks"],
+      "actions": [
+        "PUMP_PACK_DATA",
+        "LOAD_PACK_TYP",
+        "LOAD_PACK_MAP",
+        "FINISH_PACK_MAP",
+        "LOAD_PACK_BOUNDS",
+        "TOGGLE_PACK_COMPONENT",
+        "EXPORT_RETAIL_FILE"
+      ]
+    },
+    {
+      "reason": "the prologue-complete global is not derived for 1.57; Skip Prologue is off on every target",
+      "requires": ["scriptGlobals"],
+      "actions": ["SKIP_PROLOGUE"]
+    },
+    {
+      "reason": "retired action: the Population cycler absorbed Thin Population",
+      "actions": ["TOGGLE_THIN_POPULATION"]
+    }
+  ],
+  "featureGroups": [
+    {
+      "requires": ["vehicleClasses"],
+      "actions": ["CYCLE_VEHICLE_CLASS"]
+    },
+    {
+      "requires": ["effects"],
+      "actions": ["TOGGLE_NIGHT_VISION", "TOGGLE_SEETHROUGH", "CYCLE_TIMECYCLE", "CYCLE_ANIMPOSTFX"]
+    },
+    {
+      "requires": ["storage"],
+      "actions": [
+        "SAVE_PROFILE",
+        "LOAD_PROFILE",
+        "SAVE_MAP",
+        "LOAD_MAP",
+        "SAVE_VEHICLE",
+        "SPAWN_SAVED_VEHICLE",
+        "SAVE_OUTFIT",
+        "APPLY_OUTFIT"
+      ]
+    },
+    {
+      "requires": ["localization"],
+      "actions": ["CYCLE_LANGUAGE"]
+    },
+    {
+      "requires": ["hud"],
+      "actions": [
+        "TOGGLE_HUD",
+        "TOGGLE_HUD_SPEEDO",
+        "TOGGLE_HUD_COORDS",
+        "TOGGLE_HUD_FPS",
+        "TOGGLE_HUD_DISTANCE",
+        "CYCLE_SPEEDOMETER_LAYOUT"
+      ]
+    },
+    {
+      "requires": ["touchpad"],
+      "actions": ["CYCLE_TOUCHPAD"]
+    },
+    {
+      "requires": ["customPacks"],
+      "actions": [
+        "PACK_AUTOLOAD",
+        "TOGGLE_PACK_ACTIVE",
+        "UNINSTALL_PACK",
+        "TELEPORT_PACK_MAP",
+        "PACK_HIDE",
+        "APPLY_PACK_TIMECYCLE",
+        "PLAY_PACK_PTFX",
+        "RELEASE_PACK_CARD",
+        "SHOW_PACK_CARD",
+        "REGISTER_PACK",
+        "REQUEST_PACK_CARD",
+        "INSPECT_PACK",
+        "LOAD_PACK_ARCHIVE",
+        "LOAD_PACK_DATA",
+        "ADD_PACK_LABELS",
+        "REVERT_PACK_OVERRIDES"
+      ]
+    }
+  ],
+  "actions": {
+    "TOGGLE_GOD_MODE": {
+      "support": "supported",
+      "threadClass": "game-thread",
+      "hostStatus": "exact-arguments-and-draw-state",
+      "evidence": ["attempt-024", "attempt-028", "attempt-029"],
+      "menuPath": ["Main", "Self", "Invincibility", "God Mode"],
+      "natives": ["PLAYER_ID", "PLAYER_PED_ID", "SET_PLAYER_INVINCIBLE", "SET_ENTITY_INVINCIBLE"]
+    },
+    "HEAL_ARMOR": {
+      "support": "supported",
+      "threadClass": "game-thread",
+      "hostStatus": "exact-natives-through-the-shared-pipeline",
+      "menuPath": ["Main", "Self", "Heal + Armor"],
+      "natives": [
+        "PLAYER_PED_ID",
+        "GET_PED_MAX_HEALTH",
+        "SET_ENTITY_HEALTH",
+        "SET_PED_ARMOUR",
+        "CLEAR_PED_BLOOD_DAMAGE",
+        "CLEAR_PED_WETNESS"
+      ],
+      "evidence": ["attempt-029"]
+    },
+    "CYCLE_WANTED": {
+      "support": "supported",
+      "threadClass": "game-thread",
+      "hostStatus": "missing",
+      "evidence": ["attempt-024", "attempt-028", "attempt-029"],
+      "menuPath": ["Main", "Self", "Wanted", "Set Wanted Level"],
+      "natives": ["PLAYER_ID", "SET_PLAYER_WANTED_LEVEL", "SET_PLAYER_WANTED_LEVEL_NOW"]
+    },
+    "CLEAR_WANTED": {
+      "support": "supported",
+      "threadClass": "game-thread",
+      "hostStatus": "exact-arguments",
+      "evidence": ["attempt-025", "attempt-028", "attempt-029"],
+      "menuPath": ["Main", "Self", "Wanted", "Clear Wanted"],
+      "natives": ["PLAYER_ID", "SET_PLAYER_WANTED_LEVEL", "SET_PLAYER_WANTED_LEVEL_NOW"]
+    },
+    "TOGGLE_NEVER_WANTED": {
+      "support": "supported",
+      "threadClass": "game-thread",
+      "hostStatus": "exact-arguments-and-enable-disable-calls",
+      "evidence": ["attempt-028"],
+      "menuPath": ["Main", "Self", "Wanted", "Never Wanted"],
+      "natives": ["PLAYER_ID", "SET_PLAYER_WANTED_LEVEL", "SET_PLAYER_WANTED_LEVEL_NOW"]
+    },
+    "CLEAN_SELF": {
+      "support": "supported",
+      "threadClass": "game-thread",
+      "hostStatus": "exact-ped-arguments",
+      "evidence": ["attempt-028"],
+      "menuPath": ["Main", "Self", "Clean Self"],
+      "natives": ["PLAYER_PED_ID", "CLEAR_PED_BLOOD_DAMAGE", "CLEAR_PED_WETNESS"]
+    },
+    "CYCLE_WEATHER": {
+      "support": "supported",
+      "threadClass": "game-thread",
+      "hostStatus": "exact-string-argument-and-stage-apply",
+      "evidence": ["attempt-026", "attempt-029"],
+      "menuPath": ["Main", "World", "Environment", "Weather"],
+      "natives": ["SET_WEATHER_TYPE_NOW_PERSIST"]
+    },
+    "CYCLE_NAV_SPEED": {
+      "hostStatus": "controller-cycler-host-test"
+    },
+    "CYCLE_TOAST_TIME": {
+      "hostStatus": "controller-cycler-host-test"
+    },
+    "CYCLE_LANGUAGE": {
+      "hostStatus": "controller-cycler-host-test"
+    },
+    "PACK_AUTOLOAD": {
+      "threadClass": "game-thread",
+      "hostStatus": "engine-less-pack-load-host-test",
+      "menuPath": ["Main", "Custom Packs", "Load packs"],
+      "natives": []
+    },
+    "TOGGLE_PACK_ACTIVE": {
+      "threadClass": "game-thread",
+      "hostStatus": "engine-less-pack-selection-host-test",
+      "menuPath": ["Main", "Custom Packs", "Manage Packs"],
+      "natives": []
+    },
+    "PACK_HIDE": {
+      "threadClass": "game-thread",
+      "hostStatus": "exact-hash-and-flag-through-the-pack-load",
+      "menuPath": ["Main", "Custom Packs", "Load packs"],
+      "natives": ["CREATE_MODEL_HIDE", "REMOVE_MODEL_HIDE"]
+    },
+    "TELEPORT_PACK_MAP": {
+      "threadClass": "game-thread",
+      "hostStatus": "engine-less-pack-place-host-test",
+      "menuPath": ["Main", "Custom Packs", "Locations"],
+      "natives": [
+        "PLAYER_PED_ID",
+        "IS_PED_IN_ANY_VEHICLE",
+        "GET_VEHICLE_PED_IS_IN",
+        "FREEZE_ENTITY_POSITION",
+        "REQUEST_COLLISION_AT_COORD",
+        "HAS_COLLISION_LOADED_AROUND_ENTITY",
+        "GET_GROUND_Z_FOR_3D_COORD",
+        "SET_ENTITY_COORDS",
+        "SET_ENTITY_COORDS_NO_OFFSET",
+        "SET_VEHICLE_ON_GROUND_PROPERLY"
+      ]
+    },
+    "APPLY_PACK_TIMECYCLE": {
+      "threadClass": "game-thread",
+      "hostStatus": "exact-string-argument-and-toggle",
+      "menuPath": ["Main", "Custom Packs", "Effects"],
+      "natives": ["SET_TIMECYCLE_MODIFIER", "SET_TIMECYCLE_MODIFIER_STRENGTH", "CLEAR_TIMECYCLE_MODIFIER"]
+    },
+    "PLAY_PACK_PTFX": {
+      "threadClass": "game-thread",
+      "hostStatus": "engine-less-pack-effect-host-test",
+      "menuPath": ["Main", "Custom Packs", "Effects"],
+      "natives": [
+        "REQUEST_NAMED_PTFX_ASSET",
+        "HAS_NAMED_PTFX_ASSET_LOADED",
+        "PLAYER_PED_ID",
+        "GET_ENTITY_COORDS",
+        "USE_PARTICLE_FX_ASSET",
+        "SET_PARTICLE_FX_NON_LOOPED_COLOUR",
+        "START_PARTICLE_FX_NON_LOOPED_AT_COORD"
+      ]
+    }
+  }
+}

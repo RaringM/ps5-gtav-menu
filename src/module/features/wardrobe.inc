@@ -39,8 +39,8 @@ static uint32_t g_saved_outfit_drawable[GTAV_SAVED_OUTFIT_SLOTS][GTAV_WARDROBE_S
 static uint32_t g_saved_outfit_texture[GTAV_SAVED_OUTFIT_SLOTS][GTAV_WARDROBE_SLOTS];
 static uint32_t g_outfit_slot = 0;
 // value_label render buffers (copied immediately by push_list_values, so reuse is safe).
-static char g_wardrobe_style_label[12];
-static char g_wardrobe_texture_label[12];
+[[maybe_unused]] static char g_wardrobe_style_label[12];
+[[maybe_unused]] static char g_wardrobe_texture_label[12];
 
 static int wardrobe_drawable_count(int ped, uint32_t slot) {
   const PedSlot* s = &kPedSlots[slot];

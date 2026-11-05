@@ -1,19 +1,29 @@
 # Custom pack reference
 
 Format, command options and refusal messages for runtime packs on PPSA04263 / PPSA04264
-01.010.002. Start with the [user guide](user-guide.md) to install and load packs, or the
-[pack author guide](pack-author-guide.md) to convert and build them. Run commands from the
-repository root.
+01.010.002 and PPSA04264 01.011.001. Start with the [user guide](user-guide.md) to install and load
+packs, or the [pack author guide](pack-author-guide.md) to convert and build them. Run commands from
+the repository root.
 
 ## Limits
 
 - Loading is one-way for the game process: there is no unload. Each pack row loads once per
   process; restart GTA to change the loaded set.
-- At most 8 packs can be active at once. Together they may hold at most 16 archives (512 MiB),
-  64 data files (128 MiB), 16 texture cards, 48 archetype rows, 16 maps, 32 collision files,
-  32 weapon wheel icons, 192 labels, 64 spawn rows, 32 teleport rows, 64 hide rows and 64 stock
-  overrides (the bracketed numbers in the row table below); `pack-validate --against` checks a set
-  before you select it.
+- At most 16 packs can be active at once, and **Manage Packs** lists up to 128 installed packs.
+  Together the active packs may hold at most 32 archives (512 MiB), 64 data files (128 MiB),
+  16 texture cards, 64 archetype rows, 32 maps, 32 collision files, 32 weapon wheel icons,
+  256 labels, 96 spawn rows, 32 teleport rows, 64 hide rows and 64 stock overrides (the bracketed
+  numbers in the row table below); `pack-validate --against` checks a set before you select it.
+  The game's own tables usually bind first (see **Load blocked** below).
+- The game's model tables and asset stores have a fixed size per build. A fresh 01.010.002 process
+  has room for about 7 add-on vehicles, 4 peds, 63 weapon models, 5 weapon components and 6 weapon
+  files. On 01.011.001 the loader grows the vehicle and ped tables (640 to 840 and 440 to 540) and
+  the fragment, texture, archetype, ped metadata, ped drawable and particle stores once per launch,
+  before the game reads its pool sizes (boot-time pool growth): the model tables then have room for
+  about 203 vehicles and 105 peds, and ped metadata has 1001 free slots. That needs a loader running before GTA starts; one that joins a
+  running game keeps the stock tables (3 vehicles, 5 peds and 1 free ped metadata slot, so no ped or
+  clothing pack loads). No build grows the weapon tables: 470 weapon components (about 5 free), 610
+  weapon models (about 63 free) and about 6 free weapon files remain hard limits.
 - Names (archives, data files, archetype and map files, labels, spawn models) must not repeat
   across active packs, and new models, weapons and screen effects must not reuse a game name.
   Only `override` rows replace existing game content (see below).
@@ -43,18 +53,18 @@ gives the rows one pack may hold, then (in brackets) all active packs together.
 | `description` | what the pack is, printable text without `~`, up to 80 characters (**Manage Packs** shows it) | 0 or 1 | `--description` |
 | `author` | who made it, printable text without `~`, up to 32 characters | 0 or 1 | `--author` |
 | `version` | `[A-Za-z0-9._+-]`, up to 16 characters | 0 or 1 | `--version` |
-| `archive` | size, sha256, `<name>.rpf`, optional `overlay` | 1 to 4 [16]; 64 MiB each, 512 MiB together | `--archive`, `--extra-archive`, `--override-archive` |
-| `override` | overlay archive of this pack, stock `<stem>.ptd`, `.pft`, `.pdr` or `.pdd` it replaces (in its game folder, if any: `player_one/uppr_014_u.pdd`) | 16 [64] | `--override-archive` |
+| `archive` | size, sha256, `<name>.rpf`, optional `overlay` | 1 to 4 [32]; 64 MiB each, 512 MiB together | `--archive`, `--extra-archive`, `--override-archive` |
+| `override` | overlay archive of this pack, stock `<stem>.ptd`, `.pft`, `.pdr` or `.pdd` it replaces (PS4: `.otd`, `.oft`, `.odr` or `.odd`; in its game folder, if any: `player_one/uppr_014_u.pdd`) | 16 [64] | `--override-archive` |
 | `card` | texture dictionary, texture (host texture preview) | 8 [16] | `--card` |
-| `typ` | `<name>.ptyp`, optional `retail` (a game typ to keep resident, not in the archive) | 16 [48] | `--typ`, `--retail-typ` |
+| `typ` | `<name>.ptyp`, optional `retail` (a game typ to keep resident, not in the archive) | 16 [64] | `--typ`, `--retail-typ` |
 | `typdep` | pack typ (not `retail`), the game typ it depends on (the game streams it with the pack typ) | one per typ row | `--typ-dep` |
-| `map` | `<name>.pmap`, optional x, y, z and a menu text (a **Locations** teleport) | 8 [16] | `--map`, `--map-place` |
+| `map` | `<name>.pmap`, optional x, y, z and a menu text (a **Locations** teleport) | 8 [32] | `--map`, `--map-place` |
 | `mapdep` | map, the typ it needs, optional `interior` or `retail` (forms below) | one per map row | `--map-dep` |
 | `bounds` | `<name>.pbn` static collision (composite of world-space boxes) | 8 [32] | `--bounds` |
 | `data` | type (list below), size, sha256, `<file>.meta` (`AUDIO_GAMEDATA`: `<chunk>_game.rel`) | 16 [64]; 4 MiB each, 128 MiB together | `--data TYPE=PATH` |
 | `wicon` | pack weapon, game weapon in the same wheel slot whose weapon wheel icon it shows (a weapon without one shows the wheel's last drawn icon) | 8 [32] | `--wheel-icon WEAPON=DONOR`; added by default for every pack weapon without an icon (the wheel slot's default donor; `--no-default-wheel-icons`) |
-| `label` | key `[A-Za-z0-9_]`, printable text without `~` under 64 characters | 128 [192] | `--label KEY=TEXT` |
-| `spawn` | kind (list below), model, menu text | 24 [64] | `--spawn KIND:MODEL=TEXT` |
+| `label` | key `[A-Za-z0-9_]`, printable text without `~` under 64 characters | 128 [256] | `--label KEY=TEXT` |
+| `spawn` | kind (list below), model, menu text | 24 [96] | `--spawn KIND:MODEL=TEXT` |
 | `tints` | a `spawn weapon` row's weapon, `palette` (its model reads a tint palette: **Weapon Tint** recolours it) or `none` (**Weapon Tint** says `no tint palette` and changes nothing) | one per weapon spawn row | `--tints WEAPON=palette` or `WEAPON=none`; added from the `<!-- gtavmenu tints=... -->` line `convert-weapon` writes into the weapons meta |
 | `place` | x, y, z, menu text: a **Locations** teleport without a map | 8 [32] | `--place` |
 | `hide` | stock model, x, y, z, radius 1 to 200 | 32 [64] | `--hide MODEL=X,Y,Z,RADIUS` |
@@ -198,7 +208,7 @@ for their texture encoders), and prints its full reference with `--help`.
 | Tool | Purpose |
 | --- | --- |
 | `tools/build_runtime_pack.py` | Build a pack (`resources/`: archives, `pack.cfg`, data files) from loose RSC7 resources and data files; every row has an option. |
-| `tools/validate_runtime_pack.py` | Check a pack directory on the host: rows, limits, file sizes and hashes, carcols ids, the game's fixed tables (custom vehicles, peds, weapon models, weapon components and weapon files), and with `--against` the merge rules and those tables for packs active together. |
+| `tools/validate_runtime_pack.py` | Check a pack directory on the host: rows, limits, file sizes and hashes, carcols ids, the game's fixed tables (custom vehicles, peds, weapon models, weapon components and weapon files), PS4 resources (skinned vertex declarations of `.oft` fragments and the GCN Thin1D tiling of `.otd` textures, which a broken PC conversion gets wrong), and with `--against` the merge rules and those tables for packs active together. |
 | `tools/upload_runtime_pack.py` | Upload a pack over FTP with readback, select it (`--activate`, `--activate-add`), list (`--list`) or uninstall (`--uninstall ID [--purge]`); `menu-ctl.sh pack-*` wraps it. |
 | `tools/make_pmap.py` | Write a map placement `.pmap` of any size from a JSON spec of entities and grids; `--check` reads a `.pmap` back. |
 | `tools/make_addon_ptyp.py` | Make a one-archetype add-on `.ptyp` by renaming a template typ's archetype. |
@@ -277,7 +287,7 @@ console commands refuse when it is unset. Offline conversion and validation do n
 
 | Command | What it does |
 | --- | --- |
-| `pack-validate DIR [--against DIR ...]` | Check a pack directory on the host (files, sizes, hashes, row limits, merge rules); nothing is uploaded. |
+| `pack-validate DIR [--against DIR ...]` | Check a pack directory on the host (files, sizes, hashes, row limits, merge rules, stock vehicle names in spawn rows and `<handlingName>`, and the game tables of `GTAV_TARGET`: without a target each table's strictest known build; for 01.011.001 including boot-time pool growth unless `BOOT_POOLS=0`); nothing is uploaded. |
 | `pack-install DIR [--activate\|--activate-add]` | Validate, upload with readback, add the pack to the installed list and print the in-game step; `--activate` makes it the only selected pack, `--activate-add` adds it (max 8). |
 | `pack-upload DIR [--activate\|--activate-add]` | The same validated upload without the summary. |
 | `convert-map MOD --id ID --template T.pmap [...]` | Convert a PC map mod that places stock models into a validated pack, optionally installed (see [Converting PC mods](#converting-pc-mods)). |
@@ -305,8 +315,8 @@ console commands refuse when it is unset. Offline conversion and validation do n
 | `session stage\|next\|go\|check\|stop PLAN [NAME] [...]` | Developer hardware test sessions from a plan file (processes, their packs, in-game steps and expectation files; `tools/hw_session.py`): `stage` uploads the plan's packs, `next` selects a process's packs, `go` waits until GTA is in single-player, injects with the pack-notes follower (`--klog`: also the kernel log) already running and says when to press Load, `check` stops the followers and checks the run's lines. `stage --dry-run` reads inventory when `PS5_HOST` is set; without it, it only lists pack/uninstall candidates. `next --dry-run` and `go --dry-run` work offline. |
 | `pack-unhide` | Bring back the stock entities the loaded packs' `hide` rows hid. |
 | `pack-revert` | Put the loaded packs' stock overrides back (in game: **Manage Packs > Revert overrides**); while an overridden asset is still in use it waits (asks again every 2 s for up to 3 min). |
-| `fetch-templates [--source URL] [--cache DIR]` | Fetch the retail templates from the game image (default: the console over FTP while GTA V runs; `--source file:///path/to/app0` reads a local copy) into `build/retail-templates`, verified. EU 01.010.002 sources are checked against the US 01.010.002 resource pins. Existing verified cache entries are reused. The `convert-*` commands read their templates from there. |
-| `export-templates [--cache DIR]` | Export the encrypted layout, audio, weapon and timecycle templates through the running game; verify fresh exports from `/data/gtavmenu/custom/exports`. Requires console `/data` shared with GTA. |
+| `fetch-templates [--source URL] [--cache DIR]` | Fetch the retail templates from the game image (default: the console over FTP while GTA V runs; `--source file:///path/to/app0` reads a local copy) into `build/retail-templates`, verified. EU 01.010.002 sources are checked against the US 01.010.002 resource pins; 01.011.001 has no pins of its own. Existing verified cache entries are reused. The `convert-*` commands read their templates from there. |
+| `export-templates [--cache DIR]` | Export the encrypted layout, audio, weapon and timecycle templates through the running game; verify fresh exports from `/data/GTAVMenu/custom/exports`. Requires console `/data` shared with GTA. |
 
 The remaining `pack-*` commands (`pack-register`, `pack-up`, `pack-load-archive`, `pack-inspect`,
 `pack-request`, `pack-load-data`, `pack-load-typ`, `pack-load-map`, `pack-finish-map`,
@@ -579,11 +589,12 @@ The remaining `pack-*` commands (`pack-register`, `pack-up`, `pack-load-archive`
   `--attachments`, every model in the folder named like a component of the donor (its magazine, a
   scope, grip, suppressor or flashlight) becomes a new component on the weapon: the magazine replaces
   the default magazine, the others get a Custom Packs row each (`<text>: scope on/off`). The game
-  holds at most 470 weapon components and about 5 are free, and about 6 weapon files: load at most a
-  few converted weapons with attachments at a time (`Too many weapon components` /
-  `Too many weapon files loaded` otherwise). Mods drawn with shaders no stock weapon uses (`default`,
-  a scope lens exported as vehicle glass) take the schema of the first stock weapon model that has it,
-  or a stand-in weapon shader (the command says so).
+  holds at most 470 weapon components and about 5 are free, and about 6 weapon files, on every build
+  (boot-time pool growth does not raise them): load at most a few converted weapons with
+  attachments at a time (`Too many weapon components` / `Too many weapon files loaded` otherwise).
+  Mods drawn with shaders no stock weapon uses (`default`, a scope lens exported as vehicle glass)
+  take the schema of the first stock weapon model that has it, or a stand-in weapon shader (the
+  command says so).
   A converted ped is worn from **Self > Appearance > Skin Changer > Custom**; **Self > Appearance >
   Wardrobe** then steps its drawables and textures (**Slot** picks the component: Face = head,
   Mask = berd, Hair = hair, Torso = uppr, Legs = lowr, Hands/Bags = hand, Shoes = feet, Neck = teef,
@@ -645,6 +656,8 @@ The remaining `pack-*` commands (`pack-register`, `pack-up`, `pack-load-archive`
 
   Only one pack per replaced car can be active (`pack-validate --against` refuses a repeated `override`).
   Manage Packs > **Revert overrides** puts the stock car back once no such car is loaded.
+  `convert-replace` and `convert-override` write PS5 packs. A PS4 override pack names the `.o*` members
+  (`adder.oft`, `adder.otd`) and is built with `build_runtime_pack.py --override-archive ... --plain-toc`.
 - **Other "replace" mods** (any stock asset shipped under its own name: texture dictionaries `.ytd`,
   drawables and props `.ydr` with their `_hi` models, weapon models `w_*.ydr` with `+hi.ytd`, ped clothing
   `<comp>_<nnn>_<u|r>.ydd` with its `<comp>_diff_<nnn>_<x>_<race>.ytd`, vehicles `.yft`): `convert-override`
@@ -691,36 +704,43 @@ selected.
 
 | Message | Meaning and fix |
 | --- | --- |
-| `Custom packs unavailable: enable SMP/HEN shared /data, then restart GTA` | Enable game access to the console `/data` through ShadowMountPlus or the HEN setup, then restart GTA. The regular menu remains usable. |
+| `Custom packs unavailable: share /data via ShadowMountPlus/HEN, restart GTA` | Enable game access to the console `/data` through ShadowMountPlus or the HEN setup, then restart GTA. The regular menu remains usable; the Custom Packs page shows only this explanation until then. |
 | `Load packs (none selected)` | Toggle a pack on under **Installed packs** first. |
 | `packs/active is invalid`, `packs/active is invalid; fix it on the host` | The console's selection file is damaged: reselect with `pack-install --activate` or `pack-select N`. |
 | `<id>: pack.cfg invalid; reinstall it`, `Load blocked: bad pack.cfg`, `pack.cfg invalid; reinstall it.`, `pack.cfg unreadable; reinstall it` | That pack's `pack.cfg` is missing, damaged or from a newer builder: reinstall it (`pack-install`); `pack-validate` names the bad row. |
 | `Deselect <pack>: same <kind> <name>`, `Clashes with <pack>: same <kind> <name>.`, `Load blocked: packs clash`, `<pack> and <pack>: same <kind> <name>; deselect one` | Two packs use the same archive, map, typ, data file, collision file, label, override target, wheel icon or vehicle/weapon/ped/prop/effect/attachment name; only one of them can be selected. Deselect the named pack, or rename the content (check a set with `pack-validate --against`). |
 | `Limit reached: too many <rows>; deselect a pack`, `Over the limit with the others: too many <rows>.`, `Load blocked: over a limit` | Together the selected packs exceed a merged cap (the bracketed numbers in the row table, or the archive and data byte totals); deselect a pack. |
-| `8 packs selected; deselect one first` | The selection is full (at most 8 packs can be active); deselect a pack first. |
+| `16 packs selected; deselect one first` | The selection is full (at most 16 packs can be active); deselect a pack first. |
+| `<Store> slots full (<n> free, need <m>): deselect <packs>`, `Load blocked: <Store> slots full`, `Load blocked: <Store> slots full (<n> free, need <m>).`, `<Store> slots full (<n> free, need <m>): not selected` | Before anything loads, the menu counts what the selected packs add and checks it against the game's free slots: the members of each archive by store (`Fragment` `.pft`, `Drawable` `.pdr`, `Texture` `.ptd`, `Archetype` `.ptyp`, `Map data` `.pmap`, `Collision` `.pbn`, `Ped metadata` `.pmt`, `Ped drawable` `.pdd`, `Particle` `.ppt`; an overlay archive's members count too, as the menu cannot be sure each only replaces a stock file before it loads), the texture, drawable and ped metadata slots vehicle and ped rows add by name, and the game's model and file tables (`Vehicle`, `Ped model`, `Weapon model`, `Component`, `Weapon file`) for the models their data files declare. Each store keeps a margin for what the game adds itself (16 fragment, drawable, texture and ped drawable slots; 8 archetype, map data and collision; 2 particle; 1 ped metadata). Deselect the named packs (the Manage Packs line of each starts with `Load blocked`); a toast that cannot fit every id gives their count (`deselect 2 vehicle packs`). Each pack's Manage Packs line starts with what it needs (`Needs 12 frag, 31 txd, 1 vehicle.`; `(estimated)` for a keyed archive or a data file the menu cannot count), and the **Load** row's footer shows the game's free slots while nothing blocks the load (`Free: frag 564, ...` in a fresh 01.010.002 game; on 01.011.001 `frag 2284` with boot-time pool growth, `frag 284` without; also in `pack-notes` as `pack census ...`). |
 | `Pack list changed; press again`, `Pack load is running; retry` | The list changed or a load is running; press the row again. |
 | `Could not save the selection; retry`, `<id> still listed; uninstall on the host` | The console's pack folder could not be written; retry, or use `pack-select` / `pack-uninstall` on the host (`pack-notes` has the error numbers). |
 | `Pack selection invalid; reselect`, `A pack.cfg is invalid; reinstall`, `Selected packs clash or too big` | The game could not read the selection or a `pack.cfg`, or the selected packs do not fit together: reinstall or reselect, then restart GTA. |
 | `Menu busy; press Load again` | The menu was checking the selection at the same moment; press Load again. |
 | `Pack files damaged; reinstall it`, `Pack file missing; reinstall it` | A file on the console differs from `pack.cfg` or is missing; reinstall (each upload is verified by readback). |
-| `Pack archive is not a PS5 RPF`, `Pack archive format not supported`, `Pack archive has no usable files` | An archive is not a PS5 RPF7 archive, its table cannot be read, or it holds nothing the game can use; rebuild it with `build_runtime_pack.py`. |
-| `Pack archive did not load`, `Game refused the pack archive`, `Packs not registered; restart GTA`, `Packs did not register; see notes` | The game did not take the pack's archives; restart GTA and load again, and read `pack-notes` if it repeats. |
-| `Wrong game version (data loader)`, `Wrong game version (file device)`, `Wrong game version (archives)`, `Wrong game version (overrides)`, `Wrong game version (maps)`, `Wrong game version (collision)`, `Wrong game version (interiors)`, `Wrong game version (labels)`, `Wrong game version (clothing)`, `Wrong game version (components)`, `Wrong game version (audio)`, `Wrong game version (game code)` | The game build is not the supported one (a code check for that area failed); the menu refuses rather than guess. |
-| `Too many custom vehicles loaded`, `Too many custom peds loaded`, `Too many custom weapon models`, `Too many weapon components`, `Too many weapon files loaded`, `Too many models; load fewer packs`, `Too many interiors; restart GTA` | The game's fixed table for that kind is full: load fewer packs, or restart GTA. In a fresh game about 7 custom vehicles, 4 peds, 63 weapon models, 5 weapon components and 6 weapon files fit across all selected packs; `pack-validate --against` and `pack-install --activate-add` count the set and refuse it first (`engine table: weapon components: 471 > 470 (465 retail + 6 in these packs: ...)`). |
-| `Out of memory; load fewer packs`, `Game slots full; load fewer packs` | The game has too little free memory or too few free slots for the selected packs. |
+| `Pack path too long; shorten it`, `Could not prepare archive; retry` | The pack or cache path is too long, or the PS4 could not make its verified keyed-archive cache; shorten the pack/archive name and retry. |
+| `Pack archive is not a valid RPF`, `Pack archive format not supported`, `Pack archive has no usable files` | An archive is not a PS5 RPF7 archive, its table cannot be read, or it holds nothing the game can use; rebuild it with `build_runtime_pack.py`. |
+| `Pack archive did not load`, `Game could not open archive`, `Game refused the pack archive`, `Packs not registered; restart GTA`, `Packs did not register; see notes` | The game did not take or could not open the pack's archives; restart GTA and load again, and read `pack-notes` if it repeats. |
+| `Wrong game version (data loader)`, `Wrong game version (file device)`, `Wrong game version (archives)`, `Wrong game version (overrides)`, `Wrong game version (maps)`, `Wrong game version (collision)`, `Wrong game version (interiors)`, `Wrong game version (labels)`, `Wrong game version (clothing)`, `Wrong game version (components)`, `Wrong game version (audio)`, `Wrong game version (game code)` | The game build is not the one the menu was built for (a code check for that area failed); the menu refuses rather than guess. |
+| `Too many custom vehicles loaded`, `Too many custom peds loaded`, `Too many custom weapon models`, `Too many weapon components`, `Too many weapon files loaded`, `Too many models; load fewer packs`, `Too many interiors; restart GTA` | The game's fixed table for that kind is full: load fewer packs, or restart GTA. In a fresh 01.010.002 game about 7 custom vehicles, 4 peds, 63 weapon models, 5 weapon components and 6 weapon files fit across all selected packs (01.011.001: 203 vehicles and 105 peds with boot-time pool growth, 3 and 5 without; the same weapon numbers); the menu checks the selection before Load (`Load blocked: Vehicle slots full`), so these texts appear only when a data file holds more models than its pack declared; `pack-validate --against` and `pack-install --activate-add` count the set and refuse it first (`engine table: weapon components: 471 > 470 (465 retail + 6 in these packs: ...)`). |
+| `Out of memory; load fewer packs`, `Game slots full; load fewer packs` | The game has too little free memory or too few free slots (archive table) for the selected packs. |
+| `Load failed: <Store> slots full`, `<Store> slots full (<n> free, need <m>): deselect <packs>`, `<Store> slots full (<n> free, need <m>); restart GTA`, `<pack>: <Store> slots full (<n> free, need <m>)` | Registration counted the staged archives (the bytes it will register) and a store had fewer free slots than they add plus its margin, or a vehicle or ped row's by-name texture and drawable slots, or a ped row's model count in `Ped metadata`, did not fit after earlier rows loaded. The load stops at once (no retry wait); deselect the named packs, or restart GTA and load again. `pack-notes` has the technical line (`pack <store> store headroom gate refused free=<n> need=<m>`), every store's `free/size` before the descriptor (`pack store free ...`) and the counted need against the free slots (`pack store need frag=<need>/<free> ...`). |
 | `Game busy; retry in free roam`, `Game busy loading; retry later`, `Game still starting; retry later` | The game was not at a safe point for that step. Retry in free roam. |
 | `Load in Story mode, then retry` | Load packs once Story mode is running. |
-| `Data file type not supported`, `Data file name too long` | Use a data type from the list above and a shorter file name. |
+| `Data file type not supported`, `Data file name too long`, `Data type not supported on PS4` | Use a data type supported by the selected game build and a shorter file name. |
 | `Data file empty or not XML`, `Data file is not valid XML`, `Data file layout not supported` | The data file lists nothing, is not plain XML meta (no DOCTYPE, `&lt;`/numeric references, `--` in comments, `<` or `>` in attribute values), or names an entry outside its `<InitDatas>` list. |
 | `Data file in use; restart GTA`, `Game refused the data file`, `Data file did not load fully`, `Game did not queue the data file`, `A data file was refused; see notes` | The game did not take a data file; `pack-notes` names it. Restart GTA before retrying. |
-| `Model name already used`, `Weapon name already used`, `Component name already used`, `Screen effect name already used` | New content must use a name the game and other packs do not use. |
+| `Model name already used`, `Weapon name already used`, `Component name already used`, `Screen effect name already used` | New content must use a name the game and other packs do not use. On PS4 a Load refuses a vehicle or ped whose model name the game already has (stock, or another pack's) before copying anything, and the toast names the pack: deselect it; a restart does not help. |
 | `Component name repeated in file`, `Screen effect name repeated`, `Each screen effect needs a name`, `Screen effects: none or over 64` | Fix the data file: each component or screen effect once, with a name, and 1 to 64 screen effects per file. |
 | `Weapons did not register`, `Components did not register` | The weapon or component file loaded but its entries did not appear; `pack-notes` names them. |
 | `Clothing file lacks ped/dlc names`, `fullDlcName must be ped_dlcName`, `Clothing ped model not found` | The clothing file needs one `pedName` (an existing ped), `dlcName` and `fullDlcName`, with `fullDlcName` set to `<pedName>_<dlcName>`. |
 | `Clothing already added`, `Clothing archive not registered`, `Clothing did not attach to the ped` | The clothing loaded before, its archive is not in the pack, or the ped did not take it; restart GTA and check `pack-notes`. |
 | `Ped in use; restart and load first` | Clothing must load before that ped is spawned. |
 | `Waiting: tuned car nearby; move away`, `Tuned car nearby (parked ones too)` | Loading these mod kits or custom wheels now would free parts or wheels a tuned car near you is drawing: any car with LS Customs parts counts, parked ones (Franklin's at his house) and your own too. The load waits on that data file and goes on by itself once you walk or drive away (no tuned car streamed in); after 3 minutes it stops with the second text and you restart GTA. Load somewhere without tuned cars (the Maze Bank roof works). |
-| `Custom wheels are not supported` | The game's wheel code is not the version the menu checks (custom wheels need the supported build); remove the custom wheels from the pack's `carcols.meta`. |
+| `Custom wheels are not supported`, `Custom wheels unsupported on PS4` | The selected build cannot add custom wheels; remove them from the pack's `carcols.meta` (the PS4 converter requires `--drop-wheels`). |
+| `Carcols kits unavailable on PS4` | The PS4 carcols render-pool growth lane is not available; remove mod kits/custom wheels or use fewer vehicle additions. |
+| `Overrides not supported on PS4` | Older PS4 plugin builds refused every `override` row. Current builds replace the PS4 forms of stock members (`.otd`, `.oft`, `.odr`, `.odd`) and put them back with **Revert overrides**; a PS4 pack whose rows name PS5 forms (`.p*`) is refused when its `pack.cfg` is read. |
+| `Maps and typs unsupported on PS4`, `Not a PS4 pack (no .o* files)` | The PS4 build loads vehicles, peds, their data files and stock overrides only: a pack with `typ`, `map` or `bounds` rows, or an archive with PS5 (`.p*`) resources instead of PS4 (`.o*`) ones, is refused before anything loads. Deselect it, or convert the pack for PS4. |
+| `Model already in game; restart GTA` | PS4 plugin builds up to `d6bb1147` gave this for a model the game already had. Current builds say `Packs already loaded; restart GTA` when an earlier Load in this game process (also before a plugin reload) has the pack, and `Model name already used` for a stock or another pack's model name. |
 | `Audio file damaged or wrong format`, `Audio file has a reserved object` | An `AUDIO_GAMEDATA` file is not a game-data chunk the game can take (`make_audio_gamedata.py check` names the problem), or it defines the audio object the game re-initialises on every load (copy only the objects you need with `make_audio_gamedata.py car`). |
 | `Audio name in use; rename it` | The game (or a pack loaded earlier in this process) already has an audio chunk of that name: rename the file's `<chunk>`, or restart GTA. |
 | `Game refused some text labels`, `Pack has no labels` | The game refused some `label` rows (`pack-notes` gives the counts; a key the game already has is kept, not refused), or the pack has no `label` rows (host `pack-labels`). |
@@ -734,7 +754,8 @@ selected.
 | `Map file already in use`, `Map file not supported`, `Game refused the map file`, `Map did not activate`, `Map dependency failed; see notes`, `Map was refused; see pack-notes` | The map did not load; restart GTA, and rebuild it with `make_pmap.py` if it repeats. |
 | `Collision file not found in pack`, `Collision file already in use`, `Collision file did not load`, `Collision did not load; see notes` | A `bounds` row's file is missing from the archives or did not load; rebuild it with `make_static_pbn.py`. |
 | `Interior data freed; restart GTA`, `Interior map lacks its proxy`, `Interior collision not loaded yet`, `Interior collision did not attach` | The interior did not set up; restart GTA and load again, and check the `mapdep ... interior` row. |
-| `Packs already loaded; restart GTA`, `Packs already loading or loaded`, `Load failed; restart GTA to load again`, `Loaded by host commands`, `Loaded by host commands; restart GTA` | Packs load once per game process; restart GTA to load a different set. |
+| `Packs already loaded; restart GTA`, `Packs already loading or loaded`, `Load failed; restart GTA to load again`, `Loaded by host commands`, `Loaded by host commands; restart GTA` | Packs load once per game process; restart GTA to load a different set. A Load refused before its first archive went to the game (a clash, full slots, a stock model name, a bad archive) left nothing behind: fix the selection and press Load again, no restart. |
+| `Add N selected packs`, `Selected packs are loaded`, `Loaded packs have maps or overrides; restart GTA to load more`, `<pack> has maps or overrides; restart GTA to load it`, `Deselect <pack>: <what>` | After a finished load, the load row adds the newly selected packs: they are checked against the loaded set and the game's free slots, then registered, streamed and loaded from where the last load stopped, while the loaded packs stay usable. Only sets without cards, typs, maps, collision, overrides or hides take packs this way (their steps run once a game); a refused add changes nothing. |
 | `Pack rows out of step; restart GTA`, `Game state unexpected; restart GTA`, `Game state unreadable; restart GTA` | The menu could not read a game table it checks first, or its own state is out of step; restart GTA (`pack-notes` names the table). |
 | `timed out in <step>` | The step never finished; `pack-notes` shows the last state. Restart GTA before retrying. |
 | `... see notes`, `... see pack-notes` | The step stopped without its own reason; `pack-notes` shows the last state. |
@@ -744,7 +765,7 @@ selected.
 | `Screen effect did not load; see notes`, `Screen effect did not apply`, `Effect file not found in pack`, `Effect did not load; see notes`, `Effect did not start; retry` | A pack screen effect or particle effect did not play: its file is missing from the pack or did not stream in; `pack-notes` has the details. |
 | `Attachment did not come off`, `Weapon refused the attachment` | The weapon did not take or drop the pack component; the component must match the weapon (`pack-notes` has the details). |
 | `Player not ready; retry in free roam`, `Map has no teleport point` | The row needs a player in free roam, or the map row has no teleport coordinates. |
-| `Waiting: <member> in use; move away`, `Revert gave up: <member> still in use`, `Revert stopped; see pack-notes`, `<member> changed since load; restart GTA` | **Revert overrides**: the stock model is still in use, so the revert waits and tries again every 2 s for up to 3 min (put the weapon away or change the clothing, move far away; a removed weapon's model unloads about 2 minutes later) and then reverts by itself (`Overrides reverted after <n>s`); it gives up after 3 min (press it again), stops on another refusal, or the game replaced the asset since the load. |
+| `Waiting: <member> in use; move away`, `Revert gave up: <member> still in use`, `Revert stopped; see pack-notes`, `<member> changed since load; restart GTA` | **Revert overrides**: the stock model is still in use, so the revert waits and tries again every 2 s for up to 3 min (put the weapon away or change the clothing, move far away; a removed weapon's model unloads about 2 minutes later) and then reverts by itself (`Overrides reverted after <n>s`); it gives up after 3 min (press it again), stops on another refusal, or the game replaced the asset since the load. An asset the game only keeps cached (nothing uses it any more) is unloaded at once, so the wait lasts only while something still uses it: delete the car (**Spawn > Spawned Entities > Clear Vehicles**), put the weapon away or change the clothing. |
 
 Licensed under the [MIT License](../LICENSE). GTA V, PlayStation, the PS5 payload SDK, and third-party
 catalog inputs are not covered by that license. See `THIRD_PARTY_NOTICES` for catalog attribution.

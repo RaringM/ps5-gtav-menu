@@ -147,17 +147,18 @@ enum {
 // (static_asserts next to the masks). The worker holds two GtavCustomPack (the loaded set, which
 // the menu's selection check also merges into before the load, and the shared descriptor parse
 // buffer), so every row costs twice its size; spawn rows also size the menu's Custom Packs and
-// browser pages, so SPAWN_CAP grows less (8 packs x 8 spawn rows) than the other caps, which
-// doubled.
-#define GTAV_CUSTOM_PACK_ACTIVE_MAX 8
-#define GTAV_CUSTOM_PACK_ARCHIVE_CAP 16
+// browser pages. Pack-source masks are uint32_t (ACTIVE_MAX <= 31). The engine's own tables (a
+// fresh 011 process holds 3 add-on vehicles and 5 peds) bind long before these caps do; the
+// selection check (custom_pack_select.inc) refuses what the game cannot take.
+#define GTAV_CUSTOM_PACK_ACTIVE_MAX 16
+#define GTAV_CUSTOM_PACK_ARCHIVE_CAP 32
 #define GTAV_CUSTOM_PACK_CARD_CAP 16
 #define GTAV_CUSTOM_PACK_DATA_CAP 64
-#define GTAV_CUSTOM_PACK_TYP_CAP 48
-#define GTAV_CUSTOM_PACK_MAP_CAP 16
+#define GTAV_CUSTOM_PACK_TYP_CAP 64
+#define GTAV_CUSTOM_PACK_MAP_CAP 32
 #define GTAV_CUSTOM_PACK_BOUNDS_CAP 32
-#define GTAV_CUSTOM_PACK_LABEL_CAP 192
-#define GTAV_CUSTOM_PACK_SPAWN_CAP 64
+#define GTAV_CUSTOM_PACK_LABEL_CAP 256
+#define GTAV_CUSTOM_PACK_SPAWN_CAP 96
 #define GTAV_CUSTOM_PACK_OVERRIDE_CAP 64
 #define GTAV_CUSTOM_PACK_PLACE_CAP 32
 #define GTAV_CUSTOM_PACK_HIDE_CAP 64

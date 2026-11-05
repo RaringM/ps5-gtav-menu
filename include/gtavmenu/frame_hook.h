@@ -97,6 +97,7 @@ uintptr_t gtav_frame_hook_thunk_address(void);
 uintptr_t gtav_frame_hook_gateway_address(void);
 uintptr_t gtav_frame_hook_gateway_continuation(void);
 uintptr_t gtav_frame_hook_gateway_continuation_slot(void);
+extern volatile uint32_t gtav_frame_hook_inflight_count;
 uint32_t gtav_frame_hook_patch_len(void);
 uint32_t gtav_frame_hook_stolen_len(void);
 const uint8_t* gtav_frame_hook_expected_bytes(uint32_t* len_out);

@@ -1,0 +1,207 @@
+{
+  "schemaVersion": 2,
+  "targetId": "PPSA04264_01.011.001_DISC",
+  "titleId": "PPSA04264",
+  "contentId": "UP1004-PPSA04264_00-GTAVFULLGAMEDISC",
+  "titleName": "Grand Theft Auto V",
+  "contentVersion": "01.011.001",
+  "masterVersion": "01.00",
+  "sdkVersion": "0x0900000000000000",
+  "requiredSystemSoftwareVersion": "0x1342000000000000",
+  "binaryIdentity": {
+    "encryptedEboot": {
+      "size": 70874174,
+      "sha256": "3d8227862aa7b931c5eb4f30760ba4b9437c6a03abe5f5bec50df7d1a6f1582c"
+    },
+    "normalizedElf": {
+      "size": 70773934,
+      "sha256": "dcb049481ef5ea5ce6c96c6ca790475f83bad988b586dbfb8ec6e17a511df1bb"
+    }
+  },
+  "build": {
+    "channel": "primary",
+    "toolchain": {
+      "payloadSdk": "0.44",
+      "llvmMajor": 20
+    },
+    "nativeAddresses": {
+      "json": "data/native_targets/production-native-addresses-ppsa04264-01.011.001.json",
+      "header": "gtavmenu/native_addresses_ppsa04264-01.011.001_generated.h",
+      "sha256": "23fcf51d580f5b27afb04354370ec467114ebf9dc8bd341f6ba8c95383881f6e"
+    },
+    "scriptGlobals": {
+      "json": "data/script_globals/anchors-ppsa04264-01.011.001.json",
+      "header": "gtavmenu/script_globals_addresses_ppsa04264-01.011.001_generated.h",
+      "sha256": "5eb1ef174f5ff73bfd366d1671994d454300eb8d6767e3ac78c59e894d486886"
+    },
+    "features": {
+      "nativeFeatures": true,
+      "workerTextOverlay": true,
+      "toasts": true,
+      "vehiclePreview": true,
+      "instructionalScaleform": true,
+      "buttonGlyphs": false,
+      "scriptGlobals": true,
+      "phaseIntercept": true,
+      "phaseDrawList": true,
+      "customPacks": true,
+      "bootPools": true
+    },
+    "injection": {
+      "lane": "ptrace-free-cave",
+      "probeNoStop": true,
+      "noStopIo": true,
+      "noStopStrict": true,
+      "verifyWrites": true,
+      "caveBootstrap": true,
+      "caveInject": true,
+      "classicInject": false,
+      "selfStartWorker": true,
+      "installRenderPhase": true
+    },
+    "customLane": {
+      "json": "data/custom_lane/ppsa04264-01.011.001.json",
+      "header": "gtavmenu/custom_lane_addresses_ppsa04264-01.011.001_generated.h",
+      "sha256": "a77c1ee2fd86ff8efd1e2b2c4df3c5dc80ec15ad02eb7d0d5ffe8eaeb8f0c99e"
+    },
+    "bootPools": {
+      "json": "data/boot_pools/ppsa04264-01.011.001.json",
+      "header": "gtavmenu/boot_pool_profile_ppsa04264-01.011.001_generated.h",
+      "sha256": "2085e4596b4adfebe88bd9525590cbb7093472437345060e7ce4352116fae8e4"
+    }
+  },
+  "runtime": {
+    "productionProfile": "phase-menu",
+    "installHook": true,
+    "dryRun": false,
+    "startsHidden": true,
+    "openChord": "R1 + D-pad Left",
+    "injectionLane": "ptrace-free cave bootstrap",
+    "targetElevation": false,
+    "note": "The production worker publishes immutable menu draw lists and the verified render-phase callback consumes them. Gameplay work drains on the existing game-thread hook. The live worker ignores runtime.cfg."
+  },
+  "loader": {
+    "status": "hardware-validated",
+    "caveAddress": "0x37bf000",
+    "caveAllocationBytes": "0x200000",
+    "runtimeImageBias": "0x400000",
+    "playerPedAnchor": "0x5abefa8",
+    "playerPedOffset": "0x8",
+    "playerPedReadyMode": "nonzero",
+    "versionSignatureAddr": "0x1a55da0",
+    "versionSignatureExpectedCompact": "8b052a47b402488b0f8901c3cccccccc",
+    "frameHookTarget": "0x1bd47b0",
+    "brokerContinuation": "0x1bd47c0",
+    "brokerPatchLen": 14,
+    "brokerStolenLen": 16,
+    "brokerExpectedBytesCompact": "554889e55350488b05eba7ee034889fb",
+    "tlsGameCtxOffset": "0x140",
+    "tlsCtxNativeThreadOffset": "0x198",
+    "note": "Exact 01.011.001 production pins derived from normalized ELF dcb04948. The loader verifies target identity, version bytes, mapping bounds, write readback, and restoration before accepting this contract."
+  },
+  "renderPhase": {
+    "status": "hardware-validated",
+    "root": "0x4382178",
+    "leafVtable": "0x40bbbd8",
+    "groupVtable": "0x40bbc00",
+    "taskId": "0x249760f7",
+    "original": "0x1cca840",
+    "cycle": {
+      "epoch": "0x61fbcfc",
+      "reset": "0x549ccb0",
+      "producer": "0x61fc5e8",
+      "consumer": "0x61fc5ec",
+      "count0": "0x54a88a8",
+      "count1": "0x54b4430",
+      "text": "0x54b5878",
+      "counter": "0x61fbd24"
+    },
+    "fingerprints": {
+      "leafInvoke": {
+        "address": "0x34bcde0",
+        "bytes": "ff6720"
+      },
+      "groupInvoke": {
+        "address": "0x34bce90",
+        "bytes": "554889e55350488b5f204885db741390488b034889dfff5010488b5b184885db75ee4883c4085b5dc3cccccc"
+      },
+      "group2Dispatch": {
+        "address": "0x8beb41",
+        "bytes": "488b034889dfff5010488b5b184885db75ee"
+      },
+      "registration": {
+        "address": "0x8d7487",
+        "bytes": "488d3db2333f01bef760972431d2e84606be02"
+      }
+    }
+  },
+  "liveMapping": {
+    "text": {
+      "liveStart": "0x400000",
+      "liveEnd": "0x37c0000"
+    }
+  },
+  "nativeBridge": {
+    "status": "hardware_validated_for_production_profile",
+    "abiVersion": 1,
+    "addressAcceptanceSemantics": "exact_target_and_hardware_validation",
+    "runtimeInvocationValidated": true,
+    "authorizedForInjection": true,
+    "addresses": {
+      "getFrameCount": "0x1ae8a50",
+      "isControlPressed": "0x1b8f490",
+      "isControlJustPressed": "0x1b8fa70",
+      "drawRect": "0x1aae6d0",
+      "beginTextCommandDisplayText": "0x1acc5d0",
+      "addTextComponentSubstringPlayerName": "0x1acdc00",
+      "endTextCommandDisplayText": "0x1acc630",
+      "setTextScale": "0x1acfe50",
+      "setTextColour": "0x1acfe70",
+      "setTextFont": "0x1acff40",
+      "setTextCentre": "0x1acfea0",
+      "setTextWrap": "0x1acff00",
+      "setTextJustification": "0x1acfee0",
+      "setTextDropShadow": "0x1acff50",
+      "setTextDropshadow": "0x1acff50",
+      "setTextOutline": "0x1acff70",
+      "isDisabledControlPressed": "0x1b90d20",
+      "isDisabledControlJustPressed": "0x1b91220",
+      "isDisabledControlJustReleased": "0x1b91550",
+      "disableControlAction": "0x1b92c20",
+      "setInputExclusive": "0x1b92af0",
+      "getGameTimer": "0x1ae8a20",
+      "drawSprite": "0x1aaea40",
+      "hasStreamedTextureDictLoaded": "0x1aae560",
+      "requestStreamedTextureDict": "0x1aae3c0",
+      "playerId": "0x1bd4790",
+      "playerPedId": "0x1bd47b0",
+      "setPlayerInvincible": "0x1bd4d10",
+      "setEntityInvincible": "0x1a9b4c0",
+      "setEntityHealth": "0x1a9b180",
+      "setPedArmour": "0x1ba28f0",
+      "setPlayerWantedLevel": "0x1bd1520",
+      "setPlayerWantedLevelNow": "0x1bd1760"
+    },
+    "notes": [
+      "Addresses are specific to normalized ELF SHA-256 dcb049481ef5ea5ce6c96c6ca790475f83bad988b586dbfb8ec6e17a511df1bb.",
+      "Every row was relocated from the hardware-validated 01.010.002 table through its registered native hash (6670 of 6671 registration hashes are shared between the builds).",
+      "Target-specific one-shot and persistent hardware regressions validated rendering, controller input, a game-thread vehicle spawn, the script-global transition, clean relaunch, and exact active hook retirement.",
+      "Custom packs and boot-time pool growth use this build's own pinned lane (build.customLane) and boot-pool profile (build.bootPools)."
+    ]
+  },
+  "validation": {
+    "status": "hardware-accepted",
+    "date": "2026-11-01",
+    "deliveries": [
+      "standalone one-shot loader",
+      "standalone persistent watcher"
+    ],
+    "summary": "On a fresh boot, PID 115 passed exact title/version detection, ptrace-free cave allocation and restoration at 0x37bf000, render-phase and frame-hook installation, increasing worker ticks, menu drawing and controller input, a game-thread vehicle spawn confirmed on screen, script-global transition 0 to 1, and cooperative worker stop with no error. After a clean GTA close, persistent mode injected fresh Story Mode PID 128 once; daemon-stop then exact-restored the render callback to 0x1cca840 and all 16 original frame-hook bytes with ptrace=0, and target-guarded reads confirmed both originals while GTA stayed live.",
+    "limitations": "Packaged OnionHEN and etaHEN delivery-specific lifecycle checks and universal-package selection remain separate gates. Custom packs and boot-time pool growth passed their own gates on the standalone persistent watcher."
+  },
+  "notes": [
+    "This public manifest is the runtime target contract for PPSA04264 01.011.001.",
+    "All addresses are specific to the normalized ELF SHA-256 recorded in binaryIdentity and must be re-derived for another build.",
+    "Production injection is ptrace-free and performs no permanent target credential or root elevation."
+  ]
+}

@@ -31,6 +31,9 @@ Two more exporter quirks of the same gate are repaired here, each only when the 
     which reference script_rt_dials_* without embedding it. Its bytes stay unreferenced.
 Every .ytd member of the fixture is checked; other members and the original fixture are untouched,
 and the new manifest records each repair (convert_vehicle.py --repair texture-stride).
+Repairs are planned together before checking spans: a malformed tail later in dictionary hash
+order must not falsely block its neighbour. All planned spans must fit without overlap before
+any stride or mip count is changed.
 
   repair_pc_texture_stride.py --fixture build/assets/convert-<id>/fixtures/protopolice-import \\
       --material-report <its material report> --output build/assets/convert-<id>/fixtures/<new>
@@ -82,6 +85,7 @@ def repair_strides(payload: bytearray, header: dict) -> list[dict]:
         if "graphicsOffset" in row
     }
     repairs = []
+    plans = []
     for row in rows:
         if ISSUE not in row["issues"]:
             continue
@@ -93,28 +97,46 @@ def repair_strides(payload: bytearray, header: dict) -> list[dict]:
         for _ in range(row["mipLevels"]):
             chain.append(length)
             length //= 4
+        full_stride = not rest and 0 < stride < 0x10000 and chain == linear
+        refusal = f"{row['name']}: no stride reproduces the {row['format']} mip chain {linear}"
+        keep = len(linear) if full_stride else _matching_prefix(row["legacyMipBytes"], linear)
+        if not keep and not rest and 0 < stride < 0x10000:
+            # A wrong block-size stride can coexist with sub-block mip tails.
+            keep = _matching_prefix(chain, linear)
+        elif not full_stride:
+            stride = row["stride"]
+        if not keep:
+            raise SystemExit(refusal)
+        repair = {
+            "texture": row["name"],
+            "format": row["format"],
+            "size": [row["width"], row["height"]],
+            "mipLevels": row["mipLevels"],
+            "mipBytes": linear[:keep],
+        }
+        if full_stride or stride != row["stride"]:
+            repair.update(oldStride=row["stride"], newStride=stride)
+        else:
+            repair["stride"] = stride
+        if keep != len(linear):
+            repair.update(keptMipLevels=keep, droppedMipBytes=linear[keep:])
+        end = row["graphicsOffset"] + sum(linear[:keep])
+        plans.append((row, stride, keep, end, None if full_stride else refusal))
+        spans[row["name"]] = (row["graphicsOffset"], end)
+        repairs.append(repair)
+    # A malformed tail can overlap a texture earlier in dictionary hash order.
+    # Plan every candidate before checking ownership, so order cannot turn a
+    # valid neighbour repair into a refusal. No bytes change until all fit.
+    for row, _, _, end, refusal in plans:
         try:
-            if rest or not 0 < stride < 0x10000 or chain != linear:
-                raise SystemExit(f"{row['name']}: no stride reproduces the {row['format']} mip chain {linear}")
-            _inside(row, row["graphicsOffset"], row["graphicsOffset"] + sum(linear), header, spans)
-        except SystemExit as refused:
-            trimmed = _trim(payload, row, linear, header, spans)
-            if trimmed is None:
-                raise refused from None
-            repairs.append(trimmed)
-            continue
+            _inside(row, row["graphicsOffset"], end, header, spans)
+        except SystemExit:
+            if refusal is not None:
+                raise SystemExit(refusal) from None
+            raise
+    for row, stride, keep, _, _ in plans:
         struct.pack_into("<H", payload, row["systemOffset"] + STRIDE_FIELD, stride)
-        repairs.append(
-            {
-                "texture": row["name"],
-                "format": row["format"],
-                "size": [row["width"], row["height"]],
-                "mipLevels": row["mipLevels"],
-                "oldStride": row["stride"],
-                "newStride": stride,
-                "mipBytes": linear,
-            }
-        )
+        payload[row["systemOffset"] + LEVELS_FIELD] = keep
     if repairs:
         fixed = {row["name"]: row for row in inspect_legacy_dictionary(bytes(payload), header, limits)["textures"]}
         for repair in repairs:
@@ -135,29 +157,12 @@ def _inside(row: dict, start: int, end: int, header: dict, spans: dict) -> None:
             raise SystemExit(f"{row['name']}: the {row['format']} chain overlaps {name}'s data; data missing")
 
 
-def _trim(payload: bytearray, row: dict, linear: list[int], header: dict, spans: dict) -> dict | None:
-    """Cut the mip count to the longest prefix the stored stride describes exactly (None: no such prefix)."""
+def _matching_prefix(stored: list[int], linear: list[int]) -> int:
+    """Number of leading mips whose declared byte spans equal block-rounded sizes."""
     keep = 0
-    while keep < row["mipLevels"] and row["legacyMipBytes"][keep] == linear[keep]:
+    while keep < len(linear) and stored[keep] == linear[keep]:
         keep += 1
-    if keep == 0:
-        return None
-    try:
-        _inside(row, row["graphicsOffset"], row["graphicsOffset"] + sum(linear[:keep]), header, spans)
-    except SystemExit:
-        return None
-    payload[row["systemOffset"] + LEVELS_FIELD] = keep
-    spans[row["name"]] = (row["graphicsOffset"], row["graphicsOffset"] + sum(linear[:keep]))
-    return {
-        "texture": row["name"],
-        "format": row["format"],
-        "size": [row["width"], row["height"]],
-        "mipLevels": row["mipLevels"],
-        "keptMipLevels": keep,
-        "stride": row["stride"],
-        "mipBytes": linear[:keep],
-        "droppedMipBytes": linear[keep:],
-    }
+    return keep
 
 
 def drop_render_targets(payload: bytearray, header: dict) -> list[dict]:
@@ -200,7 +205,7 @@ def drop_render_targets(payload: bytearray, header: dict) -> list[dict]:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--fixture", type=Path, required=True)
-    parser.add_argument("--material-report", type=Path, required=True, help="recorded (convert_vehicle repair chain)")
+    parser.add_argument("--material-report", type=Path, help="optional material report identity for provenance")
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args(argv)
     if args.output.exists():
@@ -233,7 +238,9 @@ def main(argv: list[str] | None = None) -> int:
         "tool": "tools/repair_pc_texture_stride.py",
         "reason": "stride stored for another block size; set to the block-rounded stride of the texture's format",
         "sourceFixtureManifestSha256": hashlib.sha256((args.fixture / "manifest.json").read_bytes()).hexdigest(),
-        "materialReportSha256": hashlib.sha256(args.material_report.read_bytes()).hexdigest(),
+        "materialReportSha256": (
+            hashlib.sha256(args.material_report.read_bytes()).hexdigest() if args.material_report else None
+        ),
         "resources": repairs,
     }
     (args.output / "manifest.json").write_text(json.dumps(manifest, indent=1, sort_keys=True) + "\n")

@@ -117,6 +117,11 @@ int gtav_proc_foreground(char* title_id, size_t title_capacity, int* pid_out, ui
   return fail("foreground: no pid for appid 0x%x (%s)", appid, tid);
 }
 
+uint64_t gtav_proc_foreground_app_id(void) {
+  const int appid = sceSystemServiceGetAppIdOfRunningBigApp();
+  return appid > 0 ? (uint64_t)appid : 0;
+}
+
 int gtav_proc_find_game(const char* title_id, int* pid_out) {
   char foreground[128];
   uint64_t token;

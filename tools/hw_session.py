@@ -4,21 +4,27 @@
 A plan (a plan.json in its own directory) lists processes (one fresh GTA process each), the packs each loads
 together, named selections for processes with host-side steps before the load, the expectation file its
 pack-notes lines are checked against (tools/pack_notes.py check), the in-game steps, and which installed ids
-may be uninstalled to make room. A process may name its own "target" (default: the plan's) and ask for the
-kernel log with "klog": true (risky spawns: a crash backtrace only shows in a klog collected before it).
+may be uninstalled to make room. A process may name its own "target" (default: the plan's). The kernel log is
+collected for every process (a crash backtrace only shows in a klog collected before it); "klog": false or
+`go --no-klog` skips it.
 
   show PLAN [NAME]                 the processes, their packs, selections and runs
-  stage PLAN [--dry-run]           make room in the console's installed list (64 max) and upload every pack of
-                                   the plan that is not installed yet (no activation). Uninstalls, in this order:
+  stage PLAN [--dry-run]           make room in the console's installed list (upload_runtime_pack.INSTALLED_MAX)
+                                   and upload every pack of the plan that is not installed yet (no activation).
+                                   Uninstalls, in this order:
                                    the plan's "uninstall" ids, then older versions (<family>-vN with a newer
                                    <family>-vM installed); never a plan pack, a "keep" id or an active pack.
                                    Uninstalled packs keep their files (a later upload restores them).
-  select PLAN NAME [SELECTION]     packs/active = the selection's packs (default: "load"), verifying each remote
-                                   copy byte for byte (upload_runtime_pack.py --activate-only [--activate-add])
+  select PLAN NAME [SELECTION] [--select-installed]
+                                   packs/active = the selection's packs (default: "load"), verifying each remote
+                                   copy byte for byte (upload_runtime_pack.py --activate-only [--activate-add]).
+                                   Packs without a local build (or with --select-installed) are selected from
+                                   the console itself: each must be in packs/installed, and the merge check runs
+                                   on the console's own pack.cfg files (no byte comparison, no local copy).
   next PLAN NAME [SELECTION]       select, then print what to do before restarting GTA
-  go PLAN NAME [--klog]            wait until GTA (the process's target) runs in single-player with player
+  go PLAN NAME [--no-klog]         wait until GTA (the process's target) runs in single-player with player
                                    control (the cave-inject pre-flight probe, tools/read_player_ped_anchor.py),
-                                   start the pack-notes follower (and the klog collector) in the background,
+                                   start the klog collector and the pack-notes follower in the background,
                                    inject (menu-ctl.sh cave-inject), print "press Load now" and the in-game
                                    steps, then show the pack lines until Ctrl-C (which stops the followers)
   check PLAN NAME [NOTES] [--keep] stop the session's followers (not with --keep) and check the lines of the
@@ -58,6 +64,7 @@ import pack_notes  # noqa: E402
 import upload_runtime_pack as upr  # noqa: E402
 from gtavmenu_tools import runtime_pack  # noqa: E402
 from gtavmenu_tools.host_paths import build_dir  # noqa: E402
+from gtavmenu_tools.proc_records import is_alive, process_start, stop_record  # noqa: E402
 
 PACKS = build_dir(ROOT) / "custom-assets"  # GTAV_HOST_BUILD_DIR selects candidate pack inputs.
 # Keep one follower/injection owner per checkout even when pack outputs are isolated.
@@ -66,8 +73,6 @@ ACTIVE_FILE = SESSIONS / "active.json"
 MENU_CTL = ROOT / "menu-ctl.sh"
 ANCHOR_PROBE = ROOT / "tools/read_player_ped_anchor.py"
 MENU_CLIENT = ROOT / "tools/menu_client.py"
-# The developer checkout's reconnecting klog collector (LF lines); a publication checkout uses menu_client.py klog.
-KLOG_COLLECTOR = ROOT / "research/tools/live/collect_klog.sh"
 TARGETS = ROOT / "data/targets"
 DEFAULT_TARGET = "ppsa04264-01.010.002"
 VERSION = re.compile(r"(.+)-v(\d+)([a-z]*)\Z")
@@ -251,9 +256,7 @@ def notes_command(log: Path) -> list[str]:
 
 
 def klog_command(log: Path, *, dry_run: bool = False) -> list[str]:
-    """The kernel-log collector: the developer checkout's reconnecting collect_klog.sh, else menu_client.py klog."""
-    if KLOG_COLLECTOR.is_file():
-        return ["bash", str(KLOG_COLLECTOR), "-o", str(log)]
+    """The kernel-log collector: menu_client.py klog, reconnecting across a GTA crash or console reboot."""
     port = os.environ.get("PS5_KLOG_PORT") or "3232"
     return [
         sys.executable,
@@ -263,6 +266,8 @@ def klog_command(log: Path, *, dry_run: bool = False) -> list[str]:
         "klog",
         "--klog-port",
         port,
+        "--reconnect",
+        "--quiet",
         "--seconds",
         "86400",
         "--output",
@@ -281,30 +286,6 @@ def inject_command() -> list[str]:
 
 
 # --- background processes: recorded pid + start time, stopped only through the record ------------------------
-
-
-def process_start(pid: int) -> str | None:
-    """The process's start time (a stable identity beside the pid), or None when it is gone or a zombie."""
-    stat = Path(f"/proc/{pid}/stat")
-    if Path("/proc/self/stat").is_file():
-        try:
-            text = stat.read_text(encoding="ascii", errors="replace")
-        except OSError:
-            return None
-        fields = text[text.rindex(")") + 2 :].split()
-        if not fields or fields[0] in ("Z", "X"):
-            return None
-        return fields[19]  # field 22, starttime (fields[0] is field 3, the state)
-    result = subprocess.run(["ps", "-o", "stat=,lstart=", "-p", str(pid)], capture_output=True, text=True)
-    out = result.stdout.strip()
-    if result.returncode != 0 or not out or out.startswith("Z"):
-        return None
-    return out.split(None, 1)[1] if " " in out else out
-
-
-def is_alive(record: dict) -> bool:
-    start = process_start(int(record["pid"]))
-    return start is not None and start == record.get("start")
 
 
 def read_active(path: Path | None = None) -> dict | None:
@@ -361,36 +342,6 @@ def live_session(path: Path | None = None) -> dict | None:
             return data
         if remove_active(data, path):
             return None
-
-
-def stop_record(record: dict, *, grace: float = 5.0, sleep: Callable[[float], None] = time.sleep) -> str:
-    """Stop one recorded process (its own process group: the follower's curl/tee children go with it)."""
-    pid = int(record["pid"])
-    if not is_alive(record):
-        return f"{record.get('role', '?')} pid {pid}: already ended"
-    try:
-        group = os.getpgid(pid)
-    except OSError:
-        return f"{record.get('role', '?')} pid {pid}: already ended"
-
-    def send(sig: int) -> None:
-        try:
-            if group == pid:
-                os.killpg(pid, sig)
-            else:
-                os.kill(pid, sig)
-        except ProcessLookupError:
-            pass
-
-    send(signal.SIGTERM)
-    waited = 0.0
-    while waited < grace and is_alive(record):
-        sleep(0.2)
-        waited += 0.2
-    if is_alive(record):
-        send(signal.SIGKILL)
-        return f"{record.get('role', '?')} pid {pid}: killed"
-    return f"{record.get('role', '?')} pid {pid}: stopped"
 
 
 def normalize_klog(path: Path) -> None:
@@ -511,7 +462,7 @@ def cmd_show(plan: dict, name: str | None) -> int:
     for process in plan["processes"]:
         if name and process["name"].lower() != name.lower():
             continue
-        extra = [target_of(plan, process)] + (["klog"] if process.get("klog") else [])
+        extra = [target_of(plan, process)] + ([] if klog_enabled(process) else ["no klog"])
         print(f"{process['name']} ({', '.join(extra)}): {', '.join(process.get('runs', []))}")
         for sel, ids in process["selections"].items():
             print(f"  {sel:<6} {' '.join(ids)}")
@@ -561,13 +512,65 @@ def cmd_stage(plan: dict, dry_run: bool) -> int:
     return 0
 
 
-def cmd_select(plan: dict, name: str, selection: str) -> int:
+def has_local_copy(pack_id: str) -> bool:
+    return (PACKS / pack_id / "resources/pack.cfg").is_file()
+
+
+def select_installed(run, base: str, ids: Sequence[str]) -> int:
+    """packs/active = ids, chosen from what the console already has (no local copies).
+
+    Each id must be listed in packs/installed, and the merge rules run on the console's own pack.cfg files
+    (runtime_pack.merge_conflicts). No byte comparison against a local build is possible here: the
+    console's copy is what loads. The engine and carcols table checks need the pack files and are left to
+    the worker's own refusals before Load."""
+    if len(ids) > runtime_pack.ACTIVE_MAX:
+        print(f"selection names {len(ids)} packs; at most {runtime_pack.ACTIVE_MAX} can be active", file=sys.stderr)
+        return 1
+    installed = upr._read_ids(run, base, upr.INSTALLED) or []
+    missing = [pack_id for pack_id in ids if pack_id not in installed]
+    if missing:
+        print(f"not installed on the console: {' '.join(missing)}", file=sys.stderr)
+        return 1
+    packs, problems = [], []
+    for pack_id in ids:
+        try:
+            text = run(f"{base}{upr.PACK_ROOT}/{pack_id}/resources/pack.cfg").decode("ascii")
+            packs.append(runtime_pack.parse(text))
+        except (subprocess.CalledProcessError, UnicodeDecodeError, runtime_pack.RuntimePackError) as exc:
+            problems.append(f"{pack_id}: pack.cfg is missing or invalid on the console ({exc.__class__.__name__})")
+    if not problems:
+        problems = list(runtime_pack.merge_conflicts(packs))
+    if problems:
+        for problem in problems:
+            print(f"selection refused: {problem}", file=sys.stderr)
+        return 1
+    body = "".join(f"{pack_id}\n" for pack_id in ids).encode("ascii")
+    upr._replace(run, base, upr.ACTIVE, body)
+    run("-Q", f"SITE CHMOD 644 {upr.ACTIVE}", f"{base}{upr.PACK_ROOT}/")
+    if run(f"{base}{upr.ACTIVE}") != body:
+        print("packs/active did not read back as written", file=sys.stderr)
+        return 1
+    return 0
+
+
+def cmd_select(plan: dict, name: str, selection: str, *, installed_only: bool = False) -> int:
     process = process_of(plan, name)
     sels = process["selections"]
     if selection not in sels:
         raise PlanError(f"{process['name']} has no selection {selection!r} ({', '.join(sels)})")
-    _, conn = endpoint()
+    base, conn = endpoint()
+    no_local = [pack_id for pack_id in sels[selection] if not has_local_copy(pack_id)]
+    if installed_only or no_local:
+        if no_local and not installed_only:
+            print(f"no local build of {' '.join(no_local)}: selecting from the console's installed packs")
+        if select_installed(upr.curl, base, sels[selection]) != 0:
+            print(f"selection {selection} not applied", file=sys.stderr)
+            return 1
+        print(f"{process['name']} {selection}: packs/active = {' '.join(sels[selection])} (console copies)")
+        return 0
     extra = ["--no-validate"] if selection in process.get("no_validate", []) else []
+    # Validate against the process's own game version (engine tables differ per build), not $GTAV_TARGET.
+    extra += ["--target", target_of(plan, process)]
     for n, pack_id in enumerate(sels[selection]):
         mode = ["--activate-only"] if n == 0 else ["--activate-only", "--activate-add"]
         if upr.main([str(PACKS / pack_id), *mode, *extra, *conn]) != 0:
@@ -592,24 +595,31 @@ def print_load_prompt(process: dict) -> None:
         print(f"    - {step}")
 
 
-def cmd_next(plan_path: Path, plan: dict, name: str, selection: str, dry_run: bool) -> int:
+def klog_enabled(process: dict, *, no_klog: bool = False) -> bool:
+    """The kernel log is collected unless the process says "klog": false or the run asks --no-klog."""
+    return not no_klog and process.get("klog", True) is not False
+
+
+def cmd_next(
+    plan_path: Path, plan: dict, name: str, selection: str, dry_run: bool, *, installed_only: bool = False
+) -> int:
     process = process_of(plan, name)
     if selection not in process["selections"]:
         raise PlanError(f"{process['name']} has no selection {selection!r} ({', '.join(process['selections'])})")
     if dry_run:
         print(f"dry run: would select {process['name']} {selection}: {' '.join(process['selections'][selection])}")
-    elif cmd_select(plan, name, selection) != 0:
+    elif cmd_select(plan, name, selection, installed_only=installed_only) != 0:
         return 1
     target = target_of(plan, process)
-    klog = " --klog" if process.get("klog") else ""
+    klog = "" if klog_enabled(process) else " --no-klog"
     print(f"\n{process['name']}: {', '.join(process.get('runs', []))}")
     print("Before restarting GTA:")
     print("  1. close GTA V completely (every run needs a fresh GTA process)")
     print(f"  2. run: ./menu-ctl.sh session go {plan_path} {process['name']}{klog}")
     print(f"  3. start GTA V {title_of(target)} ({target}) and enter Story Mode; `session go` injects once you")
     print("     have player control and says when to press Load")
-    if process.get("klog"):
-        print("  (risky process: the kernel log is collected from before the inject)")
+    if klog_enabled(process):
+        print("  (the kernel log is collected from before the inject, so a crash keeps its backtrace)")
     print("After the inject `session go` prints:")
     print_load_prompt(process)
     return 0
@@ -646,13 +656,16 @@ def wait_ready(
         sleep(poll)
 
 
-def cmd_go(plan_path: Path, plan: dict, name: str, *, klog: bool, timeout: float, poll: float, dry_run: bool) -> int:
+def cmd_go(
+    plan_path: Path, plan: dict, name: str, *, no_klog: bool = False, timeout: float, poll: float, dry_run: bool
+) -> int:
     process = process_of(plan, name)
     name = process["name"]
     target = target_of(plan, process)
     paths = session_paths(plan_path, name)
-    use_klog = klog or bool(process.get("klog"))
-    env = dict(os.environ, GTAV_TARGET=target)
+    use_klog = klog_enabled(process, no_klog=no_klog)
+    # The session runs its own collector: the inject must not start menu-ctl's background follower too.
+    env = dict(os.environ, GTAV_TARGET=target, KLOG_AUTO="0")
     print(f"{plan.get('title', plan_name(plan_path))}")
     print(f"{name} on {target}: {', '.join(process.get('runs', []))}")
     print(f"  packs: {' '.join(process['selections']['load'])}")
@@ -817,19 +830,23 @@ def main(argv: list[str] | None = None) -> int:
     s = sub.add_parser("stage")
     s.add_argument("plan", type=Path)
     s.add_argument("--dry-run", action="store_true")
+    installed_help = "select from the console's installed packs (no local build needed)"
     s = sub.add_parser("select")
     s.add_argument("plan", type=Path)
     s.add_argument("name")
     s.add_argument("selection", nargs="?", default="load")
+    s.add_argument("--select-installed", action="store_true", help=installed_help)
     s = sub.add_parser("next")
     s.add_argument("plan", type=Path)
     s.add_argument("name")
     s.add_argument("selection", nargs="?", default="load")
     s.add_argument("--dry-run", action="store_true", help="print the steps; select nothing")
+    s.add_argument("--select-installed", action="store_true", help=installed_help)
     s = sub.add_parser("go")
     s.add_argument("plan", type=Path)
     s.add_argument("name")
-    s.add_argument("--klog", action="store_true", help='also collect the kernel log (default: the plan\'s "klog")')
+    s.add_argument("--klog", action="store_true", help="collect the kernel log (the default; kept for old scripts)")
+    s.add_argument("--no-klog", action="store_true", help='skip the kernel log (or set the process\'s "klog": false)')
     s.add_argument("--timeout", type=float, default=900.0, help="seconds to wait for player control (0: no limit)")
     s.add_argument("--poll", type=float, default=5.0, help="seconds between readiness probes")
     s.add_argument("--dry-run", action="store_true", help="print the flow; touch nothing")
@@ -851,12 +868,20 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "stage":
             return cmd_stage(plan, args.dry_run)
         if args.command == "select":
-            return cmd_select(plan, args.name, args.selection)
+            return cmd_select(plan, args.name, args.selection, installed_only=args.select_installed)
         if args.command == "next":
-            return cmd_next(args.plan, plan, args.name, args.selection, args.dry_run)
+            return cmd_next(
+                args.plan, plan, args.name, args.selection, args.dry_run, installed_only=args.select_installed
+            )
         if args.command == "go":
             return cmd_go(
-                args.plan, plan, args.name, klog=args.klog, timeout=args.timeout, poll=args.poll, dry_run=args.dry_run
+                args.plan,
+                plan,
+                args.name,
+                no_klog=args.no_klog,
+                timeout=args.timeout,
+                poll=args.poll,
+                dry_run=args.dry_run,
             )
         return cmd_check(args.plan, plan, args.name, args.notes, args.keep)
     except PlanError as error:

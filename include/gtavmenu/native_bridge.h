@@ -565,7 +565,7 @@ enum {
   // Host `menu-ctl.sh export-templates`: read one allow-listed retail file (param = row of
   // custom_retail_export.inc, the vehicle converter's encrypted templates) through the game's
   // common.rpf packfile on the main thread, then write the plaintext to
-  // /data/gtavmenu/custom/exports/<name> on the worker (temp + rename). No arbitrary paths.
+  // /data/GTAVMenu/custom/exports/<name> on the worker (temp + rename). No arbitrary paths.
   GTAV_NATIVE_SHELL_ACTION_EXPORT_RETAIL_FILE = 290,
   // Custom Packs > Manage Packs "Revert overrides": put every stock member the loaded packs
   // override back on its stock archive (handle + overlay node). All or nothing: refuses while any
@@ -661,6 +661,13 @@ extern GtavNativeShellState gtav_native_shell_state;
 extern const char gtav_native_shell_state_marker[];
 
 void gtav_native_bridge_init(const GtavNativeAddressTable* table);
+/* 1 when this build's target can run the shell action (target_capabilities.h). */
+int gtav_native_bridge_action_supported(uint32_t action);
+/* Bind GET_FRAME_COUNT / GET_GAME_TIMER after init (on the thread allowed to call them). */
+void gtav_native_bridge_bind_frame_getters(uint64_t get_frame_count, uint64_t get_game_timer);
+/* Phase draw-list submissions so far (GTAV_MENU_PHASE_DRAW_COUNTERS builds only). */
+void gtav_native_bridge_phase_draw_counts(uint64_t* rects, uint64_t* texts, uint64_t* sprites,
+                                          uint64_t* lists);
 void gtav_native_bridge_set_canary(uint32_t flags, uint32_t interval, uint32_t max_frames);
 void gtav_native_bridge_set_draw_rect_call_override(uint64_t address);
 void gtav_native_bridge_set_visible(int visible);
@@ -745,6 +752,10 @@ int gtav_native_bridge_selected_is_cycler(void);
 // 1 when the currently-selected row is a toggle (SHELL_ROW_TOGGLE): its Left/Right Off/On step
 // confirms with a toast like Cross does.
 int gtav_native_bridge_selected_is_toggle(void);
+// Action owned by the selected row, without activating it.
+uint32_t gtav_native_bridge_selected_action(void);
+/* SHELL_MENU_* id of the menu the cursor is in (host telemetry). */
+uint32_t gtav_native_bridge_current_menu(void);
 // Parameter of the item that produced the last activate/adjust. Vehicle spawn rows emit
 // model joaat hashes; list rows emit direction (2 = left/prev, 1 = right/next).
 uint32_t gtav_native_bridge_last_action_param(void);
@@ -752,6 +763,10 @@ uint32_t gtav_native_bridge_last_action_param(void);
 void gtav_native_bridge_set_feature_toggles(uint64_t mask);
 // Push the current display value for a SHELL_ROW_LIST cycler (e.g. weather/time).
 void gtav_native_bridge_set_list_value(uint32_t action, const char* value);
+// Synchronize feature-owned display state and publish the latest action result.
+void gtav_native_bridge_sync_feature_action_state(uint32_t action);
+void gtav_native_bridge_sync_feature_state(void);
+void gtav_native_bridge_push_feature_toast(void);
 // A pick-then-apply row whose staged value was not applied reverts when the cursor leaves it
 // (another row or menu, Back, menu closed). Returns 1 once that happened, with the action, the
 // step direction to replay (2 = prev, 1 = next) and the step count that undo the pick; 0 otherwise.

@@ -64,6 +64,7 @@ typedef struct GtavRenderPhaseState {
 
 extern GtavRenderPhaseState gtav_render_phase_state;
 extern uintptr_t gtav_render_phase_original;
+extern volatile uint32_t gtav_render_phase_inflight_count;
 
 // key 0: configure the exact callback-object +0x20 slot while unconfigured.
 // key 1: operation 1 requests install; operation 2 restores exactly and permanently.

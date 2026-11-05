@@ -12,7 +12,9 @@
 #   ./menu-ctl.sh watch [same opts] [--persist] wait for player-world/load readiness, then inject
 #                                             (run BEFORE launching GTA -- it parks on the console and
 #                                              polls an RE'd SP_READY_ADDR anchor; --persist keeps it
-#                                              resident to re-inject on each relaunch)
+#                                              resident to re-inject on each relaunch; boot-time pool
+#                                              growth follows the target manifest, --boot-pools forces
+#                                              it on and --no-boot-pools off)
 #   ./menu-ctl.sh stop                        tell the running menu worker to stop
 #   ./menu-ctl.sh restart                     rejected: a fresh GTA process is required
 #   ./menu-ctl.sh status [--pid N]            print the live menu status block
@@ -93,6 +95,13 @@
 #   ./menu-ctl.sh pack-card-show              draw the last requested pack card centred on screen
 #   ./menu-ctl.sh pack-card-release           hide the card, then release after the draw lists drain
 #   ./menu-ctl.sh doctor                      read-only health report
+#   ./menu-ctl.sh nav next|prev|select|back|... [N]   drive the menu from the host; prints the current row
+#   ./menu-ctl.sh action NAME [PARAM]         run one menu action by name, then show the worker's events
+#   ./menu-ctl.sh events [--follow] [--all]   the worker's status events (heartbeats hidden)
+#   ./menu-ctl.sh census [--json OUT]         read-only census of the pools custom packs depend on
+#   ./menu-ctl.sh klog-stop | klog-status     the background kernel-log follower (watch/cave-inject start it;
+#                                              KLOG_AUTO=0 skips it)
+#   ./menu-ctl.sh crash-pull                  copy new crash dumps to build/crash/ (read-only)
 #   ./menu-ctl.sh session stage|next|go|check|stop PLAN [NAME] [...]
 #                                              a hardware test session from a plan (tools/hw_session.py)
 #
@@ -114,6 +123,7 @@ PS5_HOST="${PS5_HOST:-}"
 PS5DEBUG_PORT="${PS5DEBUG_PORT:-744}"
 PS5_PORT="${PS5_PORT:-9021}"
 PS5_FTP_PORT="${PS5_FTP_PORT:-2121}"
+GTAV_TARGET_EXPLICIT="${GTAV_TARGET:+1}"
 GTAV_TARGET="${GTAV_TARGET:-ppsa04264-01.010.002}"
 GTAV_BUILD_PROFILE="${GTAV_BUILD_PROFILE:-production}"
 GTAV_DELIVERY="${GTAV_DELIVERY:-menu-ctl}"
@@ -136,16 +146,59 @@ if [ -x "$ROOT/.venv/bin/python" ]; then
 else
   PY="$(command -v python3 || command -v python)"
 fi
+# A live-only command (no build, no inject) with GTAV_TARGET unset follows the running build: ask the
+# console which reviewed title/version is in the foreground. Builds and injection stay explicit.
+if [ -z "$GTAV_TARGET_EXPLICIT" ] && [ -n "${PS5_HOST//[[:space:]]/}" ]; then
+  case "${1:-}" in
+    status|doctor|show|hide|stop|nav|action|events|census|spawn|spawn-model|spawn-object|spawn-ped|\
+    give-weapon|map-load|map-cancel|map-clear|pack-autoload|pack-revert|pack-upload|pack-install)
+      detected_target="$("$PY" tools/menu_client.py --host "$PS5_HOST" --port "$PS5DEBUG_PORT" --timeout 5 \
+        --auto-target foreground 2> /dev/null |
+        "$PY" -c 'import json, sys; print(json.load(sys.stdin).get("detectedTarget") or "")' 2> /dev/null)" ||
+        detected_target=""
+      if [ -n "$detected_target" ] && [ "$detected_target" != "$GTAV_TARGET" ]; then
+        GTAV_TARGET="$detected_target"
+        BUILD_PROFILE_DIR="build/ps5/${GTAV_TARGET}/${GTAV_BUILD_PROFILE}/${GTAV_DELIVERY}"
+        PAYLOAD_LOADER_ELF="$BUILD_PROFILE_DIR/gtav-menu-payload-loader.elf"
+        FRAME_HOOK_ELF="$BUILD_PROFILE_DIR/gtav-menu-feature-menu.elf"
+        export GTAV_TARGET
+      fi
+      [ -n "$detected_target" ] &&
+        echo "[menu-ctl] GTAV_TARGET unset: following the running build $GTAV_TARGET" >&2
+      ;;
+  esac
+fi
+# The game version the host pack checks (tools/gtavmenu_tools/engine_caps.py) measure against: the explicit or
+# detected target, else empty, which makes them use each table's strictest known baseline. Never the 010 default:
+# its engine tables are looser than a newer build's (01.011.001 has 3 add-on vehicle slots, 01.010.002 has 7).
+ENGINE_TARGET=""
+if [ -n "$GTAV_TARGET_EXPLICIT" ] || [ -n "${detected_target:-}" ]; then
+  ENGINE_TARGET="$GTAV_TARGET"
+fi
 TARGET_PROFILE="$("$PY" tools/target_build_config.py \
   --target-manifest "data/targets/$GTAV_TARGET.json" --make 2>/dev/null)" || {
   echo "[menu-ctl] invalid or missing target manifest: data/targets/$GTAV_TARGET.json" >&2
   exit 2
 }
-for required_profile_token in channel=primary cave_inject=1 classic_inject=0 phase_intercept=1; do
+# A development-channel profile is admitted only for its hardware qualification run, with an
+# explicit GTAV_ALLOW_DEVELOPMENT_TARGET=1; every other lane gate still applies.
+required_channel=channel=primary
+case " $TARGET_PROFILE " in
+  *" channel=development "*)
+    if [ "${GTAV_ALLOW_DEVELOPMENT_TARGET:-0}" = 1 ]; then
+      required_channel=channel=development
+      echo "[menu-ctl] $GTAV_TARGET is a development target (hardware qualification only)" >&2
+    fi
+    ;;
+esac
+for required_profile_token in "$required_channel" cave_inject=1 classic_inject=0 phase_intercept=1; do
   case " $TARGET_PROFILE " in
     *" $required_profile_token "*) ;;
     *)
       echo "[menu-ctl] target is not an admitted primary ptrace-free phase target: $GTAV_TARGET" >&2
+      if [ "$required_channel" = channel=primary ]; then
+        echo "[menu-ctl] (set GTAV_ALLOW_DEVELOPMENT_TARGET=1 to qualify a development target on hardware)" >&2
+      fi
       exit 2
       ;;
   esac
@@ -340,7 +393,7 @@ archive_and_clear_payload_log() {
 ftp_rm() { curl -s --max-time 10 -Q "DELE $1" "ftp://$PS5_HOST:$PS5_FTP_PORT/" >/dev/null 2>&1 || true; }
 # Worker notes are available only through the console /data shared with GTA by the HEN or mount setup.
 game_custom_cat() {
-  local path="/data/gtavmenu/custom/$1" text
+  local path="$CUSTOM_REMOTE/$1" text
   text="$(ftp_cat "$path")"
   [ -n "$text" ] && echo "[menu-ctl] read $path" >&2
   printf '%s' "$text"
@@ -368,7 +421,7 @@ pack_action_param() {
     --wait-feature-action "$2" --feature-wait-timeout 5 --event-interval 0.005
 }
 
-# Runtime pack lane (CUSTOM_PACKS=1 builds): the pack named by /data/gtavmenu/custom/packs/active.
+# Runtime pack lane (CUSTOM_PACKS=1 builds): the pack named by $CUSTOM_REMOTE/packs/active.
 do_pack_register() {
   [ "$#" -eq 0 ] || { echo "usage: $0 pack-register" >&2; return 2; }
   pack_action REGISTER_PACK register_pack
@@ -601,7 +654,7 @@ do_pack_upload() {
     *) echo "$usage" >&2; return 2 ;;
   esac
   [ -f "$1/resources/pack.cfg" ] || { echo "[menu-ctl] no pack descriptor: $1/resources/pack.cfg" >&2; return 2; }
-  "$PY" tools/upload_runtime_pack.py "$1" ${2:+"$2"} --host "$PS5_HOST" --port "$PS5_FTP_PORT"
+  GTAV_TARGET="$ENGINE_TARGET" "$PY" tools/upload_runtime_pack.py "$1" ${2:+"$2"} --host "$PS5_HOST" --port "$PS5_FTP_PORT"
 }
 
 # Unlist a pack (packs/active first, then packs/installed); --purge also deletes <pack root>/<id>/.
@@ -617,7 +670,7 @@ do_pack_uninstall() {
 # Host-only: check a pack directory before uploading it (no console access).
 do_pack_validate() {
   [ "$#" -ge 1 ] || { echo "usage: $0 pack-validate PACK_DIR [--against PACK_DIR ...]" >&2; return 2; }
-  "$PY" tools/validate_runtime_pack.py "$@"
+  GTAV_TARGET="$ENGINE_TARGET" "$PY" tools/validate_runtime_pack.py "$@"
 }
 
 # Host: fetch the retail templates the PC vehicle converter reads (its --templates cache) from this
@@ -656,7 +709,7 @@ do_fetch_templates() {
   local -a export_args=()
   # From the console, also pick up what `export-templates` left in the menu's export directory.
   case "$source" in
-    ftp://"$PS5_HOST":*) export_args=(--exports "ftp://$PS5_HOST:$PS5_FTP_PORT/data/gtavmenu/custom/exports") ;;
+    ftp://"$PS5_HOST":*) export_args=(--exports "ftp://$PS5_HOST:$PS5_FTP_PORT$CUSTOM_REMOTE/exports") ;;
   esac
   "$PY" tools/fetch_retail_templates.py --manifest "$manifest" --source "$source" --cache "$cache" \
     "${export_args[@]}" || return 1
@@ -719,7 +772,7 @@ do_export_templates() {
     echo "[menu-ctl] $GTAV_TARGET: checking the export against $manifest"
   fi
   [ -f "$manifest" ] || { echo "[menu-ctl] no retail template manifest for $GTAV_TARGET ($manifest)" >&2; return 2; }
-  local remote=/data/gtavmenu/custom
+  local remote="$CUSTOM_REMOTE"
   local endpoint="ftp://$PS5_HOST:$PS5_FTP_PORT" notes_path rows line row cache_name name bytes
   local before last_note latest_note notes new_notes tries result pid
   local first_pid="" exports success
@@ -802,10 +855,11 @@ do_pack_install() {
   esac
   [ -f "$1/resources/pack.cfg" ] || { echo "[menu-ctl] no pack descriptor: $1/resources/pack.cfg" >&2; return 2; }
   local report pack_id
-  report="$("$PY" tools/validate_runtime_pack.py "$1")" || return 1
+  report="$(GTAV_TARGET="$ENGINE_TARGET" "$PY" tools/validate_runtime_pack.py "$1")" || return 1
   printf '%s\n' "$report"
   pack_id="$(printf '%s\n' "$report" | sed -n 's/.* OK pack=\([^ ]*\).*/\1/p' | head -1)"
-  "$PY" tools/upload_runtime_pack.py "$1" ${2:+"$2"} --host "$PS5_HOST" --port "$PS5_FTP_PORT" || return 1
+  GTAV_TARGET="$ENGINE_TARGET" "$PY" tools/upload_runtime_pack.py "$1" ${2:+"$2"} --host "$PS5_HOST" --port "$PS5_FTP_PORT" ||
+    return 1
   if [ -n "${2:-}" ]; then
     echo "[menu-ctl] installed and selected $pack_id. In game: Custom Packs -> Load selected packs"
   else
@@ -943,7 +997,7 @@ do_convert_map() {
     echo "[menu-ctl] conversion stopped; nothing was installed (the copied mod: $input)" >&2
     return 1
   fi
-  "$PY" "$ROOT/tools/validate_runtime_pack.py" "$pack" || return 1
+  GTAV_TARGET="$ENGINE_TARGET" "$PY" "$ROOT/tools/validate_runtime_pack.py" "$pack" || return 1
   echo "[menu-ctl] pack $id: $pack (report: $out/report.json)"
   if [ "$install" = --activate ]; then
     do_pack_install "$pack" --activate
@@ -1159,7 +1213,7 @@ convert_run() {
 # convert_finish COMMAND INSTALL: validate the pack, print its summary, then install it or print the commands.
 convert_finish() {
   local file
-  "$PY" "$ROOT/tools/validate_runtime_pack.py" "$CV_PACK" || return 1
+  GTAV_TARGET="$ENGINE_TARGET" "$PY" "$ROOT/tools/validate_runtime_pack.py" "$CV_PACK" || return 1
   echo "[menu-ctl] $1: pack $CV_ID in $CV_PACK (work files and reports: $CV_WORK)"
   for file in "$CV_PACK"/resources/*; do
     echo "[menu-ctl]   $(basename -- "$file")  $(wc -c < "$file") bytes"
@@ -3302,7 +3356,7 @@ do_pack_notes() {
   local notes
   notes="$(game_custom_cat pack-notes.log)"
   if [ -z "$notes" ]; then
-    echo "[menu-ctl] no pack notes at /data/gtavmenu/custom/pack-notes.log; custom assets require shared game /data" >&2
+    echo "[menu-ctl] no pack notes at $CUSTOM_REMOTE/pack-notes.log; custom assets require shared game /data" >&2
     return 1
   fi
   printf '%s\n' "$notes"
@@ -3471,6 +3525,7 @@ parse_start_args() {
   # visible deviations for diagnosis; the normal path is the validated complete profile.
   SHOW_AFTER_START=0
   PERSIST_ENABLE=0
+  BOOT_POOLS_ARG=""  # empty = the target manifest's features.bootPools
   SCRIPT_GLOBALS_ENABLE="${SCRIPT_GLOBALS:-1}"
   VEHICLE_PREVIEW_ENABLE="${GTAV_MENU_ENABLE_VEHICLE_PREVIEW:-1}"
   INSTRUCTIONAL_SCALEFORM_ENABLE="${GTAV_MENU_ENABLE_INSTRUCTIONAL_SCALEFORM:-1}"
@@ -3495,6 +3550,8 @@ parse_start_args() {
       --show) SHOW_AFTER_START=1 ;;
       --persist) PERSIST_ENABLE=1 ;;
       --no-persist) PERSIST_ENABLE=0 ;;
+      --boot-pools) BOOT_POOLS_ARG=1 ;;
+      --no-boot-pools) BOOT_POOLS_ARG=0 ;;
       --script-globals) SCRIPT_GLOBALS_ENABLE=1 ;;
       --no-script-globals) SCRIPT_GLOBALS_ENABLE=0 ;;
       --vehicle-preview) VEHICLE_PREVIEW_ENABLE=1 ;;
@@ -3680,7 +3737,12 @@ report_inject_result() {
     echo "[menu-ctl]    Fully close GTA; this process is quarantined and must not be reused." >&2
     return 1
   fi
-  local ticks a b injected_pid fg_pid
+  local ticks a b injected_pid fg_pid boot_pool
+  # Boot-time pool growth (watch only): one summary line per served instance.
+  boot_pool="$(printf '%s\n' "$log" | grep -oE 'boot-pool: (target=.*|no profile.*|no bound.*|not enabled.*|refused.*)' | tail -1 || true)"
+  if [ -n "$boot_pool" ]; then
+    echo "[menu-ctl] $boot_pool"
+  fi
   ticks="$(printf '%s\n' "$log" | grep -oE 'ticks=[0-9]+->[0-9]+' | tail -1)"
   a="${ticks#ticks=}"; a="${a%%->*}"; b="${ticks##*->}"
   # Persistent logs contain the daemon owner's pid before the target pid. Bind controls to the
@@ -3772,6 +3834,90 @@ resolve_custom_packs() {
   fi
 }
 
+# --- crash capture and host-driven testing -----------------------------------------------------------------
+# watch and cave-inject start one unfiltered, reconnecting kernel-log follower in the background
+# (tools/crash_capture.py, record in build/klog/active.json) so a GTA crash keeps its backtrace; the
+# follower runs until `klog-stop` (at most 7 days). KLOG_AUTO=0 skips it (session go runs its own).
+klog_auto_start() {
+  [ "${KLOG_AUTO:-1}" = 0 ] && return 0
+  "$PY" tools/crash_capture.py klog-start --host "$PS5_HOST" --port "${PS5_KLOG_PORT:-3232}" \
+    --target "$GTAV_TARGET" ||
+    echo "[menu-ctl] warning: the kernel-log follower did not start (no crash capture this run)" >&2
+}
+
+do_crash_pull() {
+  "$PY" tools/crash_capture.py crash-pull --host "$PS5_HOST" --ftp-port "$PS5_FTP_PORT" "$@"
+}
+
+# The worker's status events through the resolved status block (menu_client events).
+events_client() {
+  local addrs block=""
+  addrs="$(resolved_block_addrs)"
+  [ -n "$addrs" ] && block="--address ${addrs##* }"
+  # shellcheck disable=SC2086
+  run_client events --target-id "$TARGET_ID" $TARGET_PID_ARGS $block "$@"
+}
+
+# menu-ctl nav CMD [N]: send a navigation command N times, then print the row the cursor is on.
+do_nav() {
+  local usage="usage: $0 nav next|prev|select|back|left|right|home|end|page-next|page-prev|back-root|show|hide [N]"
+  local nav="${1:-}" count="${2:-1}" i item
+  case "$nav" in
+    next|prev|select|back|left|right|home|end|page-next|page-prev|back-root|show|hide) ;;
+    *) echo "$usage" >&2; return 2 ;;
+  esac
+  case "$count" in ''|*[!0-9]*|0) echo "$usage" >&2; return 2 ;; esac
+  for ((i = 0; i < count; i++)); do
+    menu_command "$nav" > /dev/null || { echo "[menu-ctl] nav $nav failed after $i step(s)" >&2; return 1; }
+  done
+  item="$(events_client --current-item 2> /dev/null)" || item=""
+  echo "[menu-ctl] item: ${item:-(unknown)}"
+}
+
+# menu-ctl action NAME [PARAM]: run one native shell action (GTAV_NATIVE_SHELL_ACTION_<NAME>) the way its
+# menu row does, then print the worker's events for ACTION_WAIT seconds (default 4). PARAM is a number,
+# or a lowercase model/weapon name sent as its joaat hash (as spawn-model does).
+do_action() {
+  local usage="usage: $0 action NAME [PARAM]   (NAME: a GTAV_NATIVE_SHELL_ACTION_* suffix, e.g. SAVE_MAP)"
+  [ "$#" -ge 1 ] && [ "$#" -le 2 ] || { echo "$usage" >&2; return 2; }
+  local name param="${2:-}" action value cursor
+  name="$(printf '%s' "$1" | tr '[:lower:]-' '[:upper:]_')"
+  action="$(native_action_id "$name")" || return 2
+  cursor="$(events_client --print-cursor 2> /dev/null)" || cursor=""
+  if [ -z "$param" ]; then
+    menu_command activate-action --argument "$action" > /dev/null || return 1
+  else
+    case "$param" in
+      0x[0-9a-fA-F]*|[0-9]*) value="$((param))" ;;
+      *[!a-z0-9_]*) echo "[menu-ctl] PARAM is a number or a lowercase [a-z0-9_] name" >&2; return 2 ;;
+      *)
+        value="$(PYTHONPATH="$ROOT/tools${PYTHONPATH:+:$PYTHONPATH}" "$PY" -c \
+          'import sys; from gtavmenu_tools.hashes import joaat; print(joaat(sys.argv[1]))' "$param")" || return 1
+        ;;
+    esac
+    menu_command activate-action-param --argument "$(printf '0x%x' "$((action | (value << 32)))")" \
+      > /dev/null || return 1
+  fi
+  echo "[menu-ctl] action $name ($action) sent; events:"
+  if [ -n "$cursor" ]; then
+    events_client --since "$cursor" --follow --seconds "${ACTION_WAIT:-4}" || true
+  else
+    events_client --tail 8 || true
+  fi
+}
+
+# menu-ctl events [--follow] [--all] [...]: the worker's status events, heartbeats hidden unless --all.
+do_events() {
+  events_client "$@"
+}
+
+# menu-ctl census [--json OUT] [--no-config]: read-only pool census (tools/pool_census.py).
+do_census() {
+  # shellcheck disable=SC2086
+  "$PY" tools/pool_census.py --host "$PS5_HOST" --port "$PS5DEBUG_PORT" --target "$GTAV_TARGET" \
+    $TARGET_PID_ARGS "$@"
+}
+
 do_watch() {
   parse_start_args "$@"
   refuse_retired_custom_mount
@@ -3781,6 +3927,7 @@ do_watch() {
     echo "[menu-ctl] !! the ptrace-free cave route is mandatory for $GTAV_TARGET; --no-cave is unsupported." >&2
     exit 2
   fi
+  klog_auto_start
 
   # Player-ped readiness anchor (overridable). MODE 1 = ready when the dereferenced
   # value is non-zero (the player ped pointer is non-null => player in control).
@@ -3827,7 +3974,8 @@ do_watch() {
   stage_worker_elf
   # Unquoted on purpose: cave_args is a pre-split list of make assignments, or empty.
   # shellcheck disable=SC2086
-  build_payload_loader $cave_args PAYLOAD_LOADER_WAIT_FOR_GAME=1 PAYLOAD_LOADER_PERSISTENT="$PERSIST_ENABLE" \
+  build_payload_loader $cave_args ${BOOT_POOLS_ARG:+BOOT_POOLS=$BOOT_POOLS_ARG} \
+    PAYLOAD_LOADER_WAIT_FOR_GAME=1 PAYLOAD_LOADER_PERSISTENT="$PERSIST_ENABLE" \
     PAYLOAD_LOADER_SP_READY=1 \
     PAYLOAD_LOADER_SP_READY_ADDR="$sp_addr" \
     PAYLOAD_LOADER_SP_READY_DEREF="$sp_deref" \
@@ -3939,18 +4087,28 @@ do_logs() {
     return
   fi
   # --kernel: stream the PS5 kernel log (ps5debug forwarder, port 3232) to a local file,
-  # filtered to our worker lines. This is the crash-capture lane: the kernel log is
+  # filtered to our worker lines by default. This is the crash-capture lane: the kernel log is
   # kernel-side, so it retains the breadcrumbs after GTA dies (the in-memory ring does not).
-  # Requires the worker to have been built with --klog. Optional first arg = capture seconds
-  # (default ~24h = until Ctrl-C). Extra args pass through to the client `klog` command.
+  # `--kernel --all` (or KLOG_FILTER= set empty) keeps every line: the kernel's own crash report
+  # (signal, backtrace) does not carry the GTAVMenu tag. The stream reconnects across a crash or
+  # reboot. Optional first arg = capture seconds (default ~24h = until Ctrl-C). Extra args pass
+  # through to the client `klog` command.
   if [ "${1:-}" = "--kernel" ] || [ "${1:-}" = "--klog" ]; then
     shift
+    local filter="${KLOG_FILTER-GTAVMenu}"
+    if [ "${1:-}" = "--all" ]; then filter=""; shift; fi
     local secs="${KLOG_SECONDS:-86400}"
     if printf '%s' "${1:-}" | grep -qE '^[0-9]+$'; then secs="$1"; shift; fi
     local out="${KLOG_OUTPUT:-build/gtav-menu-klog.log}"
-    echo "[menu-ctl] streaming PS5 kernel log (filter '${KLOG_FILTER:-GTAVMenu}', ${secs}s) -> $out"
-    echo "[menu-ctl] crash capture: survives GTA dying. Build the worker with --klog. Ctrl-C to stop."
-    run_client klog --klog-port "${PS5_KLOG_PORT:-3232}" --filter "${KLOG_FILTER:-GTAVMenu}" \
+    local -a filter_args=()
+    local shown_filter="unfiltered"
+    if [ -n "$filter" ]; then
+      filter_args=(--filter "$filter")
+      shown_filter="filter '$filter'"
+    fi
+    echo "[menu-ctl] streaming PS5 kernel log ($shown_filter, ${secs}s) -> $out"
+    echo "[menu-ctl] crash capture: survives GTA dying and reconnects after a reboot. Ctrl-C to stop."
+    run_client klog --klog-port "${PS5_KLOG_PORT:-3232}" "${filter_args[@]}" --reconnect \
       --seconds "$secs" --output "$out" "$@"
     return
   fi
@@ -4014,6 +4172,7 @@ do_cave_inject() {
   parse_start_args "$@"
   refuse_retired_custom_mount
   resolve_custom_packs
+  klog_auto_start
 
   if [ "$PREFLIGHT_ENABLE" = "1" ]; then
     echo "[menu-ctl] pre-flight: confirming player-world readiness (read-only anchor check)..."
@@ -4087,7 +4246,8 @@ case "$cmd" in
   pack-register|pack-up|pack-load-archive|pack-inspect|pack-revert|pack-request|pack-load-data|\
   spawn-model|spawn-object|pack-load-typ|spawn-ped|give-weapon|pack-install|pack-list|pack-notes|\
   pack-upload|pack-uninstall|export-templates|pack-select|pack-autoload|pack-load-map|pack-load-bounds|\
-  pack-unhide|pack-labels|pack-finish-map|pack-card-show|pack-card-release|doctor|logs)
+  pack-unhide|pack-labels|pack-finish-map|pack-card-show|pack-card-release|doctor|logs|\
+  nav|action|events|census|crash-pull)
     require_console_host || exit 2
     ;;
 esac
@@ -4288,6 +4448,27 @@ case "$cmd" in
   doctor)
     do_doctor
     ;;
+  nav)
+    do_nav "$@"
+    ;;
+  action)
+    do_action "$@"
+    ;;
+  events)
+    do_events "$@"
+    ;;
+  census)
+    do_census "$@"
+    ;;
+  klog-stop)
+    "$PY" tools/crash_capture.py klog-stop
+    ;;
+  klog-status)
+    "$PY" tools/crash_capture.py klog-status
+    ;;
+  crash-pull)
+    do_crash_pull "$@"
+    ;;
   session)
     do_session "$@"
     ;;
@@ -4301,6 +4482,7 @@ usage: $0 COMMAND [OPTIONS]
 Production commands:
   cave-inject [--show]       inject into a ready single-player session
   watch [--persist] [opts]   wait for readiness, then inject once or per relaunch
+                             (--boot-pools / --no-boot-pools override the target's pool growth)
   stop                       stop the menu worker and restore owned hooks
   daemon-stop                retire a menu-ctl watch --persist daemon and worker
   status [--pid N]           read the live status block
@@ -4404,13 +4586,29 @@ Production commands:
   pack-card-show             draw the last requested pack card centred on screen (host debug)
   pack-card-release          hide the card and release the dict after the draw lists drain
   doctor                     run read-only target and worker checks
+  nav CMD [N]                send a menu navigation command N times (next, prev, select, back, left,
+                             right, home, end, page-next, page-prev, back-root, show, hide) and print
+                             the row the cursor is on
+  action NAME [PARAM]        run one menu action by name (GTAV_NATIVE_SHELL_ACTION_<NAME>, e.g. SAVE_MAP),
+                             then print the worker's events for ACTION_WAIT seconds (default 4)
+  events [--follow] [--all]  the worker's status events (heartbeats hidden unless --all)
+  census [--json OUT]        read-only census of the store pools, model-info blocks and gameconfig pool
+                             sizes the custom packs depend on
+  klog-stop | klog-status    stop / show the background kernel-log follower that watch and cave-inject
+                             start (KLOG_AUTO=0 skips it); the log is build/klog/<date>-<target>.log
+  crash-pull                 copy new crash dumps from /devlog/system/sce_coredumps.0 to build/crash/
+                             (read-only; the console's crash reporter deletes them after reporting)
   session stage|next|go|check|stop PLAN [NAME] [...]
                              a hardware test session from a plan (developer): stage its packs,
                              select a process's packs, wait for single-player and inject with the
                              pack-notes follower (go --klog: also the klog) running, check its lines
-  logs [N|--worker|--kernel] inspect loader or worker diagnostics
+  logs [N|--worker|--kernel [--all]]
+                             inspect loader or worker diagnostics (--kernel --all: every kernel line)
 
 Set PS5_HOST=<console-ip> for console commands; offline conversion and validation do not need it.
+Live-only commands (status, doctor, show/hide, stop, nav, action, events, census, spawn-*, give-weapon,
+map-load/-cancel/-clear, pack-autoload, pack-revert) follow the running build when GTAV_TARGET is unset;
+builds and injection keep the explicit target (default ppsa04264-01.010.002).
 The menu starts hidden and opens with R1 + D-pad Left. Select an admitted target with
 GTAV_TARGET; ppsa04264-01.010.002 remains the default. Historical measurement commands
 are unavailable in this launcher. Set GTAV_AUTO_TARGET=1 for health/control commands against

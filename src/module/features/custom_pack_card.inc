@@ -85,6 +85,10 @@ static void card_hide(void) {
 
 static uint32_t show_pack_card(uint32_t param) {
   const uint32_t action = GTAV_NATIVE_SHELL_ACTION_SHOW_PACK_CARD;
+#if !GTAV_MENU_CUSTOM_PACK_ENGINE
+  // A card's dictionary is a member of a registered pack archive.
+  if (param != 1u) return unavailable(action, GTAV_CUSTOM_PACK_ENGINE_REASON);
+#endif
   const int keepalive = param == 1u;
   if (keepalive && !__atomic_load_n(&g_card_shown, __ATOMIC_ACQUIRE))
     return GTAV_FEATURE_RESULT_NONE;

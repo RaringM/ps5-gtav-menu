@@ -42,6 +42,7 @@ from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 
 from gtavmenu_tools import rpf7
+from gtavmenu_tools.custom_pack_schema import CONSOLE_ROOT
 
 KIND = "gtavmenu-retail-templates"
 SCHEMA_VERSION = 1
@@ -49,7 +50,7 @@ TRANSFORMS = ("rsc7", "copy", "decrypt-inflate")
 DEFAULT_TARGET = "ppsa04264-01.010.002"
 # Console directory the menu's EXPORT_RETAIL_FILE action writes (src/module/features/
 # custom_retail_export.inc); one file per encrypted template, named by the member's basename.
-EXPORT_ROOT = "/data/gtavmenu/custom/exports"
+EXPORT_ROOT = f"{CONSOLE_ROOT}/exports"
 MANIFEST_DIR = Path(__file__).resolve().parents[2] / "data/retail_templates"
 MAX_MEMBER_BYTES = 1 << 30
 
@@ -244,7 +245,7 @@ class Exports:
 
 
 def open_exports(url: str, curl: Curl = run_curl) -> Exports:
-    """file:///path/to/exports or ftp://host:port/data/gtavmenu/custom/exports (bare path = file)."""
+    """file:///path/to/exports or ftp://host:port/data/GTAVMenu/custom/exports (bare path = file)."""
     parsed = urllib.parse.urlsplit(url)
 
     def checked(name: str) -> str:

@@ -38,6 +38,7 @@ build/auto-reports/ when the work dir resolves outside <repo>/build, see default
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import subprocess
 import sys
@@ -106,10 +107,144 @@ def run(command: list[str], label: str) -> subprocess.CompletedProcess:
     return result
 
 
+def ps4_name_materials(payload: bytes, header: dict, limits=None) -> dict:
+    """Admit name repair only when every explicit drawable inherits the main shader group.
+
+    Legacy FragType/EnvironmentCloth/FragPhysicsLOD/FragPhysTypeChild slots follow
+    the pinned CodeWalker layouts also used by asset_materials (the bounded walk is
+    gtavmenu_tools.ps4_resource_checks.fragment_drawables). No mesh pointers or
+    arbitrary words are scanned. Independent groups need a separate repair.
+    """
+    from gtavmenu_tools import vehicle_materials
+    from gtavmenu_tools.asset_formats import AssetError, Limits
+    from gtavmenu_tools.ps4_resource_checks import LegacyWalk, fragment_drawables
+
+    limits = limits or Limits()
+    if header["version"] != 162 or header["graphicsBytes"]:
+        raise AssetError("PS4 name repair requires system-only Legacy version-162 fragments")
+    walk = LegacyWalk(payload, header, limits, "PS4 texture-name")
+    drawables = fragment_drawables(walk)
+    main_group = walk.u64(walk.at(walk.u64(0x30), 336) + 16)
+    for pointer in set(drawables) - {0}:
+        group = walk.u64(walk.at(pointer, 336) + 16)
+        if group not in (0, main_group):
+            raise AssetError(
+                "PS4 texture-name repair does not support independent child/cloth shader bindings; "
+                "rename their dictionaries and all drawable bindings together before conversion"
+            )
+    return vehicle_materials.inspect_legacy_yft(payload, header, vehicle_materials.material_contract(), limits)
+
+
+def ps4_embedded_name_preflight(fixture: Path, manifest: dict) -> None:
+    """Refuse invalid embedded names before producing any partially repaired fixture."""
+    from gtavmenu_tools.asset_formats import AssetError
+    from gtavmenu_tools.texture_names import SOURCE_NAME_POLICY, texture_name_issue
+    from gtavmenu_tools.vehicle_repair_inputs import resource_path
+    from repair_pc_embedded_textures import EmbeddedError, embedded_textures, has_graphics
+
+    paths = [
+        resource_path(fixture, row["member"]) for row in manifest["resources"] if row["member"].lower().endswith(".yft")
+    ]
+    paths += sorted((fixture / "embedded-textures").rglob("*.yft"))
+    for path in paths:
+        blob = path.read_bytes()
+        if not has_graphics(blob):
+            continue
+        try:
+            textures = embedded_textures(blob)
+        except EmbeddedError:
+            # The extraction step diagnoses malformed main fragments or omits
+            # unsupported optional parts; this preflight only addresses names.
+            continue
+        for texture in textures:
+            if issue := texture_name_issue(texture["name"], SOURCE_NAME_POLICY):
+                raise AssetError(
+                    f"PS4 embedded texture name {texture['name']!r} in {path.relative_to(fixture)}: {issue}; "
+                    "automatic embedded-name repair is unsupported; rename the embedded dictionary "
+                    "and all drawable bindings together before conversion"
+                )
+
+
+def ps4_auto(args) -> int:
+    """Prepare Legacy source copies without PS5 templates or PS5 geometry repairs."""
+    from gtavmenu_tools.asset_formats import AssetError, Limits, decode_resource
+    from gtavmenu_tools.asset_textures import inspect_legacy_dictionary
+    from gtavmenu_tools.texture_names import SOURCE_NAME_POLICY, texture_name_issue
+    from gtavmenu_tools.vehicle_repair_inputs import resource_path
+
+    fixture = args.fixture
+    manifest = validate_fixture(fixture)
+    try:
+        ps4_embedded_name_preflight(fixture, manifest)
+    except AssetError as error:
+        raise SystemExit(f"auto PS4: {error}") from None
+    steps = args.output.with_name(args.output.name + "-steps")
+    if steps.exists() or steps.is_symlink():
+        raise SystemExit(f"refusing to overwrite {steps}")
+    steps.mkdir(parents=True)
+    applied = []
+
+    def apply(name: str, tool: str, nothing: str, extra: list[str] = ()) -> None:
+        nonlocal fixture
+        output = steps / name
+        command = [sys.executable, str(TOOLS / tool), "--fixture", str(fixture), "--output", str(output), *extra]
+        result = subprocess.run(command, cwd=ROOT, capture_output=True, text=True, check=False)
+        if result.returncode:
+            message = (result.stderr or result.stdout).strip()
+            if nothing in message and not output.exists():
+                print(f"auto PS4: {name}: nothing found")
+                return
+            raise SystemExit(f"auto PS4: {name} refused: {message}")
+        print(f"auto PS4: {name}: applied")
+        applied.append(name)
+        fixture = output
+
+    apply("select-model", "repair_pc_select_model.py", "nothing to select")
+    apply("embedded-textures", "repair_pc_embedded_textures.py", "no embedded textures", ["--model", manifest["model"]])
+    apply("texture-stride", "repair_pc_texture_stride.py", "no texture stride to repair")
+    manifest = validate_fixture(fixture)
+    needs_names = False
+    for row in manifest["resources"]:
+        if row["member"].lower().endswith(".ytd"):
+            header, payload = decode_resource(resource_path(fixture, row["member"]).read_bytes(), 256 << 20)
+            names = inspect_legacy_dictionary(payload, header, Limits())["textures"]
+            needs_names |= any(texture_name_issue(r["name"], SOURCE_NAME_POLICY) for r in names)
+    if needs_names:
+        resources = []
+        for row in manifest["resources"]:
+            if row["member"].lower().endswith(".yft"):
+                blob = resource_path(fixture, row["member"]).read_bytes()
+                header, payload = decode_resource(blob, 256 << 20)
+                try:
+                    materials = ps4_name_materials(payload, header)
+                except AssetError as error:
+                    raise SystemExit(f"auto PS4: texture-names refused for {row['member']}: {error}") from None
+                resources.append(
+                    materials | {"member": row["member"], "sourceSha256": hashlib.sha256(blob).hexdigest()}
+                )
+        report = steps / "source-materials.json"
+        report.write_text(
+            json.dumps({"kind": "pc-source-material-observation-for-name-repair", "resources": resources}, indent=2)
+            + "\n"
+        )
+        apply(
+            "texture-names",
+            "repair_pc_texture_names.py",
+            "no texture names to repair",
+            ["--material-report", str(report)],
+        )
+    manifest = copy_fixture(fixture, args.output)
+    manifest["autoRepairs"] = {"tool": "tools/repair_pc_auto.py", "target": args.target, "applied": applied}
+    (args.output / "manifest.json").write_text(json.dumps(manifest, indent=1, sort_keys=True) + "\n")
+    print(json.dumps({"output": str(args.output), "applied": applied}))
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--fixture", type=Path, required=True)
-    parser.add_argument("--material-report", type=Path, required=True)
+    parser.add_argument("--material-report", type=Path)
+    parser.add_argument("--target", choices=("ppsa04264-01.010.002", "cusa00411-01.57"), default="ppsa04264-01.010.002")
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--templates", type=Path, help="retail templates root (passed to the converter walks)")
     parser.add_argument("--reports-dir", type=Path, help="material reports (default: <output>-steps)")
@@ -117,6 +252,12 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     if args.output.exists() or args.output.is_symlink():
         raise SystemExit(f"refusing to overwrite {args.output}")
+    if args.target == "cusa00411-01.57":
+        if args.skip:
+            parser.error("--skip is not supported by PS4 source preparation")
+        return ps4_auto(args)
+    if args.material_report is None:
+        parser.error("PS5 automatic repairs require --material-report")
     manifest = validate_fixture(args.fixture)
     steps_dir = args.output.parent / (args.output.name + "-steps")
     if steps_dir.exists() or steps_dir.is_symlink():

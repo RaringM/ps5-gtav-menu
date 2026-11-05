@@ -315,9 +315,11 @@ extern "C" void gtav_features_game_thread_tick(void) {
   // retasks, explosions/fires, and world setters all need valid script context. Cheap when
   // no mode is active (one volatile read + early return).
   minigame_game_thread_tick();
+#if GTAV_MENU_ENABLE_EFFECTS
   // Screen effects (night vision / thermal) re-assert here so they survive cutscene/load
   // clears; inert until their toggle is enabled.
   effects_game_thread_tick();
+#endif
   emote_game_thread_tick();  // emote player: stream dict + TASK_PLAY_ANIM (game-thread only)
   // Held-toggle re-assertions (god mode, vehicle god/health/grip, nitro/brake, auto-heal,
   // wanted lock, movement multipliers, ...). These natives walk LIVE engine entities, so they

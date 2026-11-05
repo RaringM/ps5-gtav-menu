@@ -164,6 +164,8 @@ static uint32_t g_max_jobs;
 static volatile int g_active;
 static volatile uint32_t g_call_count;
 static volatile uint32_t g_jobs_run;
+volatile uint32_t gtav_frame_hook_inflight_count
+    __attribute__((used, retain, visibility("default")));
 // Re-entrancy/concurrency guard for the drain: set while a drain is in progress so a
 // re-entrant or cross-thread hook fire cannot drain the queue underneath an in-flight
 // job (see gtav_frame_hook_run_pending_jobs).
@@ -350,6 +352,7 @@ static void prepare_queue_state(GtavFrameHookJobFn job_fn, void* job_context,
   g_max_jobs = max_jobs_per_frame ? max_jobs_per_frame : GTAV_FRAME_HOOK_DEFAULT_MAX_JOBS;
   g_call_count = 0;
   g_jobs_run = 0;
+  __atomic_store_n(&gtav_frame_hook_inflight_count, 0u, __ATOMIC_RELEASE);
   g_draining = 0;
   g_probe_calls = 0;
   g_probe_calls_with_context = 0;
@@ -655,6 +658,7 @@ __asm__(
 // preserve that pointer and chain to the original handler via the gateway so the
 // native still returns its real value.
 void frame_hook_thunk(void* call_context) {
+  __atomic_add_fetch(&gtav_frame_hook_inflight_count, 1u, __ATOMIC_ACQ_REL);
   // Keep the common per-fire path small: only queued jobs pay for the drain loop.
   gtav_frame_hook_run_pending_jobs();
   // Chain to the original handler (gateway = stolen prologue + jump back). If the
@@ -665,6 +669,7 @@ void frame_hook_thunk(void* call_context) {
   if (gateway) {
     ((void (*)(void*))gateway)(call_context);
   }
+  __atomic_sub_fetch(&gtav_frame_hook_inflight_count, 1u, __ATOMIC_ACQ_REL);
 }
 
 // When the REPLACE target is a rage native handler (not a normal int(int) fn),

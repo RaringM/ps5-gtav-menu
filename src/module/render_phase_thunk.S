@@ -49,9 +49,11 @@ SYM(gtav_render_phase_wrapper):
   vmovdqu %ymm13, 928(%rsp)
   vmovdqu %ymm14, 960(%rsp)
   vmovdqu %ymm15, 992(%rsp)
+  lock incl SYM(gtav_render_phase_inflight_count)(%rip)
   cld
   movq 64(%r12), %rdi
   call SYM(gtav_render_phase_wrapper_body)
+  lock decl SYM(gtav_render_phase_inflight_count)(%rip)
   vmovdqu 512(%rsp), %ymm0
   vmovdqu 544(%rsp), %ymm1
   vmovdqu 576(%rsp), %ymm2

@@ -44,7 +44,9 @@ MANIFEST_PATH = TARGETS_DIR / f"{DEFAULT_MANIFEST_STEM}.json"
 def decrypted_eboot(stem: str | None = None) -> Path | None:
     """A locally dumped, decrypted eboot for `stem`, or None if none is present.
 
-    These images are large and gitignored, so every caller must tolerate their absence (CI has none).
+    These images are large: gitignored dumps under build/analysis, or Git LFS files that a checkout
+    may hold only as pointers (counted as absent). Every caller must tolerate their absence (CI has
+    none).
     Prefer title-and-version-specific paths. Version-only names are retained as a
     compatibility fallback for the historical PPSA04264 evidence, but are ambiguous
     once two regional titles share one content version.
@@ -62,7 +64,20 @@ def decrypted_eboot(stem: str | None = None) -> Path | None:
         candidates.append(analysis / f"eboot-{version}.elf")
     if version == "01.005.000":
         candidates += [analysis / "eboot.ida.elf", REPO_ROOT / "ref/eboot.elf", REPO_ROOT / "eboot.elf"]
-    return next((c for c in candidates if c.is_file()), None)
+    return next((c for c in candidates if c.is_file() and not is_lfs_pointer(c)), None)
+
+
+LFS_POINTER_PREFIX = b"version https://git-lfs.github.com/spec/v1\n"
+
+
+def is_lfs_pointer(path: Path) -> bool:
+    """True for a Git LFS pointer file: a checkout made with GIT_LFS_SKIP_SMUDGE=1 (or without
+    git-lfs) holds these small text stubs in place of the binaries, which count as absent."""
+    try:
+        with path.open("rb") as handle:
+            return handle.read(len(LFS_POINTER_PREFIX)) == LFS_POINTER_PREFIX
+    except OSError:
+        return False
 
 
 def native_addresses_header(stem: str | None = None) -> Path:

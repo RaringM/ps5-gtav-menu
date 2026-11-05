@@ -7,6 +7,8 @@ import json
 import re
 from pathlib import Path, PurePosixPath
 
+from gtavmenu_tools.boot_pool_profile import BootPoolProfileError
+from gtavmenu_tools.boot_pool_profile import contract as boot_pool_contract
 from gtavmenu_tools.etahen import (
     ELF_HEADER,
     HEADER_SIZE,
@@ -19,7 +21,8 @@ from gtavmenu_tools.onionhen import inspect_plugin_bytes
 from gtavmenu_tools.target_profile import validate_manifest
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-TARGETS = ("ppsa04264-01.005.000", "ppsa04264-01.010.002", "ppsa04263-01.010.002")
+# Registry order is part of the inventory identity; append new targets at the end.
+TARGETS = ("ppsa04264-01.005.000", "ppsa04264-01.010.002", "ppsa04263-01.010.002", "ppsa04264-01.011.001")
 LAYOUTS = {
     "standalone": {"gtav-menu-daemon.elf": "daemon", "README.md": "documentation"},
     "onionhen": {"GTAV00001.elf": "onionhen-plugin", "README.md": "documentation"},
@@ -57,6 +60,10 @@ def expected_contract(manifest: dict) -> dict:
         "brokerStolenLen",
         "brokerExpectedBytesCompact",
     )
+    try:
+        boot_pools = boot_pool_contract(manifest)
+    except (BootPoolProfileError, OSError, KeyError) as exc:
+        raise UniversalPackageError(f"boot-pool contract is not reviewed: {exc}") from exc
     return {
         "loader": {key: manifest["loader"][key] for key in loader_keys},
         "text": {key: manifest["liveMapping"]["text"][key] for key in ("liveStart", "liveEnd")},
@@ -64,6 +71,7 @@ def expected_contract(manifest: dict) -> dict:
             key: manifest["renderPhase"][key]
             for key in ("root", "leafVtable", "groupVtable", "taskId", "original", "cycle", "fingerprints")
         },
+        "bootPools": boot_pools,
     }
 
 
@@ -85,7 +93,7 @@ def target_identity(target: str, *, targets_dir: Path | None = None) -> dict:
 
 def validate_targets(entries: object, *, targets_dir: Path | None = None) -> list[dict]:
     if not isinstance(entries, list) or len(entries) != len(TARGETS):
-        raise UniversalPackageError("universal inventory must contain all three supported targets")
+        raise UniversalPackageError(f"universal inventory must contain all {len(TARGETS)} supported targets")
     for target, entry in zip(TARGETS, entries, strict=True):
         if not isinstance(entry, dict):
             raise UniversalPackageError("malformed universal target entry")

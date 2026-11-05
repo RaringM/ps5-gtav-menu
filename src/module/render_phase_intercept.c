@@ -19,6 +19,8 @@ GtavRenderPhaseState gtav_render_phase_state
 
 uintptr_t gtav_render_phase_original __attribute__((used, retain, visibility("default"))) =
     GTAV_RENDER_PHASE_ORIGINAL;
+volatile uint32_t gtav_render_phase_inflight_count
+    __attribute__((used, retain, visibility("default")));
 
 static int plausible_slot(uint64_t slot) {
   return slot >= 0x100000020ull && slot < 0x8000000000000ull && !(slot & 7u);

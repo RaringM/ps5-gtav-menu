@@ -1,0 +1,54 @@
+{
+  "_comment": [
+    "Hand-authored RE input for the script-globals subsystem (the despawn-global",
+    "MP-cars-in-SP fix). Unlike the native table, these anchors are NOT resolved by",
+    "the crossmap join -- they are version-specific machine addresses reverse-",
+    "engineered once per game build from the PS5 eboot with a disassembler, then",
+    "baked into a generated header by devtools/generators/generate_script_globals_header.py.",
+    "Set each anchor's \"addr\" to the absolute live virtual address (the eboot maps",
+    "at its fixed link base with no ASLR slide, so the disassembler vaddr is the",
+    "live VA). Leave it null until RE'd; a null anchor emits 0 and the runtime",
+    "latches FAILED rather than dereferencing null. See docs/script-globals-design.md."
+  ],
+  "gameBuild": "GTA V Enhanced (PS5) PPSA04264 / 01.011.001",
+  "targetId": "ppsa04264-01.011.001",
+  "_targetIdComment": [
+    "Target-specific anchors for PPSA04264 01.011.001.",
+    "Both the globals base and global indices move between builds; never reuse these values."
+  ],
+  "analysisInputSha256": "dcb049481ef5ea5ce6c96c6ca790475f83bad988b586dbfb8ec6e17a511df1bb",
+  "despawnGlobalIndex": {
+    "macro": "GTAV_DESPAWN_GLOBAL_INDEX",
+    "value": 4521040,
+    "note": "A read-only live bytecode scan on PPSA04264 01.011.001 (PID 101, 2026-11-01) returned exactly one hit, 4521040 (01.010.002: 4520961). The runtime writes only after an explicit vehicle spawn arms the capability."
+  },
+  "prologueGlobalIndex": {
+    "macro": "GTAV_PROLOGUE_GLOBAL_INDEX",
+    "value": 0,
+    "note": "Unset for 01.011.001; Skip Prologue remains disabled."
+  },
+  "prologueGlobalCandidates": [],
+  "anchors": [
+    {
+      "name": "SCRIPT_TABLE",
+      "macro": "GTAV_SCRIPT_TABLE_ADDR",
+      "addr": null,
+      "verifiedLive": false,
+      "lead": "Not resolved for 01.011.001; production does not consume this anchor (01.010.002 leads do not transfer).",
+      "method": [
+        "Unresolved; null emits 0 and the runtime latches FAILED instead of dereferencing it."
+      ]
+    },
+    {
+      "name": "GLOBALS_BASE",
+      "macro": "GTAV_GLOBALS_BASE_ADDR",
+      "addr": "0x618b570",
+      "verifiedLive": true,
+      "lead": "Live-inspected PPSA04264 01.011.001 globals pointer table, relocated from 01.010.002 0x6155e90.",
+      "method": [
+        "13 of the 14 01.010.002 RIP-relative accessor sites were found in the 01.011.001 normalized executable by exact surrounding bytes (displacement masked); all 13 resolve to 0x618b570.",
+        "Fail-closed read-only validation on PID 101 observed 15 plausible pointers and 49 null entries, resolved block 17 for index 4521040, and confirmed the target slot was writable with value 0 without changing it."
+      ]
+    }
+  ]
+}

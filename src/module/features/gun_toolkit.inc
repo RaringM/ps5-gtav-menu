@@ -256,9 +256,10 @@ static void gun_toolkit_game_thread_tick(void) {
     }
   } else if (gun == GTAV_GUN_CLONE) {
     // Clone gun: duplicate the aimed ped (the probe targeted peds only). CLONE_PED allocates a ped,
-    // but this tick runs on the game/script thread. Track the clone so Clear Spawned Peds removes it.
+    // but this tick runs on the game/script thread. Track the clone so Clear Spawned Peds removes it;
+    // with the ped roster full the gun does nothing.
     if (hit_ent && g_n.clone_ped && g_n.does_entity_exist &&
-        invoke_return<int>(g_n.does_entity_exist, hit_ent)) {
+        invoke_return<int>(g_n.does_entity_exist, hit_ent) && spawned_ped_room() > 0) {
       // CLONE_PED(ped, isNetwork, bScriptHostPed, copyHeadBlend) -> Ped.
       const int clone = invoke_return<int>(g_n.clone_ped, hit_ent, 0, 1, 1);
       g_gun_effect_applied++;  // native invoked (count regardless of the returned handle)

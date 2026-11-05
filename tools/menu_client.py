@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
-import select
+import os
 import socket
 import struct
 import sys
@@ -13,6 +13,22 @@ import time
 from pathlib import Path
 
 from gtavmenu_tools import parse_int, read_json
+from gtavmenu_tools.command_mailbox import (  # noqa: F401 -- COMMAND_IDS/STATUS_NAMES stay public names here
+    COMMAND_IDS,
+    COMMAND_NAMES,
+    COMMAND_STATUS_NAMES,
+    FIELDS_FORMAT,
+    FIELDS_OFFSET,
+    MAILBOX_ABI_VERSION,
+    MAILBOX_FORMAT,
+    MAILBOX_MAGIC,
+    MAILBOX_MAGIC_BYTES,
+    MAILBOX_SIZE,
+    REQUEST_SEQUENCE_OFFSET,
+    decode_command_mailbox,
+    encode_request,
+)
+from gtavmenu_tools.command_mailbox import command_id as _command_id_from_name
 from gtavmenu_tools.target import APP_VERSION as _TARGET_APP_VERSION
 from gtavmenu_tools.target import TITLE_ID as _TARGET_TITLE_ID
 
@@ -47,14 +63,14 @@ GTAV_LOG_RING_HEADER_SIZE = struct.calcsize(GTAV_LOG_RING_HEADER_FORMAT)
 GTAV_LOG_RING_ENTRY_SIZE = struct.calcsize(GTAV_LOG_RING_ENTRY_FORMAT)
 GTAV_LOG_RING_SIZE = GTAV_LOG_RING_HEADER_SIZE + GTAV_LOG_RING_ENTRY_SIZE * GTAV_LOG_RING_ENTRY_COUNT
 GTAV_LOG_RING_MAGIC_BYTES = struct.pack("<Q", GTAV_LOG_RING_MAGIC)
-GTAV_COMMAND_MAILBOX_MAGIC = 6363377698424837191
-GTAV_COMMAND_MAILBOX_ABI_VERSION = 1
-GTAV_COMMAND_MAILBOX_FORMAT = "<QIIQQIIQ32s80s"
-GTAV_COMMAND_MAILBOX_SIZE = struct.calcsize(GTAV_COMMAND_MAILBOX_FORMAT)
-GTAV_COMMAND_MAILBOX_MAGIC_BYTES = struct.pack("<Q", GTAV_COMMAND_MAILBOX_MAGIC)
-GTAV_COMMAND_REQUEST_SEQUENCE_OFFSET = struct.calcsize("<QII")
-GTAV_COMMAND_FIELDS_OFFSET = struct.calcsize("<QIIQQ")
-GTAV_COMMAND_FIELDS_FORMAT = "<IIQ"
+GTAV_COMMAND_MAILBOX_MAGIC = MAILBOX_MAGIC
+GTAV_COMMAND_MAILBOX_ABI_VERSION = MAILBOX_ABI_VERSION
+GTAV_COMMAND_MAILBOX_FORMAT = MAILBOX_FORMAT
+GTAV_COMMAND_MAILBOX_SIZE = MAILBOX_SIZE
+GTAV_COMMAND_MAILBOX_MAGIC_BYTES = MAILBOX_MAGIC_BYTES
+GTAV_COMMAND_REQUEST_SEQUENCE_OFFSET = REQUEST_SEQUENCE_OFFSET
+GTAV_COMMAND_FIELDS_OFFSET = FIELDS_OFFSET
+GTAV_COMMAND_FIELDS_FORMAT = FIELDS_FORMAT
 STATE_NAMES = {0: "zero", 1: "starting", 2: "running", 3: "stopping", 4: "stopped", 5: "error"}
 HOOK_STATUS_NAMES = {
     0: "unknown",
@@ -74,6 +90,8 @@ ERROR_NAMES = {
     4: "hook_install_failed",
     5: "thread_create_failed",
     6: "live_hook_disabled",
+    7: "callback_quiesce_failed",
+    8: "shutdown_failed",
 }
 EVENT_NAMES = {
     0: "none",
@@ -98,119 +116,6 @@ EVENT_NAMES = {
 }
 LEVEL_NAMES = {0: "error", 1: "warn", 2: "info", 3: "debug", 4: "trace"}
 LOG_CATEGORY_NAMES = {0: "general", 1: "inject", 2: "hook", 3: "pad", 4: "feat", 5: "native", 6: "menu", 7: "config"}
-COMMAND_NAMES = {
-    0: "none",
-    1: "toggle",
-    2: "next",
-    3: "prev",
-    4: "select",
-    5: "back",
-    6: "stop",
-    7: "telemetry",
-    8: "god",
-    9: "heal",
-    10: "wanted",
-    11: "show",
-    12: "hide",
-    13: "render_interval",
-    14: "worker_hz",
-    15: "spawn",
-    16: "left",
-    17: "right",
-    18: "load_module",
-    19: "activate_action",
-    20: "toast_ticks",
-    21: "hotkey",
-    22: "page_prev",
-    23: "page_next",
-    24: "home",
-    25: "end",
-    26: "letter_prev",
-    27: "letter_next",
-    28: "back_root",
-    29: "pin",
-    30: "render_diag_mode",
-    31: "render_diag_capture",
-    32: "render_cycle_probe",
-    33: "render_path_low",
-    34: "render_path_high",
-    35: "render_path_control",
-    36: "render_bank_control",
-    37: "render_phase_slot",
-    38: "render_phase_control",
-    39: "activate_action_param",
-}
-COMMAND_IDS = {
-    "toggle": 1,
-    "next": 2,
-    "down": 2,
-    "prev": 3,
-    "previous": 3,
-    "up": 3,
-    "select": 4,
-    "activate": 4,
-    "back": 5,
-    "stop": 6,
-    "telemetry": 7,
-    "god": 8,
-    "heal": 9,
-    "armor": 9,
-    "heal-armor": 9,
-    "heal_armor": 9,
-    "wanted": 10,
-    "clear-wanted": 10,
-    "clear_wanted": 10,
-    "show": 11,
-    "refresh": 11,
-    "redraw": 11,
-    "hide": 12,
-    "render_interval": 13,
-    "set_render_interval": 13,
-    "render-interval": 13,
-    "worker_hz": 14,
-    "worker-hz": 14,
-    "render-diag-mode": 30,
-    "render-diag-capture": 31,
-    "render_diag_mode": 30,
-    "render_diag_capture": 31,
-    "render-cycle-probe": 32,
-    "render-path-low": 33,
-    "render-path-high": 34,
-    "render-path-control": 35,
-    "render-phase-slot": 37,
-    "render-phase-control": 38,
-    "render-bank-control": 36,
-    "render_cycle_probe": 32,
-    "set_worker_hz": 14,
-    "spawn": 15,
-    "spawn_vehicle": 15,
-    "left": 16,
-    "right": 17,
-    "load_module": 18,
-    "load-module": 18,
-    "activate_action": 19,
-    "activate-action": 19,
-    "activate_action_param": 39,
-    "activate-action-param": 39,
-    "toast_ticks": 20,
-    "set_toast_ticks": 20,
-    "toast-ticks": 20,
-    "hotkey": 21,
-    "page_prev": 22,
-    "page-prev": 22,
-    "page_next": 23,
-    "page-next": 23,
-    "home": 24,
-    "end": 25,
-    "letter_prev": 26,
-    "letter-prev": 26,
-    "letter_next": 27,
-    "letter-next": 27,
-    "back_root": 28,
-    "back-root": 28,
-    "pin": 29,
-}
-COMMAND_STATUS_NAMES = {0: "idle", 1: "pending", 2: "acked", 3: "unknown"}
 
 
 def _cstr(raw: bytes) -> str:
@@ -383,15 +288,25 @@ class Ps5DebugNg:
         return matches
 
 
+def reviewed_targets() -> tuple[str, ...]:
+    """Every pinned data/targets manifest stem: the builds live controls may talk to.
+
+    At least gtavmenu_tools.universal_package.TARGETS (what one universal package embeds): a newer
+    reviewed build is injectable through its own target before it joins a release package."""
+    from gtavmenu_tools import target as target_manifests
+
+    return tuple(
+        path.stem for path in target_manifests.all_manifest_paths() if target_manifests.is_pinned(read_json(path))
+    )
+
+
 def supported_foreground_target(fg: dict[str, object]) -> str:
     """Identify a supported title/version for controls; injection verifies memory pins separately."""
-    from gtavmenu_tools.universal_package import TARGETS
-
     title = str(fg.get("titleId", ""))
     version = str(fg.get("appVersion", ""))
     matches = [
         target
-        for target in TARGETS
+        for target in reviewed_targets()
         if target.split("-", 1) == [title.lower(), version] and target.split("-", 1)[0].upper() == title
     ]
     if len(matches) != 1 or int(fg.get("pid") or 0) <= 0:
@@ -404,7 +319,10 @@ def require_expected_foreground(client: Ps5DebugNg, args: argparse.Namespace) ->
     if getattr(args, "auto_target", False):
         if getattr(args, "allow_non_gtav", False):
             raise RuntimeError("--auto-target cannot be combined with --allow-non-gtav")
-        supported_foreground_target(fg)
+        detected = supported_foreground_target(fg)
+        if getattr(args, "auto_target_note", False):
+            print(f"[menu_client] GTAV_TARGET unset: following the running build {detected}", file=sys.stderr)
+            args.auto_target_note = False
         return fg
     if getattr(args, "allow_non_gtav", False):
         return fg
@@ -574,46 +492,6 @@ def feature_action_event_succeeded(event: dict[str, object] | None, action_name:
     return message.startswith(f"feature ok action={action_name} ") and not message.endswith(
         "message=queued for main thread"
     )
-
-
-def decode_command_mailbox(raw: bytes, address: int | None = None) -> dict[str, object]:
-    if len(raw) < GTAV_COMMAND_MAILBOX_SIZE:
-        raise ValueError(f"command mailbox blob too small: {len(raw)} < {GTAV_COMMAND_MAILBOX_SIZE}")
-    (
-        magic,
-        abi_version,
-        struct_size,
-        request_sequence,
-        ack_sequence,
-        command,
-        status,
-        argument,
-        last_command,
-        last_result,
-    ) = struct.unpack_from(GTAV_COMMAND_MAILBOX_FORMAT, raw, 0)
-    if magic != GTAV_COMMAND_MAILBOX_MAGIC:
-        raise ValueError(f"bad command mailbox magic: 0x{magic:016x}")
-    if abi_version != GTAV_COMMAND_MAILBOX_ABI_VERSION:
-        raise ValueError(f"unsupported command mailbox ABI: {abi_version}")
-    if struct_size < GTAV_COMMAND_MAILBOX_SIZE or struct_size > len(raw):
-        raise ValueError(f"invalid command mailbox struct size: {struct_size}")
-    return {
-        "address": address,
-        "addressHex": _hex_addr(address) if address is not None else None,
-        "magic": f"0x{magic:016x}",
-        "abiVersion": abi_version,
-        "structSize": struct_size,
-        "requestSequence": request_sequence,
-        "ackSequence": ack_sequence,
-        "command": command,
-        "commandName": COMMAND_NAMES.get(command, f"unknown_{command}"),
-        "status": status,
-        "statusName": COMMAND_STATUS_NAMES.get(status, f"unknown_{status}"),
-        "argument": argument,
-        "argumentHex": _hex_addr(argument),
-        "lastCommand": _cstr(last_command),
-        "lastResult": _cstr(last_result),
-    }
 
 
 def find_command_mailbox_candidates(
@@ -902,21 +780,6 @@ def _write_json_output(path: str | Path, payload: dict[str, object]) -> None:
     output.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
 
 
-def _command_id_from_name(value: str) -> int:
-    text = value.strip().lower().replace(" ", "-")
-    if not text:
-        raise ValueError("empty command")
-    if text in COMMAND_IDS:
-        return COMMAND_IDS[text]
-    try:
-        command = int(text, 0)
-    except ValueError as exc:
-        raise ValueError(f"unknown menu command: {value}") from exc
-    if command not in COMMAND_NAMES:
-        raise ValueError(f"unknown menu command id: {command}")
-    return command
-
-
 def _mailbox_rank(row: dict[str, object]) -> tuple[int, int, int]:
     return (int(row.get("ackSequence", 0)), int(row.get("requestSequence", 0)), int(row.get("address") or 0))
 
@@ -1073,6 +936,98 @@ def command_status(client: Ps5DebugNg, args: argparse.Namespace) -> None:
     if args.output:
         Path(args.output).write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(result if args.all else {"foreground": fg, "pid": pid, "selected": result["selected"]}, indent=2))
+
+
+# Periodic status events that say nothing new: the menu-draw and worker-tick heartbeats, the hook summary
+# and the pad-hook state. `events` hides them unless --all; `--current-item` still reads the draw lines.
+STATUS_HEARTBEAT_PREFIXES = ("worker text menu draw", "worker tick=", "hook a=", "pad hook state")
+
+
+def is_heartbeat_event(message: str) -> bool:
+    return message.startswith(STATUS_HEARTBEAT_PREFIXES)
+
+
+def event_item(message: str) -> str | None:
+    """The menu row an event names (`... item=<label>[ action=<name>]`), or None."""
+    marker = message.find(" item=")
+    if marker < 0:
+        marker = message.find("item=") if message.startswith("item=") else -1
+        if marker < 0:
+            return None
+    else:
+        marker += 1
+    label = message[marker + len("item=") :]
+    action = label.find(" action=")
+    return label[:action] if action >= 0 else label
+
+
+def current_item(events: list[dict[str, object]]) -> str | None:
+    """The row the newest event that names one points at (heartbeat draw lines included)."""
+    for event in reversed(events):
+        item = event_item(str(event.get("message", "")))
+        if item:
+            return item
+    return None
+
+
+def _event_lines(events: list[dict[str, object]], *, show_all: bool) -> list[str]:
+    return [
+        str(event.get("message", ""))
+        for event in events
+        if show_all or not is_heartbeat_event(str(event.get("message", "")))
+    ]
+
+
+def command_events(client: Ps5DebugNg, args: argparse.Namespace) -> None:
+    """Print the worker's status events by ring sequence: the retained tail, then (--follow) each new one."""
+    _apply_candidate_status_filters(args)
+    pid, _fg = resolve_pid(client, args)
+    candidates, skipped = _collect_status_candidates(client, pid, args)
+    if not candidates:
+        raise RuntimeError(f"no GTAVMenu status block found; skipped={skipped[:8]}")
+    selected, _matched, _rejected = _select_status_candidate(candidates, args)
+    address = int(selected["address"])
+
+    def read() -> dict[str, object]:
+        return decode_status(client.read(pid, address, GTAV_STATUS_SIZE), address)
+
+    status = selected
+    cursor = int(status.get("eventWriteIndex") or 0)
+    if args.print_cursor:
+        print(cursor)
+        return
+    if args.current_item:
+        print(current_item(list(status.get("events") or [])) or "")
+        return
+    if args.since is not None:
+        cursor, retained = status_events_since(args.since, status, allow_overflow=True)
+        lost = cursor - args.since - len(retained)
+        if lost > 0:
+            print(f"# {lost} event(s) overwritten before they were read")
+    else:
+        retained = list(status.get("events") or [])[-args.tail :] if args.tail else []
+    for line in _event_lines(retained, show_all=args.all):
+        print(line, flush=True)
+    if not args.follow:
+        return
+    deadline = time.monotonic() + args.seconds if args.seconds else None
+    try:
+        while deadline is None or time.monotonic() < deadline:
+            time.sleep(args.interval)
+            status = read()
+            index = int(status.get("eventWriteIndex") or 0)
+            if index < cursor:
+                print(f"# status ring restarted ({cursor}->{index}); the worker restarted", flush=True)
+                cursor = 0
+            previous = cursor
+            cursor, new = status_events_since(cursor, status, allow_overflow=True)
+            lost = cursor - previous - len(new)
+            if lost > 0:
+                print(f"# {lost} event(s) overwritten before they were read", flush=True)
+            for line in _event_lines(new, show_all=args.all):
+                print(line, flush=True)
+    except KeyboardInterrupt:
+        pass
 
 
 def decode_log_ring(raw: bytes, address: int | None = None) -> dict[str, object]:
@@ -1349,9 +1304,8 @@ def run_menu_command_result(
         )
     mailbox_address = int(selected_mailbox["address"] or 0)
     sequence = max(int(selected_mailbox["requestSequence"]), int(selected_mailbox["ackSequence"])) + 1
-    field_data = struct.pack(GTAV_COMMAND_FIELDS_FORMAT, command_id, 1, parse_int(args.argument))
-    client.write(pid, mailbox_address + GTAV_COMMAND_FIELDS_OFFSET, field_data)
-    client.write(pid, mailbox_address + GTAV_COMMAND_REQUEST_SEQUENCE_OFFSET, struct.pack("<Q", sequence))
+    for offset, data in encode_request(command_id, parse_int(args.argument), sequence):
+        client.write(pid, mailbox_address + offset, data)
     after = decode_command_mailbox(client.read(pid, mailbox_address, GTAV_COMMAND_MAILBOX_SIZE), mailbox_address)
     wait_poll_count = 0
     if args.wait:
@@ -1451,52 +1405,111 @@ def command_menu_command(client: Ps5DebugNg, args: argparse.Namespace) -> None:
         raise RuntimeError(f"feature action {args.wait_feature_action} refused: {result['featureActionResult']}")
 
 
+KLOG_MARK = "# klog"
+
+
+def _pump_klog(sock, *, deadline: float, filters: list[str], write, clock=time.monotonic) -> bool:
+    """Copy one connection's text until the deadline or the peer closes; True when the peer closed.
+
+    Filtered lines are matched whole: a partial line waits for its end (or the connection's end)."""
+    pending = ""
+    closed = False
+    while clock() < deadline:
+        sock.settimeout(max(0.01, min(0.5, deadline - clock())))
+        try:
+            chunk = sock.recv(4096)
+        except TimeoutError:
+            continue
+        if not chunk:
+            closed = True
+            break
+        text = chunk.decode("utf-8", "replace")
+        if not filters:
+            write(text)
+            continue
+        pending += text
+        lines = pending.splitlines(keepends=True)
+        pending = lines.pop() if lines and (not lines[-1].endswith(("\n", "\r"))) else ""
+        for line in lines:
+            if any(item in line for item in filters):
+                write(line)
+    if filters and pending and any(item in pending for item in filters):
+        write(pending)
+    return closed
+
+
+def stream_klog(
+    connect,
+    *,
+    deadline: float,
+    filters: list[str],
+    write,
+    reconnect: bool = False,
+    retry: float = 2.0,
+    clock=time.monotonic,
+    sleep=time.sleep,
+) -> int:
+    """Stream the kernel log until the deadline; returns the number of connections made.
+
+    Without reconnect one connection is streamed (a refused connection raises). With reconnect a refused
+    or dropped connection is retried every `retry` seconds and each gap is marked with a `# klog` line, so
+    a console reboot or a GTA crash does not end a long capture: the kernel log outlives the game."""
+    connections = 0
+    while clock() < deadline:
+        try:
+            sock = connect()
+        except OSError as exc:
+            if not reconnect:
+                raise
+            write(f"\n{KLOG_MARK} connect failed ({exc.__class__.__name__}); retrying {time.strftime('%H:%M:%S')}\n")
+            sleep(max(0.0, min(retry, deadline - clock())))
+            continue
+        connections += 1
+        if connections > 1:
+            write(f"\n{KLOG_MARK} reconnected {time.strftime('%H:%M:%S')}\n")
+        try:
+            closed = _pump_klog(sock, deadline=deadline, filters=filters, write=write, clock=clock)
+        finally:
+            sock.close()
+        if not reconnect or not closed:
+            break
+        write(f"\n{KLOG_MARK} connection closed {time.strftime('%H:%M:%S')}; reconnecting\n")
+        sleep(max(0.0, min(retry, deadline - clock())))
+    return connections
+
+
 def command_klog(_client: Ps5DebugNg | None, args: argparse.Namespace) -> None:
     if not args.host:
         raise SystemExit("--host is required for klog")
     deadline = time.monotonic() + args.seconds
-    sock = socket.create_connection((args.host, args.klog_port), timeout=args.timeout)
-    sock.setblocking(False)
-    filters = args.filter or []
-    pending = ""
     output_fp = None
     if getattr(args, "output", None):
         output = Path(args.output)
         output.parent.mkdir(parents=True, exist_ok=True)
-        output_fp = output.open("w", encoding="utf-8")
+        output_fp = output.open("a" if getattr(args, "append", False) else "w", encoding="utf-8")
 
     def write_text(text: str) -> None:
-        sys.stdout.write(text)
-        sys.stdout.flush()
+        if not getattr(args, "quiet", False):
+            sys.stdout.write(text)
+            sys.stdout.flush()
         if output_fp:
             output_fp.write(text)
             output_fp.flush()
 
     try:
-        while time.monotonic() < deadline:
-            remaining = max(0.0, deadline - time.monotonic())
-            readable, _, _ = select.select([sock], [], [], min(0.5, remaining))
-            if not readable:
-                continue
-            chunk = sock.recv(4096)
-            if not chunk:
-                break
-            text = chunk.decode("utf-8", "replace")
-            if not filters:
-                write_text(text)
-                continue
-            pending += text
-            lines = pending.splitlines(keepends=True)
-            pending = lines.pop() if lines and (not lines[-1].endswith(("\n", "\r"))) else ""
-            for line in lines:
-                if any(item in line for item in filters):
-                    write_text(line)
-        if filters and pending and any(item in pending for item in filters):
-            write_text(pending)
+        stream_klog(
+            lambda: socket.create_connection((args.host, args.klog_port), timeout=args.timeout),
+            deadline=deadline,
+            filters=[item for item in (args.filter or []) if item],
+            write=write_text,
+            reconnect=getattr(args, "reconnect", False),
+            retry=getattr(args, "retry", 2.0),
+        )
+    except KeyboardInterrupt:
+        pass
     finally:
         if output_fp:
             output_fp.close()
-        sock.close()
 
 
 def add_status_filter_args(parser: argparse.ArgumentParser, *, include_wait: bool = False) -> None:
@@ -1547,8 +1560,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--host", help="PS5 host/IP")
     parser.add_argument("--port", type=int, default=744, help="ps5debug-NG port")
     parser.add_argument("--timeout", type=float, default=10.0, help="socket timeout")
-    parser.add_argument("--expect-title-id", default=EXPECTED_TITLE_ID)
-    parser.add_argument("--expect-app-version", default=EXPECTED_APP_VERSION)
+    parser.add_argument("--expect-title-id", help="foreground title (default: GTAV_TARGET's manifest)")
+    parser.add_argument("--expect-app-version", help="foreground version (default: GTAV_TARGET's manifest)")
     parser.add_argument(
         "--auto-target", action="store_true", help="accept any reviewed title/version for live worker controls"
     )
@@ -1579,6 +1592,18 @@ def build_parser() -> argparse.ArgumentParser:
     worker_log.add_argument("--json", action="store_true")
     worker_log.add_argument("--output")
     worker_log.set_defaults(func=command_worker_log)
+
+    events = sub.add_parser("events", help="print the worker's status events (heartbeats hidden)")
+    _add_status_location_args(events)
+    add_status_filter_args(events)
+    events.add_argument("--tail", type=int, default=16, help="retained events to print first (0: none)")
+    events.add_argument("--since", type=int, help="print events after this ring index instead of the tail")
+    events.add_argument("--follow", action="store_true", help="keep printing new events")
+    events.add_argument("--seconds", type=float, default=0.0, help="stop following after this long (0: Ctrl-C)")
+    events.add_argument("--interval", type=float, default=0.25, help="follow poll interval in seconds")
+    events.add_argument("--print-cursor", action="store_true", help="print the ring index and exit")
+    events.add_argument("--current-item", action="store_true", help="print the selected menu row and exit")
+    events.set_defaults(func=command_events)
 
     status_wait = sub.add_parser("status-wait", help="wait for menu worker status conditions")
     _add_status_location_args(status_wait)
@@ -1614,14 +1639,47 @@ def build_parser() -> argparse.ArgumentParser:
     klog.add_argument("--klog-port", type=int, default=3232)
     klog.add_argument("--seconds", type=float, default=10.0)
     klog.add_argument("--timeout", type=float, default=5.0)
-    klog.add_argument("--filter", action="append")
+    klog.add_argument("--filter", action="append", help="keep only lines containing this text (repeatable)")
     klog.add_argument("--output")
+    klog.add_argument("--append", action="store_true", help="append to --output instead of replacing it")
+    klog.add_argument("--quiet", action="store_true", help="write only to --output")
+    klog.add_argument(
+        "--reconnect", action="store_true", help="retry a refused or dropped connection until --seconds end"
+    )
+    klog.add_argument("--retry", type=float, default=2.0, help="seconds between reconnect attempts")
     klog.set_defaults(func=command_klog, no_connect=True)
     return parser
 
 
+def target_env_selected(environ: dict[str, str] | None = None) -> bool:
+    environ = os.environ if environ is None else environ
+    return bool(environ.get("GTAV_TARGET") or environ.get("TARGET_ID"))
+
+
+def resolve_expected_identity(args: argparse.Namespace, environ: dict[str, str] | None = None) -> None:
+    """Fill --expect-title-id/--expect-app-version from GTAV_TARGET's manifest.
+
+    With neither flag, no GTAV_TARGET/TARGET_ID and no --allow-non-gtav, live commands follow the running
+    build instead (--auto-target: any reviewed title/version), and name it on stderr. menu-ctl always
+    exports GTAV_TARGET, so it keeps the exact pinned check."""
+    explicit = args.expect_title_id is not None or args.expect_app_version is not None
+    if (
+        not explicit
+        and not args.auto_target
+        and not target_env_selected(environ)
+        and not getattr(args, "allow_non_gtav", False)
+    ):
+        args.auto_target = True
+        args.auto_target_note = True
+    if args.expect_title_id is None:
+        args.expect_title_id = EXPECTED_TITLE_ID
+    if args.expect_app_version is None:
+        args.expect_app_version = EXPECTED_APP_VERSION
+
+
 def main(argv: list[str]) -> int:
     args = build_parser().parse_args(argv)
+    resolve_expected_identity(args)
     if getattr(args, "no_connect", False):
         args.func(None, args)
         return 0

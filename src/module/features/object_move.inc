@@ -391,7 +391,7 @@ static void object_move_game_thread_tick(void) {
     }
     if (dup_edge && g_n.create_object) {
       const int model = spawned_object_model_of(e);
-      if (model) {
+      if (model && spawned_object_room() > 0) {
         // CREATE_OBJECT(modelHash, x, y, z, isNetwork, thisScriptCheck, dynamic) at the current
         // pose; freeze immediately so it can't settle before the next tick acquires it.
         int obj = invoke_return<int>(g_n.create_object, model, g_object_move_pos.x,

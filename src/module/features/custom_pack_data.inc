@@ -1,5 +1,5 @@
 // Source fragment of features.cpp, textually included by custom_rpf.inc inside the
-// CUSTOM_DEVICE && CUSTOM_STREAM && PS5 branch of the runtime pack lane.
+// CUSTOM_PACKS branch of the runtime pack lane, in the engine lane only (PS5, PS4).
 //
 // Pack data files: pinned LoadDataFile mounters, loose-entry fill and the parser pump.
 
@@ -8,8 +8,11 @@
 // changeset executor makes (0x159b633 normalized). The vehicle loaders read only the DataFile's
 // filename (+0), an absolute path read synchronously through GetDevice. Mounters only add new
 // names: an existing handling or model name is skipped, never replaced.
-static const uintptr_t kDataFileInterfaces = 0x598a350;  // void*[208]
+static const uintptr_t kDataFileInterfaces = GTAV_LANE_kDataFileInterfaces;  // void*[208]
 static const uint32_t kDataFileInterfaceCount = 208;
+#if defined(__ORBIS__)
+static const uint8_t kGameAllocateBytes[] = GTAV_LANE_kGameAllocateBytes;
+#endif
 // Route: queued rows leave exactly one parser request for pump_pack_data; sync rows (peds.meta,
 // weaponarchetypes.meta) parse inside LoadDataFile.
 // `names` is the XML element whose text lists the row's new model or weapon names (nullptr: none
@@ -25,65 +28,97 @@ static const struct {
   const char* anchor;
   uint8_t pin[32];
 } kDataFileMounters[] = {
-    {GTAV_CUSTOM_PACK_DATA_HANDLING, 0x5584be8, 0x4032b48, 0x27b6150, 0, nullptr, nullptr,
-     {0x55, 0x48, 0x89, 0xe5, 0x41, 0x57, 0x41, 0x56, 0x41, 0x55, 0x41, 0x54, 0x53, 0x48, 0x83, 0xec, 0x78, 0x48, 0x8b, 0x05, 0xf8, 0x98, 0x8f, 0x01, 0x48, 0x89, 0xb5, 0x60, 0xff, 0xff, 0xff, 0x48}},
-    {GTAV_CUSTOM_PACK_DATA_CARCOLS, 0x45a4790, 0x3f90ec0, 0x14138e0, 0, "kitName", nullptr,
-     {0x55, 0x48, 0x89, 0xe5, 0x41, 0x57, 0x41, 0x56, 0x41, 0x55, 0x41, 0x54, 0x53, 0x48, 0x81, 0xec, 0x88, 0x00, 0x00, 0x00, 0x48, 0x8b, 0x05, 0x65, 0xc1, 0xc9, 0x02, 0x48, 0x89, 0xb5, 0x58, 0xff}},
-    {GTAV_CUSTOM_PACK_DATA_VEHICLE_METADATA, 0x45a4780, 0x3f90e20, 0x1413370, 0, "modelName", nullptr,
-     {0x55, 0x48, 0x89, 0xe5, 0x41, 0x56, 0x53, 0x48, 0x83, 0xec, 0x40, 0x4c, 0x8b, 0x35, 0xde, 0xc6, 0xc9, 0x02, 0x48, 0x8d, 0x0d, 0xc7, 0xda, 0xb7, 0x02, 0x48, 0x8d, 0x5d, 0xb0, 0x48, 0x89, 0xf7}},
-    {GTAV_CUSTOM_PACK_DATA_VEHICLE_VARIATION, 0x45a4788, 0x3f90e90, 0x14137d0, 0, nullptr, nullptr,
-     {0x55, 0x48, 0x89, 0xe5, 0x41, 0x57, 0x41, 0x56, 0x53, 0x48, 0x83, 0xec, 0x78, 0x4c, 0x8b, 0x35, 0x7c, 0xc2, 0xc9, 0x02, 0x48, 0x8d, 0x5d, 0xb0, 0x4c, 0x8d, 0x7d, 0x80, 0x48, 0x8d, 0x15, 0xca}},
-    // Vehicle layouts: same queue-and-pump path; load before vehicles.meta.
-    {GTAV_CUSTOM_PACK_DATA_VEHICLE_LAYOUTS, 0x5618338, 0x4032fe0, 0x27b6dd0, 0, nullptr, nullptr,
-     {0x55, 0x48, 0x89, 0xe5, 0x41, 0x57, 0x41, 0x56, 0x53, 0x48, 0x83, 0xec, 0x78, 0x4c, 0x8b, 0x35, 0x7c, 0x8c, 0x8f, 0x01, 0x48, 0x8d, 0x5d, 0xb0, 0x4c, 0x8d, 0x7d, 0x80, 0x48, 0x8d, 0x15, 0xe9}},
+#if defined(__ORBIS__)
+#define PACK_VEHICLE_DATA_SYNC 1
+#else
+#define PACK_VEHICLE_DATA_SYNC 0
+#endif
+    {GTAV_CUSTOM_PACK_DATA_HANDLING, GTAV_LANE_kMounter_handling_iface,
+     GTAV_LANE_kMounter_handling_vtable, GTAV_LANE_kMounter_handling_load, PACK_VEHICLE_DATA_SYNC,
+     "handlingName", nullptr, GTAV_LANE_kMounter_handling_pin},
+    {GTAV_CUSTOM_PACK_DATA_CARCOLS, GTAV_LANE_kMounter_carcols_iface,
+     GTAV_LANE_kMounter_carcols_vtable, GTAV_LANE_kMounter_carcols_load, PACK_VEHICLE_DATA_SYNC,
+     "kitName", nullptr, GTAV_LANE_kMounter_carcols_pin},
+    {GTAV_CUSTOM_PACK_DATA_VEHICLE_METADATA, GTAV_LANE_kMounter_vehicle_metadata_iface,
+     GTAV_LANE_kMounter_vehicle_metadata_vtable, GTAV_LANE_kMounter_vehicle_metadata_load,
+     PACK_VEHICLE_DATA_SYNC, "modelName", nullptr, GTAV_LANE_kMounter_vehicle_metadata_pin},
+    {GTAV_CUSTOM_PACK_DATA_VEHICLE_VARIATION, GTAV_LANE_kMounter_vehicle_variation_iface,
+     GTAV_LANE_kMounter_vehicle_variation_vtable, GTAV_LANE_kMounter_vehicle_variation_load,
+     PACK_VEHICLE_DATA_SYNC, nullptr, nullptr, GTAV_LANE_kMounter_vehicle_variation_pin},
+    // Vehicle layouts on Orbis are synchronous too; load before vehicles.meta.
+    {GTAV_CUSTOM_PACK_DATA_VEHICLE_LAYOUTS, GTAV_LANE_kMounter_vehicle_layouts_iface,
+     GTAV_LANE_kMounter_vehicle_layouts_vtable, GTAV_LANE_kMounter_vehicle_layouts_load,
+     PACK_VEHICLE_DATA_SYNC, nullptr, nullptr, GTAV_LANE_kMounter_vehicle_layouts_pin},
+    // The mounters below exist where the target's lane pins them.
+#ifdef GTAV_LANE_kMounter_ped_metadata_iface
     // Shared ped mounter (types 20/21/51/53/55/71), dispatching on DataFile+0x90.
-    {GTAV_CUSTOM_PACK_DATA_PED_METADATA, 0x45a41c0, 0x3f90df0, 0x1412590, 1, "Name", nullptr,
-     {0x55, 0x48, 0x89, 0xe5, 0x41, 0x57, 0x41, 0x56, 0x41, 0x55, 0x41, 0x54, 0x53, 0x48, 0x81, 0xec, 0x88, 0x00, 0x00, 0x00, 0x4c, 0x8b, 0x3d, 0xb5, 0xd4, 0xc9, 0x02, 0x49, 0x8b, 0x07, 0x48, 0x89}},
+    {GTAV_CUSTOM_PACK_DATA_PED_METADATA, GTAV_LANE_kMounter_ped_metadata_iface, GTAV_LANE_kMounter_ped_metadata_vtable, GTAV_LANE_kMounter_ped_metadata_load, 1, "Name", nullptr,
+     GTAV_LANE_kMounter_ped_metadata_pin},
+#endif
+#ifdef GTAV_LANE_kMounter_weapon_metadata_iface
     // Weapon models (sync; 0x15ba760 normalized adds each InitData by name, no name or capacity
     // check). Rows load in descriptor order: list this row before the weapons.meta using it.
-    {GTAV_CUSTOM_PACK_DATA_WEAPON_METADATA, 0x53fb1f8, 0x3fa7e60, 0x1a46f40, 1, "modelName", nullptr,
-     {0x55, 0x48, 0x89, 0xe5, 0x48, 0x89, 0xf7, 0xba, 0x00, 0xf0, 0x00, 0x00, 0x31, 0xf6, 0xe8, 0x0d, 0x38, 0xf7, 0xff, 0xb0, 0x01, 0x5d, 0xc3, 0xcc, 0xcc, 0xcc, 0xcc, 0xcc, 0xcc, 0xcc, 0xcc, 0xcc}},
-    {GTAV_CUSTOM_PACK_DATA_WEAPONINFO, 0x578e5f8, 0x403cce8, 0x296bac0, 0, "Name", "<Item type=\"CWeaponInfo\">",
-     {0x55, 0x48, 0x89, 0xe5, 0x41, 0x57, 0x41, 0x56, 0x41, 0x55, 0x41, 0x54, 0x53, 0x48, 0x81, 0xec, 0x48, 0x01, 0x00, 0x00, 0x4c, 0x8b, 0x35, 0x85, 0x3f, 0x74, 0x01, 0x49, 0x89, 0xf7, 0x49, 0x8b}},
+    {GTAV_CUSTOM_PACK_DATA_WEAPON_METADATA, GTAV_LANE_kMounter_weapon_metadata_iface, GTAV_LANE_kMounter_weapon_metadata_vtable, GTAV_LANE_kMounter_weapon_metadata_load, 1, "modelName", nullptr,
+     GTAV_LANE_kMounter_weapon_metadata_pin},
+#endif
+#ifdef GTAV_LANE_kMounter_weaponinfo_iface
+    {GTAV_CUSTOM_PACK_DATA_WEAPONINFO, GTAV_LANE_kMounter_weaponinfo_iface, GTAV_LANE_kMounter_weaponinfo_vtable, GTAV_LANE_kMounter_weaponinfo_load, 0, "Name", "<Item type=\"CWeaponInfo\">",
+     GTAV_LANE_kMounter_weaponinfo_pin},
+#endif
+#ifdef GTAV_LANE_kMounter_weaponcomponentsinfo_iface
     // Weapon components (queued): one <Name> per `<Item type="...Info">` (the Infos), not the
     // `...Data">` items (reload/swap data, named and referenced by ref= only).
-    {GTAV_CUSTOM_PACK_DATA_WEAPONCOMPONENTSINFO, 0x578d360, 0x403cc48, 0x296b770, 0, "Name", "Info\">",
-     {0x55, 0x48, 0x89, 0xe5, 0x41, 0x56, 0x53, 0x48, 0x83, 0xec, 0x40, 0x4c, 0x8b, 0x35, 0xde, 0x42, 0x74, 0x01, 0x48, 0x8d, 0x5d, 0xb0, 0x48, 0x89, 0xf7, 0x48, 0x8d, 0x0d, 0xe8, 0x14, 0x6d, 0x01}},
-    {GTAV_CUSTOM_PACK_DATA_WEAPON_ANIMATIONS, 0x578dc50, 0x403ccb8, 0x296ba00, 0, nullptr, nullptr,
-     {0x55, 0x48, 0x89, 0xe5, 0x41, 0x56, 0x53, 0x48, 0x83, 0xec, 0x40, 0x4c, 0x8b, 0x35, 0x4e, 0x40, 0x74, 0x01, 0x48, 0x8d, 0x5d, 0xb0, 0x48, 0x8d, 0x0d, 0xc3, 0x15, 0x6d, 0x01, 0x48, 0x89, 0xda}},
+    {GTAV_CUSTOM_PACK_DATA_WEAPONCOMPONENTSINFO, GTAV_LANE_kMounter_weaponcomponentsinfo_iface, GTAV_LANE_kMounter_weaponcomponentsinfo_vtable, GTAV_LANE_kMounter_weaponcomponentsinfo_load, 0, "Name", "Info\">",
+     GTAV_LANE_kMounter_weaponcomponentsinfo_pin},
+#endif
+#ifdef GTAV_LANE_kMounter_weapon_animations_iface
+    {GTAV_CUSTOM_PACK_DATA_WEAPON_ANIMATIONS, GTAV_LANE_kMounter_weapon_animations_iface, GTAV_LANE_kMounter_weapon_animations_vtable, GTAV_LANE_kMounter_weapon_animations_load, 0, nullptr, nullptr,
+     GTAV_LANE_kMounter_weapon_animations_pin},
+#endif
+#ifdef GTAV_LANE_kMounter_shop_ped_apparel_iface
     // Clothing for an existing ped: the shared apparel mounter (134/137/149/150, `mov ecx,-134` +
     // df+0x90) queues one parse; pack_apparel_gate pins the 137 case and its post-parse step.
-    {GTAV_CUSTOM_PACK_DATA_SHOP_PED_APPAREL, 0x53fa8f8, 0x3fa7e00, 0x1a448e0, 0, nullptr, nullptr,
-     {0x55, 0x48, 0x89, 0xe5, 0x41, 0x57, 0x41, 0x56, 0x41, 0x55, 0x41, 0x54, 0x53, 0x48, 0x81, 0xec, 0x48, 0x01, 0x00, 0x00, 0x4c, 0x8b, 0x2d, 0x65, 0xb1, 0x66, 0x02, 0xb9, 0x7a, 0xff, 0xff, 0xff}},
+    {GTAV_CUSTOM_PACK_DATA_SHOP_PED_APPAREL, GTAV_LANE_kMounter_shop_ped_apparel_iface, GTAV_LANE_kMounter_shop_ped_apparel_vtable, GTAV_LANE_kMounter_shop_ped_apparel_load, 0, nullptr, nullptr,
+     GTAV_LANE_kMounter_shop_ped_apparel_pin},
+#endif
+#ifdef GTAV_LANE_kMounter_timecyclemod_iface
     // Timecycle modifiers (sync; 0x31678d0 normalized appends every <modifier name=...>). Names
     // come from pack_tc_modifier_names (an attribute, not element text), so `names` is nullptr.
-    {GTAV_CUSTOM_PACK_DATA_TIMECYCLEMOD, 0x54fbd20, 0x4017ec0, 0x24fe640, 1, nullptr, nullptr,
-     {0x55, 0x48, 0x89, 0xe5, 0x41, 0x56, 0x53, 0x48, 0x81, 0xec, 0x10, 0x01, 0x00, 0x00, 0x4c, 0x8b, 0x35, 0x0b, 0x14, 0xbb, 0x01, 0x49, 0x8b, 0x06, 0x48, 0x89, 0x45, 0xe8, 0x83, 0xbe, 0x90, 0x00}},
+    {GTAV_CUSTOM_PACK_DATA_TIMECYCLEMOD, GTAV_LANE_kMounter_timecyclemod_iface, GTAV_LANE_kMounter_timecyclemod_vtable, GTAV_LANE_kMounter_timecyclemod_load, 1, nullptr, nullptr,
+     GTAV_LANE_kMounter_timecyclemod_pin},
+#endif
+#ifdef GTAV_LANE_kMounter_audio_gamedata_iface
     // Audio game-data chunk (sync; the audio metadata mounter shared by types 138-141/143,
     // pack_audio_gate pins the rest). No XML names: pack_audio_verify checks the chunk itself.
-    {GTAV_CUSTOM_PACK_DATA_AUDIO_GAMEDATA, 0x435a0b0, 0x3f51198, 0x98e840, 1, nullptr, nullptr,
-     {0x55, 0x48, 0x89, 0xe5, 0x41, 0x57, 0x41, 0x56, 0x41, 0x55, 0x41, 0x54, 0x53, 0x48, 0x83, 0xec, 0x38, 0x48, 0x8b, 0x05, 0x08, 0x12, 0x72, 0x03, 0x49, 0x89, 0xfe, 0x48, 0x89, 0xf7, 0x48, 0x8b}},
+    {GTAV_CUSTOM_PACK_DATA_AUDIO_GAMEDATA, GTAV_LANE_kMounter_audio_gamedata_iface, GTAV_LANE_kMounter_audio_gamedata_vtable, GTAV_LANE_kMounter_audio_gamedata_load, 1, nullptr, nullptr,
+     GTAV_LANE_kMounter_audio_gamedata_pin},
+#endif
 };
 // vehicles.meta stores: CVehicleModelInfo records come from the archetype factory's block for
 // mapTypeDef 0xf000 ({data, u16 count, u16 capacity}; the handler increments count without a
 // capacity check), and each new model takes one streamed-archetype pool slot (registration is
 // silently skipped when none is free).
-static const uintptr_t kVehicleModelFactory = 0x45a36d8;  // buckets +8, u16 bucket count +0x10
-static const uintptr_t kVehicleModelFactoryVtable = 0x3f8ffe8;
-static const uint32_t kVehicleModelMapTypeDef = 0xf000;
-static const uintptr_t kArchetypePoolFree = 0x6177260;  // u32
-static const uintptr_t kHandlingCount = 0x5584c10;      // u16 count of the handling atArray
+static const uintptr_t kVehicleModelFactory = GTAV_LANE_kVehicleModelFactory;  // buckets +8, u16 bucket count +0x10
+static const uintptr_t kVehicleModelFactoryVtable = GTAV_LANE_kVehicleModelFactoryVtable;
+static const uint32_t kVehicleModelMapTypeDef = GTAV_LANE_kVehicleModelMapTypeDef;
+static const uintptr_t kArchetypePoolFree = GTAV_LANE_kArchetypePoolFree;  // u32
+static const uintptr_t kHandlingCount = GTAV_LANE_kHandlingCount;      // u16 count of the handling atArray
 static int pack_readable(uintptr_t address, size_t bytes) {
+#if defined(__ORBIS__)
+  if (!address || !bytes || bytes > UINTPTR_MAX - address) return 0;
+  return gtav_platform_pack_range_readable(address, bytes);
+#else
   GtavLooseVqInfo info = {};
   return loose_query(address, &info) && (info.protection & 1) &&
          address + bytes <= (uintptr_t)info.end;
+#endif
 }
 
 // Vehicle variation globals: the carcols
 // merge grows the mod-kit, lights and sirens arrays by reallocating them, and vehicle mod render
 // data caches raw pointers into the kit arrays. Every pump logs the three {data, count, capacity}
 // triples before and after, so a move is visible in each run.
-static const uintptr_t kVehicleVariationGlobals = 0x5a8b380;  // CVehicleModelInfoVarGlobal*
+static const uintptr_t kVehicleVariationGlobals = GTAV_LANE_kVehicleVariationGlobals;  // CVehicleModelInfoVarGlobal*
 struct PackVarArrays {
   uintptr_t kits, lights, sirens;
   uint16_t kit_count, kit_capacity, light_count, light_capacity, siren_count, siren_capacity;
@@ -128,27 +163,22 @@ static uint8_t g_pack_datafile[0x100];
 //  B. The parse runs only inside the parser pump, which the game's changeset loop calls after each
 //     data-file action. The worker pumps from a separate action once exactly our request is
 //     pending and its read has completed, so the pump never waits on an unfinished read.
-static const uintptr_t kRegisterLoose = 0x2f18730;  // (path, u32* size, u32) -> (coll<<16)|idx
-static const uintptr_t kParserPump = 0x2f5ef30;     // (parser)
-static const uintptr_t kLockMutex = 0x3790430;      // PLT stubs (mutex*)
-static const uintptr_t kUnlockMutex = 0x3790440;
-static const uintptr_t kLooseLock = 0x5c815d0;
-static const uintptr_t kLooseCollectionPtr = 0x5c85b10;
-static const uintptr_t kPackLooseVtable = 0x4071208;
-static const uintptr_t kParserPtr = 0x6258910;
-static const uintptr_t kParserPumpGuard = 0x5eaf308;  // u8 re-entrancy byte
-static const uint8_t kRegisterLooseBytes[32] = {
-    0x55, 0x48, 0x89, 0xe5, 0x41, 0x57, 0x41, 0x56, 0x41, 0x55, 0x41, 0x54, 0x53, 0x48, 0x81, 0xec,
-    0x18, 0x02, 0x00, 0x00, 0x48, 0x8b, 0x1d, 0x15, 0x73, 0x19, 0x01, 0x49, 0x89, 0xfe, 0x48, 0x8d};
-static const uint8_t kParserPumpBytes[32] = {
-    0x55, 0x48, 0x89, 0xe5, 0x41, 0x57, 0x41, 0x56, 0x41, 0x55, 0x41, 0x54, 0x53, 0x48, 0x81, 0xec,
-    0xe8, 0x00, 0x00, 0x00, 0x4c, 0x8b, 0x35, 0x15, 0x0b, 0x15, 0x01, 0x49, 0x8b, 0x06, 0x48, 0x89};
-static const uint8_t kLockMutexBytes[11] = {0xff, 0x25, 0xe2, 0xf7, 0x91, 0x00,
-                                            0x68, 0x09, 0x00, 0x00, 0x00};
-static const uint8_t kUnlockMutexBytes[11] = {0xff, 0x25, 0xda, 0xf7, 0x91, 0x00,
-                                              0x68, 0x0a, 0x00, 0x00, 0x00};
 static int32_t g_pack_pending_row = -1;
 static uintptr_t g_pack_pending_request;
+#if !defined(__ORBIS__)
+static const uintptr_t kRegisterLoose = GTAV_LANE_kRegisterLoose;  // (path, u32* size, u32) -> (coll<<16)|idx
+static const uintptr_t kParserPump = GTAV_LANE_kParserPump;     // (parser)
+static const uintptr_t kLockMutex = GTAV_LANE_kLockMutex;      // PLT stubs (mutex*)
+static const uintptr_t kUnlockMutex = GTAV_LANE_kUnlockMutex;
+static const uintptr_t kLooseLock = GTAV_LANE_kLooseLock;
+static const uintptr_t kLooseCollectionPtr = GTAV_LANE_kLooseCollectionPtr;
+static const uintptr_t kPackLooseVtable = GTAV_LANE_kPackLooseVtable;
+static const uintptr_t kParserPtr = GTAV_LANE_kParserPtr;
+static const uintptr_t kParserPumpGuard = GTAV_LANE_kParserPumpGuard;  // u8 re-entrancy byte
+static const uint8_t kRegisterLooseBytes[] = GTAV_LANE_kRegisterLooseBytes;
+static const uint8_t kParserPumpBytes[] = GTAV_LANE_kParserPumpBytes;
+static const uint8_t kLockMutexBytes[] = GTAV_LANE_kLockMutexBytes;
+static const uint8_t kUnlockMutexBytes[] = GTAV_LANE_kUnlockMutexBytes;
 
 static int pack_pump_anchors_ok() {
   return memcmp((const void*)kRegisterLoose, kRegisterLooseBytes, sizeof(kRegisterLooseBytes)) ==
@@ -200,14 +230,19 @@ static const char* pack_fill_loose_entry(const char* name, uint64_t size) {
                      (unsigned)index, (unsigned)size, refusal == nullptr);
   return refusal;
 }
+#endif
 
 // Count and capacity of a model-info factory's block for mapTypeDef 0xf000, walking its buckets
 // defensively (the factory's own GetCount/GetCapacity loop forever on a missing key). Returns 0 on
 // success. The ped and weapon-model factories share the vehicle factory's shape.
-static const uintptr_t kPedModelFactory = 0x45a36f0;
-static const uintptr_t kPedModelFactoryVtable = 0x3f90088;
-static const uintptr_t kWeaponModelFactory = 0x45a36c0;
-static const uintptr_t kWeaponModelFactoryVtable = 0x3f8ff48;
+#ifdef GTAV_LANE_kPedModelFactory
+static const uintptr_t kPedModelFactory = GTAV_LANE_kPedModelFactory;
+static const uintptr_t kPedModelFactoryVtable = GTAV_LANE_kPedModelFactoryVtable;
+#endif
+#ifdef GTAV_LANE_kWeaponModelFactory
+static const uintptr_t kWeaponModelFactory = GTAV_LANE_kWeaponModelFactory;
+static const uintptr_t kWeaponModelFactoryVtable = GTAV_LANE_kWeaponModelFactoryVtable;
+#endif
 
 static int pack_model_factory_block(uintptr_t factory, uintptr_t vtable, uint32_t* count,
                                     uint32_t* capacity, uintptr_t* models = nullptr) {
@@ -240,7 +275,9 @@ static int pack_vehicle_model_store(uint32_t* count, uint32_t* capacity) {
 
 // Archetype (model) map: buckets* @+0, u16 bucket count @+8; node {u32 hash, u16 index @+4,
 // next* @+8}. What IS_MODEL_IN_CDIMAGE resolves.
-static const uintptr_t kArchetypeMap = 0x6166ae8;
+static const uintptr_t kArchetypeMap = GTAV_LANE_kArchetypeMap;
+// {T** +0, i32 size +8, stride +0x18, bits* +0x30}
+static const uintptr_t kModelInfoPool = GTAV_LANE_kModelInfoPool;
 
 static int pack_model_known(uint32_t hash) {
   const uintptr_t buckets = *(const volatile uintptr_t*)kArchetypeMap;
@@ -255,11 +292,12 @@ static int pack_model_known(uint32_t hash) {
   return 0;
 }
 
+#ifdef GTAV_LANE_kWeaponInfoBlobs
 // Weapon infos: one blob record per weapons.meta
 // ({data, u16 count, u16 capacity}; the loader increments count with no capacity check) and the
 // by-hash info array the pump's PostLoad rebuilds and sorts on info+0x10.
-static const uintptr_t kWeaponInfoBlobs = 0x5a8a000;
-static const uintptr_t kWeaponInfoByHash = 0x5a89ff0;  // {CItemInfo**, u16 count, u16 capacity}
+static const uintptr_t kWeaponInfoBlobs = GTAV_LANE_kWeaponInfoBlobs;
+static const uintptr_t kWeaponInfoByHash = GTAV_LANE_kWeaponInfoByHash;  // {CItemInfo**, u16 count, u16 capacity}
 
 static int pack_weapon_known(uint32_t hash, uintptr_t* found = nullptr) {
   const uintptr_t infos = *(const volatile uintptr_t*)kWeaponInfoByHash;
@@ -280,24 +318,23 @@ static int pack_weapon_known(uint32_t hash, uintptr_t* found = nullptr) {
   }
   return 0;
 }
+#endif
 
+#ifdef GTAV_LANE_kComponentInfos
 // Weapon component infos: each components file
 // appends one 0xed8-byte blob (Infos: CWeaponComponentInfo*[470] at +0x10, s32 count +0xec0) to the
 // heap-grown blob list {data, u16 count, u16 capacity}. The parse's completion functor (vtable
 // slot 2) refills the global CWeaponComponentInfo*[470] from every blob with NO capacity check,
 // then qsorts it on info+0x10 (name hash, unsigned); lookups binary-search it. Past 470 the refill
 // would run over the count and the blob list behind the array, so the gate keeps count + n <= 470.
-static const uintptr_t kComponentInfos = 0x5a8b3f0;      // CWeaponComponentInfo*[470]
-static const uintptr_t kComponentInfoCount = 0x5a8c2a0;  // s32, right after the array
-static const uintptr_t kComponentBlobs = 0x5a8c2a8;      // {blob**, u16 count, u16 capacity}
+static const uintptr_t kComponentInfos = GTAV_LANE_kComponentInfos;      // CWeaponComponentInfo*[470]
+static const uintptr_t kComponentInfoCount = GTAV_LANE_kComponentInfoCount;  // s32, right after the array
+static const uintptr_t kComponentBlobs = GTAV_LANE_kComponentBlobs;      // {blob**, u16 count, u16 capacity}
 static const uint32_t kComponentInfoMax = 470;
-static const uintptr_t kComponentFunctorVtable = 0x403cc78;  // the 79 load's functor (its pin)
-static const uintptr_t kComponentRefill = 0x296b820;         // its slot 2
+static const uintptr_t kComponentFunctorVtable = GTAV_LANE_kComponentFunctorVtable;  // the 79 load's functor (its pin)
+static const uintptr_t kComponentRefill = GTAV_LANE_kComponentRefill;         // its slot 2
 // mov dword [count], 0; movzx eax, word [blob count]; test; jz; push rbx; lea rsi, [array]; xor
-static const uint8_t kComponentRefillBytes[36] = {
-    0xc7, 0x05, 0x76, 0x0a, 0x12, 0x03, 0x00, 0x00, 0x00, 0x00, 0x0f, 0xb7,
-    0x05, 0x7f, 0x0a, 0x12, 0x03, 0x48, 0x85, 0xc0, 0x0f, 0x84, 0x0a, 0x01,
-    0x00, 0x00, 0x53, 0x48, 0x8d, 0x35, 0xae, 0xfb, 0x11, 0x03, 0x31, 0xd2};
+static const uint8_t kComponentRefillBytes[] = GTAV_LANE_kComponentRefillBytes;
 
 static int pack_component_anchors_ok() {
   return pack_readable(kComponentFunctorVtable, 0x18) &&
@@ -330,16 +367,42 @@ static int pack_component_known(uint32_t hash, uintptr_t* found = nullptr) {
   }
   return 0;
 }
+#endif
 
-// Data files are parsed asynchronously: LoadDataFile queues a parse job and a streamer read of the
-// file, routed by device class exactly like resources. A /data path reads through the APR queue and
-// parses garbage (on hardware: nothing added), so each verified file is copied into never-freed
-// memory and named through the memory device, the route register_pack already gates. Returns
-// nullptr on success.
+// On Prospero, data files are parsed asynchronously: LoadDataFile queues a parse job and a streamer
+// read of the file, routed by device class exactly like resources. A /data path reads through the
+// APR queue and parses garbage (on hardware: nothing added), so each verified file is copied into
+// never-freed memory and named through the memory device, the route register_pack already gates.
+// Orbis instead reads synchronously from /data and keeps only a game-heap copy for XML checks.
 static uint8_t* g_pack_data_memory[GTAV_CUSTOM_PACK_DATA_CAP];
 static const char* pack_stage_data_file(uint32_t row, const char* path, char* name,
                                         size_t name_size) {
   const GtavCustomPackData* data = &g_pack.data[row];
+#if defined(__ORBIS__)
+  typedef void* (*GameAllocateFn)(size_t, size_t, uint32_t);
+  // The row's copy is allocated once and never freed: a later stage of the row must still fit it.
+  static uint64_t capacity[GTAV_CUSTOM_PACK_DATA_CAP];
+  if (memcmp((const void*)GTAV_LANE_kGameAllocate, kGameAllocateBytes,
+             sizeof(kGameAllocateBytes)) != 0)
+    return "pack data allocator anchors mismatch";
+  if (!g_pack_data_memory[row]) {
+    g_pack_data_memory[row] =
+        (uint8_t*)((GameAllocateFn)GTAV_LANE_kGameAllocate)(data->size + 1u, 0x10u, 0);
+    if (g_pack_data_memory[row]) capacity[row] = data->size + 1u;
+  }
+  uint8_t* memory = g_pack_data_memory[row];
+  if (!memory) return "pack data allocation failed";
+  if (capacity[row] < data->size + 1u) return "pack buffer too small";
+  if (pack_read_local(path, memory, data->size, data->size) != (int64_t)data->size ||
+      !pack_sha256_matches(memory, data->size, data->sha256))
+    return "pack data file size/hash gate refused";
+  memory[data->size] = 0;
+  if (snprintf(name, name_size, "%s", path) >= (int)name_size) return "pack data path too long";
+  void* device = ((PackGetDeviceFn)kFiDeviceGetDevice)(name, true);
+  if ((uintptr_t)device == 0 || *(const uintptr_t*)device != kFiLocalVtable)
+    return "pack data /data device gate refused";
+  return nullptr;
+#else
   const uint64_t bytes = (data->size + GTAV_PACK_ARCHIVE_SLACK + 0xffffull) & ~0xffffull;
   if (!g_pack_data_memory[row]) {
     if (const char* refusal = pack_map_direct(bytes, &g_pack_data_memory[row])) return refusal;
@@ -363,6 +426,7 @@ static const char* pack_stage_data_file(uint32_t row, const char* path, char* na
           data->size)
     return "pack data memory device gate refused";
   return nullptr;
+#endif
 }
 
 // joaat of the text of every <tag>...</tag> in staged data row `row` (XML), at most `max`.
@@ -415,6 +479,7 @@ static uint32_t pack_data_grandchild_bound(uint32_t row, const char* list) {
                                                (size_t)g_pack.data[row].size, list);
 }
 
+#if !defined(__ORBIS__)
 // Timecycle modifiers (TIMECYCLEMOD_FILE 28).
 // LoadDataFile parses the XML on this thread (0x31678d0 normalized). Per <modifier name="X"> it
 // appends a 0x28-byte modifier to the modifier array: entries* +0 and u16 count +8 of 12-byte
@@ -423,14 +488,14 @@ static uint32_t pack_data_grandchild_bound(uint32_t row, const char* list) {
 // duplicate check. 0x31680b0 then sorts the map, sets the sorted byte and resizes the
 // per-modifier weight array to the modifier count. Vars are parsed only while the tc-vars-ready
 // byte is 1; otherwise every new modifier has 0 entries.
-static const uintptr_t kTcModifiers = 0x577de20;    // T*[], u16 count +8, u16 capacity +0xa
-static const uintptr_t kTcMapSorted = 0x577de30;    // u8, 1 once the name map is sorted
-static const uintptr_t kTcModifierMap = 0x577de38;  // {u32 hash, u32, T*}[], u16 count +8
-static const uintptr_t kTcWeights = 0x577dde8;      // f32[] per modifier, u16 count +8
-static const uintptr_t kTcVarsReady = 0x6210c60;    // u8, 1 once the 429 tc var names exist
+static const uintptr_t kTcModifiers = GTAV_LANE_kTcModifiers;    // T*[], u16 count +8, u16 capacity +0xa
+static const uintptr_t kTcMapSorted = GTAV_LANE_kTcMapSorted;    // u8, 1 once the name map is sorted
+static const uintptr_t kTcModifierMap = GTAV_LANE_kTcModifierMap;  // {u32 hash, u32, T*}[], u16 count +8
+static const uintptr_t kTcWeights = GTAV_LANE_kTcWeights;      // f32[] per modifier, u16 count +8
+static const uintptr_t kTcVarsReady = GTAV_LANE_kTcVarsReady;    // u8, 1 once the 429 tc var names exist
 // SET_TIMECYCLE_MODIFIER (live 0x1ab67f0) stores the resolved modifier index here (-1: none, set
 // by CLEAR_TIMECYCLE_MODIFIER 0x1ab68e0); GET_TIMECYCLE_MODIFIER_INDEX (0x1ab6910) returns it.
-static const uintptr_t kTcCurrentIndex = 0x57805b0;  // s32
+static const uintptr_t kTcCurrentIndex = GTAV_LANE_kTcCurrentIndex;  // s32
 
 typedef struct {
   uintptr_t modifiers, map;
@@ -581,6 +646,7 @@ static int pack_tc_verify(uint32_t row, uint32_t n, const uint32_t* hashes, uint
   return readable && s.count == before + n && s.map_count == s.count && s.sorted == 1u &&
          s.weights == s.count && known == n && usable == n;
 }
+#endif
 
 // CARCOLS growth gate. The merge appends kits in place while count + new <= capacity; otherwise it
 // deep-copies every kit into a larger array and frees each old kit's visible-mod (0x68) and
@@ -597,24 +663,17 @@ static int pack_tc_verify(uint32_t row, uint32_t n, const uint32_t* hashes, uint
 // and +0xb50 (rear, 0xff4f66). A type grows only when count + new > capacity, `new` bounded by
 // every grandchild of <Wheels>; each type that could grow must have no live gfx pointer into it.
 // Unpinned code refuses wheels as before.
-static const uintptr_t kModRenderDataPool = 0x45a57d0;
+#if !defined(__ORBIS__)
+static const uintptr_t kModRenderDataPool = GTAV_LANE_kModRenderDataPool;
 #define PACK_WHEEL_TYPES 13u
-static const uintptr_t kWheelMergeCode = 0x1423d7a;
-static const uint8_t kWheelMergeCodeBytes[] = {
-    0x48, 0x83, 0xf8, 0x0d, 0x0f, 0x84, 0x58, 0x0c, 0x00, 0x00, 0x49, 0x89, 0xc7, 0x48,
-    0x89, 0x85, 0x40, 0xff, 0xff, 0xff, 0x48, 0x8b, 0x85, 0x70, 0xff, 0xff, 0xff, 0x49,
-    0xc1, 0xe7, 0x04, 0x42, 0x0f, 0xb7, 0x44, 0x38, 0x70, 0x66, 0x85, 0xc0, 0x74, 0xcc};
-static const uintptr_t kWheelGrowCode = 0x1423e90;
-static const uint8_t kWheelGrowCodeBytes[] = {0x66, 0x44, 0x3b, 0x73, 0x0a, 0x0f,
-                                              0x85, 0x96, 0x05, 0x00, 0x00};
-static const uintptr_t kWheelGfxFrontCode = 0x13f4f03;
-static const uint8_t kWheelGfxFrontCodeBytes[] = {0x4c, 0x6b, 0xf2, 0x38, 0x48, 0xc1, 0xe7,
-                                                  0x04, 0x4c, 0x03, 0x74, 0x3e, 0x68, 0x4d,
-                                                  0x89, 0xb2, 0x48, 0x0b, 0x00, 0x00};
-static const uintptr_t kWheelGfxRearCode = 0x13f4f59;
-static const uint8_t kWheelGfxRearCodeBytes[] = {0x48, 0xc1, 0xe0, 0x04, 0x48, 0x6b, 0xc9,
-                                                 0x38, 0x48, 0x03, 0x4c, 0x02, 0x68, 0x49,
-                                                 0x89, 0x8a, 0x50, 0x0b, 0x00, 0x00};
+static const uintptr_t kWheelMergeCode = GTAV_LANE_kWheelMergeCode;
+static const uint8_t kWheelMergeCodeBytes[] = GTAV_LANE_kWheelMergeCodeBytes;
+static const uintptr_t kWheelGrowCode = GTAV_LANE_kWheelGrowCode;
+static const uint8_t kWheelGrowCodeBytes[] = GTAV_LANE_kWheelGrowCodeBytes;
+static const uintptr_t kWheelGfxFrontCode = GTAV_LANE_kWheelGfxFrontCode;
+static const uint8_t kWheelGfxFrontCodeBytes[] = GTAV_LANE_kWheelGfxFrontCodeBytes;
+static const uintptr_t kWheelGfxRearCode = GTAV_LANE_kWheelGfxRearCode;
+static const uint8_t kWheelGfxRearCodeBytes[] = GTAV_LANE_kWheelGfxRearCodeBytes;
 
 struct PackWheelArrays {
   uintptr_t data[PACK_WHEEL_TYPES];
@@ -693,11 +752,13 @@ static uint32_t pack_tuned_cars() {
   return tuned;
 }
 
+#endif
 // The gate's in-use refusal: the autoload waits on it (custom_pack_autoload.inc pack_al_gate_wait)
 // instead of failing; nothing of the row has run. The last gate's hit and live slot counts.
 static const char kPackCarcolsInUse[] = "carcols would free mod parts in use (tuned car nearby)";
 static volatile uint32_t g_pack_carcols_hits, g_pack_carcols_gfx;
 
+#if !defined(__ORBIS__)
 static const char* pack_carcols_gate(uint32_t row, uint32_t new_kits) {
   PackVarArrays vars;
   if (pack_var_arrays(&vars) != 0) return "vehicle variation globals unreadable";
@@ -770,7 +831,28 @@ static const char* pack_carcols_gate(uint32_t row, uint32_t new_kits) {
   g_pack_carcols_hits = hits;
   return hits ? kPackCarcolsInUse : nullptr;
 }
+#else
+static const char* pack_carcols_gate(uint32_t row, uint32_t new_kits) {
+  PackVarArrays vars;
+  if (pack_var_arrays(&vars) != 0) return "vehicle variation globals unreadable";
+  const uint32_t kits = pack_data_list_bound(row, "Kits");
+  const uint32_t wheels = pack_data_grandchild_bound(row, "Wheels");
+  if (kits == UINT32_MAX || wheels == UINT32_MAX)
+    return "carcols file is not plain XML (structure refused)";
+  if (wheels) return "custom wheels need the PS4 wheel/render lane";
+  if (kits > new_kits) new_kits = kits;
+  const int kit_grow = (uint32_t)vars.kit_count + new_kits > vars.kit_capacity;
+  gtav_status_eventf(GTAV_MENU_EVENT_NATIVE_SHELL,
+                     "pack carcols gate kits=%u/%u new=%u wheels=%u grow=%d",
+                     (unsigned)vars.kit_count, (unsigned)vars.kit_capacity, (unsigned)new_kits,
+                     (unsigned)wheels, kit_grow);
+  if (kit_grow) return "Carcols kits unsupported on PS4";
+  return nullptr;
+}
+static uint32_t pack_tuned_cars() { return 0; }
+#endif
 
+#if !defined(__ORBIS__)
 // SHOP_PED_APPAREL_META_FILE. The 137 case of the
 // mounter (0x16449e0 normalized) returns true WITHOUT queueing when the DataFile name's hash is in
 // the apparel manager's file list; otherwise it queues one parse. Its post-parse step (functor slot
@@ -782,38 +864,47 @@ static const char* pack_carcols_gate(uint32_t row, uint32_t new_kits) {
 // No count drives a capacity here: the slot append compares count with capacity (0x1a4c67a pin)
 // and the post-parse repeats the streamed check itself, so a pedName spelling the scan misses
 // refuses (count != 1) or fails pack_apparel_verify; nothing overruns.
+// A pinned code window: the lane address and the bytes that must sit there before the step runs.
 struct PackApparelPin {
   uintptr_t at;
   uint8_t size;
-  uint8_t bytes[56];
+  const uint8_t* bytes;
   const char* what;
 };
+#define PACK_CODE_PIN(name, what) {GTAV_LANE_##name, sizeof(name##Bytes), name##Bytes, what}
 // Live eboot text (execute-only) range, from the crash dumps' dynamic-library list.
-static const uintptr_t kEbootTextStart = 0x400000;
-static const uintptr_t kEbootTextEnd = 0x3798000;
+static const uintptr_t kEbootTextStart = GTAV_LANE_kEbootTextStart;
+static const uintptr_t kEbootTextEnd = GTAV_LANE_kEbootTextEnd;
+static const uint8_t kApparel137CaseSiteBytes[] = GTAV_LANE_kApparel137CaseSiteBytes;
+static const uint8_t kApparelFileListSiteBytes[] = GTAV_LANE_kApparelFileListSiteBytes;
+static const uint8_t kApparelPostParseBytes[] = GTAV_LANE_kApparelPostParseBytes;
+static const uint8_t kApparelModelPoolSiteBytes[] = GTAV_LANE_kApparelModelPoolSiteBytes;
+static const uint8_t kApparelStreamedSkipSiteBytes[] = GTAV_LANE_kApparelStreamedSkipSiteBytes;
+static const uint8_t kApparelPmtLookupSiteBytes[] = GTAV_LANE_kApparelPmtLookupSiteBytes;
+static const uint8_t kApparelSlotAppendSiteBytes[] = GTAV_LANE_kApparelSlotAppendSiteBytes;
+static const uint8_t kApparelStreamedCheckBytes[] = GTAV_LANE_kApparelStreamedCheckBytes;
 static const PackApparelPin kApparelPins[] = {
-    // 137 case: manager [0x54566c8] and functor vtable 0x3fa8598 (rip-relative), then the file
-    // list walk {T** +0x70, u16 +0x78}, name hash at file +0x20.
-    {0x1a449e0, 32, {0x48, 0x8b, 0x1d, 0xe1, 0x1c, 0xa1, 0x03, 0x48, 0x8d, 0x05, 0xaa, 0x3b, 0x56, 0x02, 0x4c, 0x89, 0xe7, 0x66, 0xc7, 0x83, 0xa0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x66, 0xc7, 0x83, 0xb0, 0x00, 0x00}, "137 case"},
-    {0x1a44a3c, 40, {0x0f, 0xb7, 0x4b, 0x78, 0x48, 0x85, 0xc9, 0x0f, 0x84, 0x2d, 0x01, 0x00, 0x00, 0x49, 0x8b, 0x36, 0x31, 0xd2, 0x66, 0x90, 0x48, 0x8b, 0x3c, 0xd6, 0x39, 0x47, 0x20, 0x0f, 0x84, 0x11, 0x01, 0x00, 0x00, 0x48, 0xff, 0xc2, 0x48, 0x39, 0xd1, 0x75}, "file list"},
-    // Post-parse: entry, model-info pool lookup (pool 0x6177250), streamed check, pmt slot lookup
+    // 137 case: manager [kApparelManagerPtr] and functor vtable kApparelFunctorVtable
+    // (rip-relative), then the file list walk {T** +0x70, u16 +0x78}, name hash at file +0x20.
+    PACK_CODE_PIN(kApparel137CaseSite, "137 case"),
+    PACK_CODE_PIN(kApparelFileListSite, "file list"),
+    // Post-parse: entry, model-info pool lookup (kModelInfoPool), streamed check, pmt slot lookup
     // (MetaDataStore +0x80/+0x88) and the append to model +0xe0.
-    {0x1a4b600, 32, {0x55, 0x48, 0x89, 0xe5, 0x41, 0x57, 0x41, 0x56, 0x41, 0x55, 0x41, 0x54, 0x53, 0x48, 0x83, 0xec, 0x78, 0x48, 0x8b, 0x1e, 0x48, 0x85, 0xdb, 0x0f, 0x84, 0xc9, 0x15, 0x00, 0x00, 0x4c, 0x8b, 0x6f}, "post-parse"},
-    {0x1a4b7f2, 48, {0x0f, 0xb7, 0x40, 0x04, 0x3b, 0x05, 0x5c, 0xba, 0x72, 0x04, 0x0f, 0x8d, 0xe4, 0x13, 0x00, 0x00, 0x48, 0x8b, 0x0d, 0x77, 0xba, 0x72, 0x04, 0x89, 0xc2, 0xc1, 0xea, 0x05, 0x8b, 0x0c, 0x91, 0x0f, 0xa3, 0xc1, 0x0f, 0x83, 0xcc, 0x13, 0x00, 0x00, 0x48, 0x8b, 0x0d, 0x2f, 0xba, 0x72, 0x04, 0x48}, "model pool"},
-    {0x1a4b845, 24, {0x3d, 0xff, 0xff, 0x00, 0x00, 0x0f, 0x84, 0x96, 0x13, 0x00, 0x00, 0x8d, 0xb8, 0x00, 0x00, 0xff, 0x0f, 0xe8, 0x25, 0x8a, 0xf6, 0xff, 0x84, 0xc0}, "streamed skip"},
-    {0x1a4c600, 36, {0x48, 0x8b, 0x0d, 0xa9, 0x6c, 0x72, 0x04, 0x8b, 0x35, 0xab, 0x6c, 0x72, 0x04, 0x31, 0xd2, 0x44, 0x89, 0xc0, 0xf7, 0xf6, 0x8b, 0x14, 0x91, 0x8b, 0x7d, 0x94, 0x83, 0xfa, 0xff, 0x0f, 0x84, 0x6f, 0x03, 0x00, 0x00, 0x48}, "pmt lookup"},
-    {0x1a4c67a, 21, {0x0f, 0xb7, 0x99, 0xe8, 0x00, 0x00, 0x00, 0x4c, 0x8b, 0xb1, 0xe0, 0x00, 0x00, 0x00, 0x66, 0x3b, 0x99, 0xea, 0x00, 0x00, 0x00}, "slot append"},
-    // Streamed check itself, mirrored by pack_model_streamed (module id 0x6210f30, modules
-    // 0x62271c8, entries 0x6227018: state = entry +4 & 3).
-    {0x19b4280, 52, {0x8b, 0x05, 0xaa, 0xcc, 0x85, 0x04, 0x48, 0x8b, 0x0d, 0x3b, 0x2f, 0x87, 0x04, 0xba, 0xff, 0xff, 0xff, 0xff, 0x48, 0x8b, 0x04, 0xc1, 0x0f, 0xb7, 0xcf, 0x81, 0xf9, 0xff, 0xff, 0x00, 0x00, 0x0f, 0x45, 0xd1, 0xb9, 0x0e, 0x00, 0x00, 0x00, 0x03, 0x50, 0x08, 0x48, 0x8b, 0x05, 0x67, 0x2d, 0x87, 0x04, 0x0f, 0xb6, 0x44}, "streamed check"},
+    PACK_CODE_PIN(kApparelPostParse, "post-parse"),
+    PACK_CODE_PIN(kApparelModelPoolSite, "model pool"),
+    PACK_CODE_PIN(kApparelStreamedSkipSite, "streamed skip"),
+    PACK_CODE_PIN(kApparelPmtLookupSite, "pmt lookup"),
+    PACK_CODE_PIN(kApparelSlotAppendSite, "slot append"),
+    // Streamed check itself, mirrored by pack_model_streamed (kApparelModelModuleId, the streaming
+    // modules and kApparelStreamEntries: state = entry +4 & 3).
+    PACK_CODE_PIN(kApparelStreamedCheck, "streamed check"),
 };
-static const uintptr_t kApparelFunctorVtable = 0x3fa8598;
-static const uintptr_t kApparelPostParse = 0x1a4b600;
-static const uintptr_t kApparelManagerPtr = 0x54566c8;
-static const uintptr_t kMetaDataStore = 0x6173230;  // name map: nodes +0x78, heads +0x80, count +0x88
-static const uintptr_t kModelInfoPool = 0x6177250;  // {T** +0, i32 size +8, stride +0x18, bits* +0x30}
-static const uintptr_t kApparelModelModuleId = 0x6210f30;
-static const uintptr_t kApparelStreamEntries = 0x6227018;  // kStreamingModules: custom_rpf.inc
+static const uintptr_t kApparelFunctorVtable = GTAV_LANE_kApparelFunctorVtable;
+static const uintptr_t kApparelPostParse = GTAV_LANE_kApparelPostParse;
+static const uintptr_t kApparelManagerPtr = GTAV_LANE_kApparelManagerPtr;
+static const uintptr_t kMetaDataStore = GTAV_LANE_kMetaDataStore;  // name map: nodes +0x78, heads +0x80, count +0x88
+static const uintptr_t kApparelModelModuleId = GTAV_LANE_kApparelModelModuleId;
+static const uintptr_t kApparelStreamEntries = GTAV_LANE_kApparelStreamEntries;  // kStreamingModules: custom_rpf.inc
 
 // Text of the first <tag> element of staged XML row `row`; returns the element count.
 static uint32_t pack_xml_text(uint32_t row, const char* tag, char* out, size_t out_size) {
@@ -842,12 +933,12 @@ static uint32_t pack_xml_text(uint32_t row, const char* tag, char* out, size_t o
 // `hash`, or -1 (the post-parse lookup at 0x164c600; the wheel request at 0xfdcc10).
 static int32_t pack_store_slot(uintptr_t s, uint32_t hash) {
   if (!pack_readable(s, 0x90)) return -1;
-  const uintptr_t slots = *(const volatile uintptr_t*)(s + 0x40);
-  const uintptr_t flags = *(const volatile uintptr_t*)(s + 0x48);
-  const uint32_t size = *(const volatile uint32_t*)(s + 0x50);
-  const uintptr_t nodes = *(const volatile uintptr_t*)(s + 0x78);
-  const uintptr_t heads = *(const volatile uintptr_t*)(s + 0x80);
-  const uint32_t buckets = *(const volatile uint32_t*)(s + 0x88);
+  const uintptr_t slots = *(const volatile uintptr_t*)(s + PACK_STORE_SLOTS_OFFSET);
+  const uintptr_t flags = *(const volatile uintptr_t*)(s + PACK_STORE_FLAGS_OFFSET);
+  const uint32_t size = *(const volatile uint32_t*)(s + PACK_STORE_SIZE_OFFSET);
+  const uintptr_t nodes = *(const volatile uintptr_t*)(s + PACK_STORE_MAP_NODES_OFFSET);
+  const uintptr_t heads = *(const volatile uintptr_t*)(s + PACK_STORE_MAP_HEADS_OFFSET);
+  const uint32_t buckets = *(const volatile uint32_t*)(s + PACK_STORE_MAP_COUNT_OFFSET);
   if (!slots || !flags || !nodes || !buckets || !pack_readable(heads, (size_t)buckets * 4u)) return -1;
   uint32_t node = ((const volatile uint32_t*)heads)[hash % buckets];
   for (int depth = 0; node != UINT32_MAX && depth < 256; ++depth) {
@@ -1083,21 +1174,26 @@ static int pack_component_verify(int32_t row, int32_t before, const uint32_t* ha
 // opens a .nametable. Objects are looked up newest chunk first (live 0x2e90730), so a vehicle created
 // after the load finds a CarAudioSettings (class 3) its audioNameHash names (CarAudioEntity init,
 // live 0xaa8030, reads model info +0x4e4 after the script override).
-static const uintptr_t kAudioGameObjects = 0x57ef0c8;  // the game-object manager (iface+8)
-static const uint32_t kAudioChunkStride = 0x78;
+static const uintptr_t kAudioGameObjects = GTAV_LANE_kAudioGameObjects;  // the game-object manager (iface+8)
+static const uint32_t kAudioChunkStride = GTAV_LANE_kAudioChunkStride;
 static const uint32_t kAudioRemovalSlots = 48;  // iface +0x10: char[0x20] names
-static const uint32_t kAudioModelHash = 0x4e4;  // CVehicleModelInfo audioNameHash
+static const uint32_t kAudioModelHash = GTAV_LANE_kAudioModelHash;  // CVehicleModelInfo audioNameHash
+static const uint8_t kAudioChunkNameSiteBytes[] = GTAV_LANE_kAudioChunkNameSiteBytes;
+static const uint8_t kAudioLoadCallSiteBytes[] = GTAV_LANE_kAudioLoadCallSiteBytes;
+static const uint8_t kAudioDedupeSiteBytes[] = GTAV_LANE_kAudioDedupeSiteBytes;
+static const uint8_t kAudioLookupBucketsSiteBytes[] = GTAV_LANE_kAudioLookupBucketsSiteBytes;
+static const uint8_t kAudioLookupSearchSiteBytes[] = GTAV_LANE_kAudioLookupSearchSiteBytes;
 static const PackApparelPin kAudioPins[] = {
     // strrchr(name, '/') + 1 with no NULL check, then strchr(.., '_'): the chunk name.
-    {0x98e865, 41, {0x48, 0x89, 0x75, 0xa8, 0xbe, 0x2f, 0x00, 0x00, 0x00, 0xe8, 0x0d, 0x1d, 0xe0, 0x02, 0x49, 0x89, 0xc7, 0xbe, 0x5f, 0x00, 0x00, 0x00, 0x49, 0xff, 0xc7, 0x4c, 0x89, 0xff, 0xe8, 0x8a, 0x1d, 0xe0, 0x02, 0x4c, 0x29, 0xf8, 0xb9, 0x20, 0x00, 0x00, 0x00}, "chunk name"},
-    // LoadMetadataChunk(iface+8, chunk, name, 0, 0), then the GAMEDATA (0x8c) step on 0x57ef0c8.
-    {0x98ea6f, 52, {0x49, 0x8b, 0x7e, 0x08, 0x48, 0x8b, 0x55, 0xa8, 0x48, 0x8d, 0x75, 0xb0, 0x31, 0xc9, 0x45, 0x31, 0xc0, 0xe8, 0x3b, 0x28, 0x50, 0x02, 0x41, 0x89, 0xc7, 0x48, 0x8b, 0x5d, 0xa8, 0x81, 0xbb, 0x90, 0x00, 0x00, 0x00, 0x8c, 0x00, 0x00, 0x00, 0x0f, 0x85, 0xd5, 0x00, 0x00, 0x00, 0x48, 0x8d, 0x3d, 0x25, 0x06, 0xe6, 0x04}, "load call"},
+    PACK_CODE_PIN(kAudioChunkNameSite, "chunk name"),
+    // LoadMetadataChunk(iface+8, chunk, name, 0, 0), then the GAMEDATA (0x8c) step.
+    PACK_CODE_PIN(kAudioLoadCallSite, "load call"),
     // The loaded-name skip: u16 count +8, chunks +0, stride 0x78, hash +0, loaded byte +0x71.
-    {0x2e9138c, 56, {0x41, 0x0f, 0xb7, 0x44, 0x24, 0x08, 0x89, 0xcb, 0xc1, 0xe3, 0x0f, 0x01, 0xcb, 0x48, 0x85, 0xc0, 0x74, 0x30, 0x49, 0x8b, 0x0c, 0x24, 0xbe, 0xff, 0xff, 0xff, 0xff, 0x31, 0xd2, 0xeb, 0x11, 0x0f, 0x1f, 0x44, 0x00, 0x00, 0x48, 0xff, 0xc2, 0x48, 0x83, 0xc1, 0x78, 0x48, 0x39, 0xd0, 0x74, 0x17, 0x39, 0x19, 0x75, 0xf0, 0x80, 0x79, 0x71, 0x00}, "dedupe"},
+    PACK_CODE_PIN(kAudioDedupeSite, "dedupe"),
     // GetObject: objects +0x1c, loaded +0x71, buckets +0x28 by hash low byte, index +0x20.
-    {0x2e907b0, 48, {0x48, 0x6b, 0xd0, 0x78, 0x83, 0x7c, 0x11, 0x1c, 0x00, 0x74, 0xe5, 0x80, 0x7c, 0x11, 0x71, 0x00, 0x74, 0xde, 0x48, 0x8b, 0x7c, 0x11, 0x28, 0x44, 0x8b, 0x4c, 0xf7, 0x04, 0x45, 0x85, 0xc9, 0x7e, 0xcf, 0x4c, 0x63, 0x04, 0xf7, 0x48, 0x8b, 0x54, 0x11, 0x20, 0x41, 0xff, 0xc9, 0x45, 0x31, 0xd2}, "lookup buckets"},
+    PACK_CODE_PIN(kAudioLookupBucketsSite, "lookup buckets"),
     // ... binary search on the index entry's hash (+4), unsigned.
-    {0x2e907fb, 26, {0x47, 0x8d, 0x1c, 0x11, 0x41, 0xd1, 0xfb, 0x49, 0x63, 0xfb, 0x4c, 0x01, 0xc7, 0x44, 0x39, 0x64, 0xfa, 0x04, 0x72, 0xe1, 0x0f, 0x86, 0x7a, 0xff, 0xff, 0xff}, "lookup search"},
+    PACK_CODE_PIN(kAudioLookupSearchSite, "lookup search"),
 };
 
 typedef struct {
@@ -1301,6 +1397,24 @@ static int pack_audio_verify(uint32_t row, uint32_t before) {
   gtav_worker_klog(line);
   return added && resolved == g_pack_audio_info.objects;
 }
+#endif
+
+// By-name slots a model row adds (FindOrAdd traps on a full pool, like LoadImage): `adds` plus the
+// store's margin free in store `store` (PACK_STORE_*, gtav_custom_pack_store_need). Registration
+// reserved one row's worth per row (custom_rpf.inc pack_store_adds) before it had read the data
+// files; this checks the row's full model bound when the row loads. nullptr or the refusal.
+static const char* pack_by_name_gate(int store, uint32_t adds) {
+  static char refusal[GTAV_FEATURE_MESSAGE_LEN];
+  if (!adds) return nullptr;
+  const PackStoreGate& gate = kPackStoreGates[store];
+  const uint32_t need = gtav_custom_pack_store_need(store, adds);
+  uint32_t free_slots = 0, size = 0;
+  if (pack_readable(gate.store, 0x64) && pack_store_headroom(gate, &free_slots, &size) == 0 &&
+      free_slots >= need)
+    return nullptr;
+  gtav_custom_pack_store_refusal(refusal, sizeof(refusal), gate.name, free_slots, need);
+  return refusal;
+}
 
 // Read-only headroom gates for data row `row` declaring `n` names (hashes, at most
 // GTAV_PACK_DATA_NAMES_MAX). Returns nullptr when the row may load.
@@ -1312,6 +1426,14 @@ static const char* pack_data_gate(uint32_t row, uint32_t n, const uint32_t* hash
   switch (type) {
     case GTAV_CUSTOM_PACK_DATA_CARCOLS:
       return pack_carcols_gate(row, n);
+    case GTAV_CUSTOM_PACK_DATA_HANDLING:
+    case GTAV_CUSTOM_PACK_DATA_VEHICLE_VARIATION:
+    case GTAV_CUSTOM_PACK_DATA_VEHICLE_LAYOUTS:
+      return nullptr;
+    case GTAV_CUSTOM_PACK_DATA_VEHICLE_METADATA:
+      if (pack_vehicle_model_store(&count, &capacity) != 0) return "vehicle model store unreadable";
+      break;
+#if !defined(__ORBIS__)
     case GTAV_CUSTOM_PACK_DATA_SHOP_PED_APPAREL:
       return pack_apparel_gate(row);
     case GTAV_CUSTOM_PACK_DATA_TIMECYCLEMOD:
@@ -1320,9 +1442,6 @@ static const char* pack_data_gate(uint32_t row, uint32_t n, const uint32_t* hash
       return pack_audio_gate(row);
     case GTAV_CUSTOM_PACK_DATA_WEAPONCOMPONENTSINFO:
       return pack_component_gate(row, n, hashes);
-    case GTAV_CUSTOM_PACK_DATA_VEHICLE_METADATA:
-      if (pack_vehicle_model_store(&count, &capacity) != 0) return "vehicle model store unreadable";
-      break;
     case GTAV_CUSTOM_PACK_DATA_PED_METADATA:
       if (pack_model_factory_block(kPedModelFactory, kPedModelFactoryVtable, &count, &capacity) != 0)
         return "ped model store unreadable";
@@ -1348,6 +1467,10 @@ static const char* pack_data_gate(uint32_t row, uint32_t n, const uint32_t* hash
     }
     default:
       return nullptr;
+#else
+    default:
+      return "pack data type is not supported on PS4";
+#endif
   }
   // Model rows: every name is new, fits the factory block and gets an archetype slot. All three
   // factories append one record per element child of <InitDatas> with no capacity check (vehicles:
@@ -1372,32 +1495,44 @@ static const char* pack_data_gate(uint32_t row, uint32_t n, const uint32_t* hash
     return type == GTAV_CUSTOM_PACK_DATA_PED_METADATA ? "ped model store headroom gate refused"
                                                       : "weapon model store headroom gate refused";
   }
+  // Each vehicle model finds or adds its txdName; each ped its own and its props' dwd and txd.
+  if (type == GTAV_CUSTOM_PACK_DATA_VEHICLE_METADATA ||
+      type == GTAV_CUSTOM_PACK_DATA_PED_METADATA) {
+    const uint32_t per_model = type == GTAV_CUSTOM_PACK_DATA_PED_METADATA ? 2u : 1u;
+    if (const char* refusal = pack_by_name_gate(PACK_STORE_TXD, per_model * bound)) return refusal;
+    if (type == GTAV_CUSTOM_PACK_DATA_PED_METADATA)
+      if (const char* refusal = pack_by_name_gate(PACK_STORE_DWD, 2u * bound)) return refusal;
+  }
   if (type != GTAV_CUSTOM_PACK_DATA_VEHICLE_METADATA) {
     // Peds skip a known name silently, weapon models register it twice: refuse both.
     for (uint32_t i = 0; i < checked; ++i)
       if (pack_model_known(hashes[i]) != 0) return "model name already exists or map unreadable";
     if (type == GTAV_CUSTOM_PACK_DATA_PED_METADATA) {
-      // pft/pmt slots are looked up by name only; the MetaDataStore must have room for any it adds.
-      const uintptr_t meta_store = 0x6173230;
-      const uint32_t size =
-          pack_readable(meta_store, 0x64) ? *(const volatile uint32_t*)(meta_store + 0x50) : 0;
-      const uint32_t used =
-          size ? *(const volatile uint32_t*)(meta_store + 0x60) & 0x3fffffffu : UINT32_MAX;
-      if (!size || used > size || *(const volatile uint32_t*)(meta_store + 0x58) == UINT32_MAX ||
-          size - used < bound)
-        return "ped metadata store headroom gate refused";
+      // pft/pmt slots are looked up by name only; the MetaDataStore must have room for any it adds
+      // (custom_rpf.inc kPackStoreGates, here with the row's own model bound plus the store's
+      // margin as the need).
+      static char refusal[GTAV_FEATURE_MESSAGE_LEN];
+      const PackStoreGate& meta = kPackStoreGates[PACK_STORE_METADATA];
+      const uint32_t need = gtav_custom_pack_store_need(PACK_STORE_METADATA, bound);
+      uint32_t free_slots = 0, size = 0;
+      if (!pack_readable(meta.store, 0x64) || pack_store_headroom(meta, &free_slots, &size) != 0 ||
+          free_slots < need) {
+        gtav_custom_pack_store_refusal(refusal, sizeof(refusal), meta.name, free_slots, need);
+        return refusal;
+      }
     }
   }
   return nullptr;
 }
 
+#if !defined(__ORBIS__)
 // Weapon model rows: AddWeaponModel appends a
 // 0x190-byte CWeaponModelInfo to the factory block (name hash +0x18); its InitData step finds the
 // drawable by the model's own name (0x3044690 normalized: kind +0x60, 2 = drawable store slot
 // +0x64, 1 = fragment, 0 = none, i.e. invisible) and records the txdName slot in that drawable
 // store entry (+0x18; -1 = no texture dictionary). One klog line per new model, from engine state.
-static const uintptr_t kDrawableStore = 0x61a6cd8;  // entries* +0x40, flags* +0x48, size +0x50
-static const uintptr_t kDrawableStoreVtable = 0x40934c0;
+static const uintptr_t kDrawableStore = GTAV_LANE_kDrawableStore;  // entries* +0x40, flags* +0x48, size +0x50
+static const uintptr_t kDrawableStoreVtable = GTAV_LANE_kDrawableStoreVtable;
 
 static void pack_weapon_model_note(uint32_t row, uint32_t from, uint32_t to) {
   char line[GTAV_FEATURE_MESSAGE_LEN + 16];
@@ -1464,12 +1599,33 @@ static int pack_data_sync_verify(uint32_t row, uint32_t n, const uint32_t* hashe
     pack_weapon_model_note(row, count_before, count);
   return store == 0 && count == count_before + n && known == n;
 }
+#else
+static int pack_data_sync_verify(uint32_t row, uint32_t n, const uint32_t* hashes,
+                                 uint32_t count_before) {
+  const uint32_t type = g_pack.data[row].type;
+  if (type == GTAV_CUSTOM_PACK_DATA_HANDLING)
+    return *(const volatile uint16_t*)kHandlingCount == count_before + n;
+  if (type != GTAV_CUSTOM_PACK_DATA_VEHICLE_METADATA) return 1;
+  uint32_t count = 0, capacity = 0, known = 0;
+  const int store = pack_vehicle_model_store(&count, &capacity);
+  for (uint32_t i = 0; i < n && i < GTAV_PACK_DATA_NAMES_MAX; ++i)
+    known += pack_model_known(hashes[i]) == 1;
+  char line[GTAV_FEATURE_MESSAGE_LEN + 16];
+  snprintf(line, sizeof(line), "GTAVMenu pack data %u sync vehicles %u->%u/%u known=%u/%u",
+           (unsigned)row, (unsigned)count_before, (unsigned)count, (unsigned)capacity,
+           (unsigned)known, (unsigned)n);
+  gtav_status_event(GTAV_MENU_EVENT_NATIVE_SHELL, line + 9);
+  gtav_worker_klog(line);
+  return store == 0 && count == count_before + n && known == n;
+}
+#endif
 
 static uint64_t g_pack_data_parsed;  // rows whose contents landed (pumped, or sync and verified)
 // Names and weapon count of the queued row, for the post-pump check.
 static uint32_t g_pack_pending_names[GTAV_PACK_DATA_NAMES_MAX];
 static uint32_t g_pack_pending_name_count;
 
+#if !defined(__ORBIS__)
 // Weapon wheel icon aliases (`wicon` rows). The
 // wheel shows a weapon's icon with wT<WheelSlot>.gotoAndStop("INT" + name hash) on an instance of
 // the hud.gfx sprite SLOT_WEAPONS_<WheelSlot> (MASTER_WEAPONS in a vehicle); a pack weapon's name
@@ -1483,35 +1639,28 @@ static uint32_t g_pack_pending_name_count;
 // hash), and NamedFrames.add (the FrameLabel loader's own insert) adds the alias under the movie's
 // lock. The key is handed over as a string with a foreign heap, so add copies it into the movie
 // heap; nothing the table keeps points at worker memory. Main thread only (pump_pack_data).
-static const uintptr_t kSfMovies = 0x458dc00;           // movie structs (stride 0x1e0)
-static const uintptr_t kSfMovieCount = 0x458dc08;       // u16
-static const uintptr_t kSfMovieLocks = 0x458ef08;       // mutex per movie id (8 bytes each)
-static const uintptr_t kHudContainerMovie = 0x54581a8;  // s32: HUD component 0 (hud.gfx) movie id
-static const uintptr_t kSfStoreSlots = 0x459c968;  // ScaleformStore +0x40: slots, +0x50 size, +0x54 stride
-static const uint32_t kSfMovieStride = 0x1e0;
-static const uint32_t kSfMovieMax = 0x32;  // the manager refuses ids above 0x31
+static const uintptr_t kSfMovies = GTAV_LANE_kSfMovies;           // movie structs (stride 0x1e0)
+static const uintptr_t kSfMovieCount = GTAV_LANE_kSfMovieCount;       // u16
+static const uintptr_t kSfMovieLocks = GTAV_LANE_kSfMovieLocks;       // mutex per movie id (8 bytes each)
+static const uintptr_t kHudContainerMovie = GTAV_LANE_kHudContainerMovie;  // s32: HUD component 0 (hud.gfx) movie id
+static const uintptr_t kSfStoreSlots = GTAV_LANE_kSfStoreSlots;  // ScaleformStore +0x40: slots, +0x50 size, +0x54 stride
+static const uint32_t kSfMovieStride = GTAV_LANE_kSfMovieStride;
+static const uint32_t kSfMovieMax = GTAV_LANE_kSfMovieMax;  // the manager refuses ids above 0x31
 static const uint32_t kSfMovieActive = 3;
-static const uintptr_t kGfxMovieRootVtable = 0x409cc08;
-static const uintptr_t kGfxGetMovieDef = 0x36a9140;  // root vt+0x10
-static const uintptr_t kGfxMovieDefImplVtable = 0x409c8d0;
-static const uintptr_t kGfxGetResource = 0x369a0e0;  // def vt+0xe0 (def, export name) -> resource
-static const uintptr_t kGfxSpriteDefVtable = 0x409d3d0;
-static const uintptr_t kGfxGetLabeledFrame = 0x36d56f0;  // sprite vt+0x70 (def, label, u32*, bool)
-static const uintptr_t kGfxTranslateFrame = 0x3692000;   // its tail call (NamedFrames lookup)
-static const uintptr_t kGfxFrameNameAdd = 0x3695610;  // (hash*, hash*, {key*, u32*}*, hash value)
-static const uint32_t kGfxNamedFrames = 0x28;          // GFxSpriteDef: NamedFrames table pointer
-static const uint8_t kGfxGetMovieDefBytes[5] = {0x48, 0x8b, 0x47, 0x58, 0xc3};
-static const uint8_t kGfxGetLabeledFrameBytes[9] = {0x48, 0x83, 0xc7, 0x28, 0xe9,
-                                                    0x07, 0xc9, 0xfb, 0xff};
-static const uint8_t kGfxGetResourceBytes[32] = {
-    0x55, 0x48, 0x89, 0xe5, 0x41, 0x57, 0x41, 0x56, 0x41, 0x55, 0x41, 0x54, 0x53, 0x48, 0x83, 0xec,
-    0x48, 0x48, 0x8b, 0x1d, 0x68, 0x59, 0xa1, 0x00, 0x48, 0x8b, 0x03, 0x48, 0x89, 0x45, 0xd0, 0x48};
-static const uint8_t kGfxTranslateFrameBytes[32] = {
-    0x55, 0x48, 0x89, 0xe5, 0x41, 0x57, 0x41, 0x56, 0x41, 0x55, 0x41, 0x54, 0x53, 0x48, 0x81, 0xec,
-    0x88, 0x01, 0x00, 0x00, 0x48, 0x8b, 0x1d, 0x45, 0xda, 0xa1, 0x00, 0x48, 0x8b, 0x03, 0x48, 0x89};
-static const uint8_t kGfxFrameNameAddBytes[32] = {
-    0x55, 0x48, 0x89, 0xe5, 0x41, 0x57, 0x41, 0x56, 0x41, 0x55, 0x41, 0x54, 0x53, 0x48, 0x83, 0xec,
-    0x48, 0x48, 0x8b, 0x07, 0x49, 0x89, 0xcd, 0x48, 0x89, 0xd3, 0x49, 0x89, 0xfe, 0x48, 0x85, 0xc0};
+static const uintptr_t kGfxMovieRootVtable = GTAV_LANE_kGfxMovieRootVtable;
+static const uintptr_t kGfxGetMovieDef = GTAV_LANE_kGfxGetMovieDef;  // root vt+0x10
+static const uintptr_t kGfxMovieDefImplVtable = GTAV_LANE_kGfxMovieDefImplVtable;
+static const uintptr_t kGfxGetResource = GTAV_LANE_kGfxGetResource;  // def vt+0xe0 (def, export name) -> resource
+static const uintptr_t kGfxSpriteDefVtable = GTAV_LANE_kGfxSpriteDefVtable;
+static const uintptr_t kGfxGetLabeledFrame = GTAV_LANE_kGfxGetLabeledFrame;  // sprite vt+0x70 (def, label, u32*, bool)
+static const uintptr_t kGfxTranslateFrame = GTAV_LANE_kGfxTranslateFrame;   // its tail call (NamedFrames lookup)
+static const uintptr_t kGfxFrameNameAdd = GTAV_LANE_kGfxFrameNameAdd;  // (hash*, hash*, {key*, u32*}*, hash value)
+static const uint32_t kGfxNamedFrames = GTAV_LANE_kGfxNamedFrames;          // GFxSpriteDef: NamedFrames table pointer
+static const uint8_t kGfxGetMovieDefBytes[] = GTAV_LANE_kGfxGetMovieDefBytes;
+static const uint8_t kGfxGetLabeledFrameBytes[] = GTAV_LANE_kGfxGetLabeledFrameBytes;
+static const uint8_t kGfxGetResourceBytes[] = GTAV_LANE_kGfxGetResourceBytes;
+static const uint8_t kGfxTranslateFrameBytes[] = GTAV_LANE_kGfxTranslateFrameBytes;
+static const uint8_t kGfxFrameNameAddBytes[] = GTAV_LANE_kGfxFrameNameAddBytes;
 static const uint32_t kWheelSlots = 8;  // CWeaponInfo WheelSlot (info +0x58) = SLOT_WEAPONS_<n>
 
 static uint32_t g_pack_wicons_applied;  // per merged wicon row (bit = row)
@@ -1708,6 +1857,29 @@ static void pack_wicon_apply(const uint32_t* names, uint32_t name_count) {
   if (rows)
     gtav_status_eventf(GTAV_MENU_EVENT_NATIVE_SHELL, "pack wicon applied %d/%d", applied, rows);
 }
+#endif
+
+#if defined(__ORBIS__)
+static void pack_note_light_sirens(int32_t row, const PackVarArrays* before,
+                                   const PackVarArrays* after);
+#endif
+// Index of the first of `size` bytes at `live` that differs from `want`, or -1 when all match.
+static int pack_first_difference(uintptr_t live, const uint8_t* want, size_t size) {
+  for (size_t i = 0; i < size; ++i)
+    if (((const volatile uint8_t*)live)[i] != want[i]) return (int)i;
+  return -1;
+}
+
+#if defined(__ORBIS__)
+// 1 when this lane has a pinned mounter for data type `type` (the register gate refuses the rest
+// before anything is staged).
+static int pack_data_type_mountable(uint32_t type) {
+  if (!gtav_custom_pack_data_type_name(type) || type >= kDataFileInterfaceCount) return 0;
+  for (size_t m = 0; m < sizeof(kDataFileMounters) / sizeof(kDataFileMounters[0]); ++m)
+    if (kDataFileMounters[m].type == type) return 1;
+  return 0;
+}
+#endif
 
 // Load data row `param` of the active pack through its mounter, once per row and process.
 static uint32_t load_pack_data(uint32_t param) {
@@ -1728,16 +1900,32 @@ static uint32_t load_pack_data(uint32_t param) {
       data->type >= kDataFileInterfaceCount)
     return unavailable(action, "pack data type has no pinned mounter");
   const uintptr_t iface = ((const volatile uintptr_t*)kDataFileInterfaces)[data->type];
-  if (iface != kDataFileMounters[m].iface || !pack_readable(iface, 8) ||
-      *(const volatile uintptr_t*)iface != kDataFileMounters[m].vtable ||
-      ((const volatile uintptr_t*)kDataFileMounters[m].vtable)[2] != kDataFileMounters[m].load ||
-      memcmp((const void*)kDataFileMounters[m].load, kDataFileMounters[m].pin,
-             sizeof(kDataFileMounters[m].pin)) != 0) {
+  const int pin_mismatch = pack_first_difference(
+      kDataFileMounters[m].load, kDataFileMounters[m].pin, sizeof(kDataFileMounters[m].pin));
+  const char* anchor_refusal = nullptr;
+  if (iface != kDataFileMounters[m].iface)
+    anchor_refusal = "pack data iface mismatch";
+  else if (!pack_readable(iface, 8))
+    anchor_refusal = "pack data iface unreadable";
+  else if (*(const volatile uintptr_t*)iface != kDataFileMounters[m].vtable)
+    anchor_refusal = "pack data vtable mismatch";
+  else if (((const volatile uintptr_t*)kDataFileMounters[m].vtable)[2] != kDataFileMounters[m].load)
+    anchor_refusal = "pack data load mismatch";
+  else if (pin_mismatch >= 0) {
+    anchor_refusal = "pack data pin mismatch";
+    static char refusal[GTAV_FEATURE_MESSAGE_LEN];
+    const uint32_t i = (uint32_t)pin_mismatch;
+    snprintf(refusal, sizeof(refusal), "pack data pin mismatch i=%d got=%02x want=%02x",
+             pin_mismatch, ((const volatile uint8_t*)kDataFileMounters[m].load)[i],
+             kDataFileMounters[m].pin[i]);
+    anchor_refusal = refusal;
+  }
+  if (anchor_refusal) {
     char line[GTAV_FEATURE_MESSAGE_LEN + 16];
-    snprintf(line, sizeof(line), "GTAVMenu pack data %u type=%u mounter anchors mismatch",
-             (unsigned)param, (unsigned)data->type);
+    snprintf(line, sizeof(line), "GTAVMenu pack data %u type=%u %s", (unsigned)param,
+             (unsigned)data->type, anchor_refusal);
     gtav_worker_klog(line);
-    return unavailable(action, "pack data mounter anchors mismatch");
+    return unavailable(action, anchor_refusal);
   }
   const int sync = kDataFileMounters[m].sync;
 
@@ -1747,6 +1935,13 @@ static uint32_t load_pack_data(uint32_t param) {
   if (const char* refusal = pack_stage_data_file(param, path, name, sizeof(name)))
     return unavailable(action, refusal);
   static uint32_t hashes[GTAV_PACK_DATA_NAMES_MAX];
+#if defined(__ORBIS__)
+  const uint32_t names = kDataFileMounters[m].names
+                             ? pack_data_names(param, kDataFileMounters[m].names,
+                                               kDataFileMounters[m].anchor, hashes,
+                                               GTAV_PACK_DATA_NAMES_MAX)
+                             : 0;
+#else
   const uint32_t names =
       data->type == GTAV_CUSTOM_PACK_DATA_TIMECYCLEMOD
           ? pack_tc_modifier_names(param, hashes, GTAV_PACK_DATA_NAMES_MAX)
@@ -1754,12 +1949,12 @@ static uint32_t load_pack_data(uint32_t param) {
           ? pack_data_names(param, kDataFileMounters[m].names, kDataFileMounters[m].anchor, hashes,
                             GTAV_PACK_DATA_NAMES_MAX)
           : 0;
-
   if (!pack_pump_anchors_ok()) return unavailable(action, "pack data pump anchors mismatch");
   const uintptr_t parser = pack_parser();
   if (!parser || *(const volatile uint16_t*)(parser + 0x78) != 0 ||
       *(const volatile uintptr_t*)(parser + 0x80) != 0)
     return unavailable(action, "parser is not idle");
+#endif
   // The in-use refusal repeats while the autoload waits (every ~2 s): klog its first one per row.
   static int32_t in_use_row = -1;
   if (const char* refusal = pack_data_gate(param, names, hashes)) {
@@ -1777,6 +1972,16 @@ static uint32_t load_pack_data(uint32_t param) {
   uint32_t sync_before = 0, capacity = 0;
   if (sync) {
     int store = -1;
+#if defined(__ORBIS__)
+    if (data->type == GTAV_CUSTOM_PACK_DATA_VEHICLE_METADATA) {
+      store = pack_vehicle_model_store(&sync_before, &capacity);
+    } else {
+      store = 0;
+      sync_before = data->type == GTAV_CUSTOM_PACK_DATA_HANDLING
+                        ? *(const volatile uint16_t*)kHandlingCount
+                        : 0;
+    }
+#else
     PackTcState tc;
     switch (data->type) {
       case GTAV_CUSTOM_PACK_DATA_PED_METADATA:
@@ -1800,29 +2005,50 @@ static uint32_t load_pack_data(uint32_t param) {
       default:
         break;
     }
+#endif
     if (store != 0) return unavailable(action, "sync row store unreadable");
   }
 
+#if !defined(__ORBIS__)
   if (const char* refusal = pack_fill_loose_entry(name, data->size))
     return unavailable(action, refusal);
+#endif
   g_pack_data_loaded |= 1ull << param;
   memset(g_pack_datafile, 0, sizeof(g_pack_datafile));
   memcpy(g_pack_datafile, name, strlen(name));
   *(uint32_t*)(g_pack_datafile + 0x90) = data->type;
+#if defined(__ORBIS__)
+  PackVarArrays vars_before, vars_after;
+  const int vars_ok = (data->type == GTAV_CUSTOM_PACK_DATA_CARCOLS ||
+                       data->type == GTAV_CUSTOM_PACK_DATA_VEHICLE_VARIATION) &&
+                      pack_var_arrays(&vars_before) == 0;
+  if (vars_ok) pack_log_var_arrays("before", (int32_t)param, &vars_before);
+#endif
   gtav_worker_klog("GTAVMenu pack data load before");
   const bool loaded =
       ((LoadDataFileFn)kDataFileMounters[m].load)((void*)iface, g_pack_datafile);
   gtav_worker_klog("GTAVMenu pack data load returned");
+#if defined(__ORBIS__)
+  if (vars_ok && pack_var_arrays(&vars_after) == 0) {
+    pack_log_var_arrays("after", (int32_t)param, &vars_after);
+    pack_note_light_sirens((int32_t)param, &vars_before, &vars_after);
+  }
+#endif
   char message[GTAV_FEATURE_MESSAGE_LEN];
   if (sync) {
+#if defined(__ORBIS__)
+    const int clean = pack_data_sync_verify(param, names, hashes, sync_before);
+#else
     // Parsed already: nothing may be queued, and the new models must be registered.
     const int clean = *(const volatile uint16_t*)(parser + 0x78) == 0 &&
                       pack_data_sync_verify(param, names, hashes, sync_before);
+#endif
     if (loaded && clean) __atomic_or_fetch(&g_pack_data_parsed, 1ull << param, __ATOMIC_RELEASE);
     snprintf(message, sizeof(message), "pack data %u %s sync returned %d verified %d",
              (unsigned)param, type_name, (int)loaded, clean);
     return loaded && clean ? ok(action, message) : failed(action, message);
   }
+#if !defined(__ORBIS__)
   // Exactly one request must now be pending: ours. pump_pack_data parses it once its read is done.
   const uintptr_t requests = *(const volatile uintptr_t*)(parser + 0x70);
   if (*(const volatile uint16_t*)(parser + 0x78) == 1 && requests && pack_readable(requests, 8)) {
@@ -1831,6 +2057,7 @@ static uint32_t load_pack_data(uint32_t param) {
     g_pack_pending_name_count = names < GTAV_PACK_DATA_NAMES_MAX ? names : GTAV_PACK_DATA_NAMES_MAX;
     memcpy(g_pack_pending_names, hashes, g_pack_pending_name_count * sizeof(uint32_t));
   }
+#endif
   snprintf(message, sizeof(message), "pack data %u %s queued=%d returned %d", (unsigned)param,
            type_name, g_pack_pending_row == (int32_t)param, (int)loaded);
   if (data->type == GTAV_CUSTOM_PACK_DATA_SHOP_PED_APPAREL) {
@@ -1849,14 +2076,40 @@ static uint32_t load_pack_data(uint32_t param) {
 // stores the indices at model info +0x53a/+0x53b (0x1021797, pinned); the siren renderer indexes
 // the array with +0x53b without a bound (0x22cc5b9; 0 = no sirens), so an id the map lacks (index
 // 0xff) must never reach a lit siren. Read-only: pack-notes lines only.
-static const uintptr_t kSirenIdMap = 0x45a50e0;
-static const uintptr_t kSirenIdMapCode = 0x1423c8b;
-static const uint8_t kSirenIdMapCodeBytes[] = {0x49, 0x8b, 0x4a, 0x48, 0x49, 0x63, 0xc7,
-                                               0x48, 0x8d, 0x35, 0x47, 0x14, 0x18, 0x03};
-static const uintptr_t kVariationLightSirenCode = 0x1421797;
-static const uint8_t kVariationLightSirenCodeBytes[] = {
-    0x43, 0x0f, 0xb6, 0x44, 0x34, 0x48, 0x88, 0x83, 0x3a, 0x05, 0x00, 0x00,
-    0x43, 0x0f, 0xb6, 0x44, 0x34, 0x49, 0x88, 0x83, 0x3b, 0x05, 0x00, 0x00};
+static const uintptr_t kSirenIdMap = GTAV_LANE_kSirenIdMap;
+static const uintptr_t kSirenIdMapCode = GTAV_LANE_kSirenIdMapCode;
+static const uint8_t kSirenIdMapCodeBytes[] = GTAV_LANE_kSirenIdMapCodeBytes;
+static const uintptr_t kVariationLightSirenCode = GTAV_LANE_kVariationLightSirenCode;
+static const uint8_t kVariationLightSirenCodeBytes[] = GTAV_LANE_kVariationLightSirenCodeBytes;
+
+#if defined(__ORBIS__)
+static int32_t pack_model_index(uint32_t hash, uintptr_t* model) {
+  *model = 0;
+  const uintptr_t buckets = *(const volatile uintptr_t*)kArchetypeMap;
+  const uint32_t bucket_count = *(const volatile uint16_t*)(kArchetypeMap + 8);
+  if (!buckets || !bucket_count || !pack_readable(buckets, bucket_count * 8u)) return -1;
+  uintptr_t node = ((const volatile uintptr_t*)buckets)[hash % bucket_count];
+  int32_t index = -1;
+  for (int depth = 0; node && depth < 256 && index < 0; ++depth) {
+    if (!pack_readable(node, 0x10)) return -1;
+    if (*(const volatile uint32_t*)node == hash) index = *(const volatile uint16_t*)(node + 4);
+    node = *(const volatile uintptr_t*)(node + 8);
+  }
+  const uintptr_t p = kModelInfoPool;
+  if (index < 0 || index == 0xffff || !pack_readable(p, 0x38)) return -1;
+  const uintptr_t base = *(const volatile uintptr_t*)p;
+  const int32_t size = *(const volatile int32_t*)(p + 8);
+  const uint64_t stride = *(const volatile uint64_t*)(p + 0x18);
+  const uintptr_t bits = *(const volatile uintptr_t*)(p + 0x30);
+  const uintptr_t word = bits + (uintptr_t)(index >> 5) * 4u;
+  if (index >= size || !base || stride < 8 || stride > 0x1000 || !pack_readable(word, 4) ||
+      !((*(const volatile uint32_t*)word >> (index & 31)) & 1u) ||
+      !pack_readable(base + (uintptr_t)index * stride, 8))
+    return -1;
+  *model = *(const volatile uintptr_t*)(base + (uintptr_t)index * stride);
+  return *model && pack_readable(*model, 0xf0) ? index : -1;
+}
+#endif
 
 static void pack_world_note(const char* format, ...) __attribute__((format(printf, 1, 2)));
 static void pack_note_light_sirens(int32_t row, const PackVarArrays* before,
@@ -1888,6 +2141,12 @@ static void pack_note_light_sirens(int32_t row, const PackVarArrays* before,
     pack_world_note("pack data %d siren check skipped: variation code mismatch", (int)row);
     return;
   }
+  // The game resolves a variation's siren through the id map: the item's id must map back to the
+  // index the variation holds, or the car's siren switches on someone else's pattern.
+  const int map_ok =
+      memcmp((const void*)kSirenIdMapCode, kSirenIdMapCodeBytes, sizeof(kSirenIdMapCodeBytes)) ==
+          0 &&
+      pack_readable(kSirenIdMap, 256);
   uint32_t hashes[4];
   const uint32_t names = pack_data_names((uint32_t)row, "modelName", nullptr, hashes, 4);
   for (uint32_t i = 0; i < names && i < 4u; ++i) {
@@ -1903,15 +2162,20 @@ static void pack_note_light_sirens(int32_t row, const PackVarArrays* before,
     const int siren_id = siren < after->siren_count && pack_readable(siren_item, 1)
                              ? *(const volatile uint8_t*)siren_item
                              : -1;
+    const int mapped = siren_id >= 0 && map_ok ? ((const volatile uint8_t*)kSirenIdMap)[siren_id]
+                                               : -1;
     pack_world_note("pack data %d model 0x%08x lights idx=%u id=%d sirens idx=%u id=%d %s",
                     (int)row, (unsigned)hashes[i], (unsigned)light, light_id, (unsigned)siren,
                     siren_id,
                     !siren          ? "no sirens"
-                    : siren_id >= 0 ? "ok"
-                                    : "UNRESOLVED: do not switch this car's siren on");
+                    : siren_id < 0  ? "UNRESOLVED: do not switch this car's siren on"
+                    : !map_ok       ? "ok (map unchecked)"
+                    : mapped == (int)siren ? "ok"
+                                           : "MISMATCH: the siren id maps to another index");
   }
 }
 
+#if !defined(__ORBIS__)
 // Wheels a CARCOLS row appended: per changed type the count, and for
 // the first new items the wheelName hash and its drawable store slot (the wheel request looks the
 // hash up there, 0xfdcc10; no slot = the wheel draws nothing). A wheel index above 254 cannot be
@@ -2042,7 +2306,13 @@ static uint32_t pump_pack_data() {
   }
   return ok(action, message);
 }
+#else
+static uint32_t pump_pack_data() {
+  return unavailable(GTAV_NATIVE_SHELL_ACTION_PUMP_PACK_DATA, "vehicle data is synchronous on PS4");
+}
+#endif
 
+#if !defined(__ORBIS__)
 // Custom Packs `spawn timecycle` row (param = joaat of the modifier name): apply the pack modifier
 // at full strength, or clear it when it is the one applied. Main thread (run_gated_action), the
 // lane of the Screen Effect cycler. Success is read back from the index SET_TIMECYCLE_MODIFIER
@@ -2103,9 +2373,9 @@ static uint32_t apply_pack_timecycle(uint32_t param) {
 // slot, u32 next}, +0x80 u32 bucket heads, +0x88 bucket count. REQUEST_NAMED_PTFX_ASSET (live
 // 0x1c0ada0) and the effect start's USE_PARTICLE_FX_ASSET lookup (0x1aa0286) walk this map with
 // the lowercase joaat; the effect rule is then looked up under that asset (0x3594afb).
-static const uintptr_t kPtfxStore = 0x6226148;
-static const uintptr_t kPtfxStoreVtable = 0x4097eb0;
-static const uint32_t kPtfxDefStride = 0x18;
+static const uintptr_t kPtfxStore = GTAV_LANE_kPtfxStore;
+static const uintptr_t kPtfxStoreVtable = GTAV_LANE_kPtfxStoreVtable;
+static const uint32_t kPtfxDefStride = GTAV_LANE_kPtfxDefStride;
 
 struct PackPtfxSlot {
   int32_t slot;     // local slot index, -1 when the name is not in the store
@@ -2123,15 +2393,16 @@ static int pack_ptfx_slot(const char* asset, PackPtfxSlot* out) {
   out->used = out->size = 0;
   if (!pack_readable(kPtfxStore, 0x90) ||
       *(const volatile uintptr_t*)kPtfxStore != kPtfxStoreVtable ||
-      *(const volatile uint32_t*)(kPtfxStore + 0x54) != kPtfxDefStride)
+      *(const volatile uint32_t*)(kPtfxStore + PACK_STORE_STRIDE_OFFSET) != kPtfxDefStride)
     return -1;
-  out->size = *(const volatile uint32_t*)(kPtfxStore + 0x50);
-  out->used = *(const volatile uint32_t*)(kPtfxStore + 0x60) & 0x3fffffffu;
-  const uintptr_t nodes = *(const volatile uintptr_t*)(kPtfxStore + 0x78);
-  const uintptr_t buckets = *(const volatile uintptr_t*)(kPtfxStore + 0x80);
-  const uint32_t bucket_count = *(const volatile uint32_t*)(kPtfxStore + 0x88);
-  const uintptr_t defs = *(const volatile uintptr_t*)(kPtfxStore + 0x40);
-  const uintptr_t flags = *(const volatile uintptr_t*)(kPtfxStore + 0x48);
+  out->size = *(const volatile uint32_t*)(kPtfxStore + PACK_STORE_SIZE_OFFSET);
+  out->used = *(const volatile uint32_t*)(kPtfxStore + PACK_STORE_USED_OFFSET) & 0x3fffffffu;
+  const uintptr_t nodes = *(const volatile uintptr_t*)(kPtfxStore + PACK_STORE_MAP_NODES_OFFSET);
+  const uintptr_t buckets = *(const volatile uintptr_t*)(kPtfxStore + PACK_STORE_MAP_HEADS_OFFSET);
+  const uint32_t bucket_count =
+      *(const volatile uint32_t*)(kPtfxStore + PACK_STORE_MAP_COUNT_OFFSET);
+  const uintptr_t defs = *(const volatile uintptr_t*)(kPtfxStore + PACK_STORE_SLOTS_OFFSET);
+  const uintptr_t flags = *(const volatile uintptr_t*)(kPtfxStore + PACK_STORE_FLAGS_OFFSET);
   if (!bucket_count || !pack_readable(buckets, (size_t)bucket_count * 4u) || !defs || !flags)
     return -1;
   const uint32_t hash = pack_joaat(asset);
@@ -2271,7 +2542,96 @@ static uint32_t play_pack_ptfx(uint32_t param) {
            started ? "started" : "start returned 0");
   return started ? ok(action, message) : failed(action, message);
 }
+#else
+static uint32_t g_pack_tc_applied;
 
+static uint32_t apply_pack_timecycle(uint32_t param) {
+  const uint32_t action = GTAV_NATIVE_SHELL_ACTION_APPLY_PACK_TIMECYCLE;
+  if (!g_n.set_timecycle_modifier || !g_n.clear_timecycle_modifier)
+    return unavailable(action, "missing timecycle natives");
+  const char* name = nullptr;
+  if (__atomic_load_n(&g_pack_parsed, __ATOMIC_ACQUIRE))
+    for (int i = 0; i < g_pack.spawn_count && !name; ++i)
+      if (g_pack.spawns[i].kind == GTAV_CUSTOM_PACK_SPAWN_TIMECYCLE &&
+          pack_joaat(g_pack.spawns[i].model) == param)
+        name = g_pack.spawns[i].model;
+  if (!name) return unavailable(action, "not a screen effect of the loaded packs");
+  const int clear = g_pack_tc_applied == param;
+  if (clear) {
+    invoke_void(g_n.clear_timecycle_modifier);
+    g_pack_tc_applied = 0;
+  } else {
+    invoke_void(g_n.set_timecycle_modifier, name);
+    if (g_n.set_timecycle_modifier_strength) invoke_void(g_n.set_timecycle_modifier_strength, 1.0f);
+    g_pack_tc_applied = param;
+  }
+  char message[GTAV_FEATURE_MESSAGE_LEN];
+  snprintf(message, sizeof(message), "screen effect %.32s %s", name, clear ? "off" : "on");
+  pack_world_note("pack tc %s 0x%08x", message, (unsigned)param);
+  return ok(action, message);
+}
+
+static int pack_ptfx_row(uint32_t param, char* asset, char* effect) {
+  if (!__atomic_load_n(&g_pack_parsed, __ATOMIC_ACQUIRE)) return 0;
+  for (int i = 0; i < g_pack.spawn_count; ++i) {
+    const char* model = g_pack.spawns[i].model;
+    const char* colon = strchr(model, ':');
+    if (g_pack.spawns[i].kind != GTAV_CUSTOM_PACK_SPAWN_PTFX || !colon ||
+        pack_joaat(model) != param)
+      continue;
+    snprintf(asset, GTAV_CUSTOM_PACK_NAME_MAX, "%.*s", (int)(colon - model), model);
+    snprintf(effect, GTAV_CUSTOM_PACK_NAME_MAX, "%s", colon + 1);
+    return 1;
+  }
+  return 0;
+}
+
+static uint32_t play_pack_ptfx(uint32_t param) {
+  const uint32_t action = GTAV_NATIVE_SHELL_ACTION_PLAY_PACK_PTFX;
+  static time_t deadline = 0;
+  static uint32_t pending = 0;
+  if (!g_n.request_named_ptfx_asset || !g_n.has_named_ptfx_asset_loaded ||
+      !g_n.use_particle_fx_asset || !g_n.start_particle_fx_non_looped_at_coord ||
+      !g_n.get_entity_coords || !g_n.player_ped_id) {
+    deadline = 0;
+    return unavailable(action, "missing particle natives");
+  }
+  char asset[GTAV_CUSTOM_PACK_NAME_MAX], effect[GTAV_CUSTOM_PACK_NAME_MAX];
+  if (!pack_ptfx_row(param, asset, effect)) {
+    deadline = 0;
+    return unavailable(action, "not a particle effect of the loaded packs");
+  }
+  const int first = deadline == 0 || pending != param;
+  invoke_void(g_n.request_named_ptfx_asset, asset);
+  if (!invoke_return<int>(g_n.has_named_ptfx_asset_loaded, asset)) {
+    if (first) {
+      pending = param;
+      deadline = time(NULL) + GTAV_MODEL_STREAM_WAIT_SECONDS;
+    }
+    if (time(NULL) < deadline && gtav_frame_hook_enqueue(action, param))
+      return ok(action, "pack effect loading");
+    pack_world_note("pack ptfx load timeout %s", asset);
+    deadline = 0;
+    return failed(action, "pack effect did not load (see klog)");
+  }
+  deadline = 0;
+  const int ped = native_player_ped_id();
+  if (!ped) return failed(action, "player ped unavailable");
+  const Vec3 c = invoke_vector(g_n.get_entity_coords, ped, 1);
+  invoke_void(g_n.use_particle_fx_asset, asset);
+  if (g_n.set_particle_fx_non_looped_colour)
+    invoke_void(g_n.set_particle_fx_non_looped_colour, 1.0f, 1.0f, 1.0f);
+  const int started = invoke_return<int>(g_n.start_particle_fx_non_looped_at_coord, effect, c.x,
+                                         c.y, c.z - 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0, 0, 0);
+  char message[GTAV_FEATURE_MESSAGE_LEN];
+  snprintf(message, sizeof(message), "effect %.40s %s", effect,
+           started ? "started" : "start returned 0");
+  return started ? ok(action, message) : failed(action, message);
+}
+static void pack_ptfx_report() {}
+#endif
+
+#if !defined(__ORBIS__)
 // `spawn component <weapon>:<component>` row whose model text hashes to `param`: the two joaats.
 static int pack_component_row(uint32_t param, uint32_t* weapon, uint32_t* component) {
   if (!__atomic_load_n(&g_pack_parsed, __ATOMIC_ACQUIRE)) return 0;
@@ -2476,3 +2836,19 @@ static const char* pack_weapon_footer(uint32_t weapon) {
   cached = weapon;
   return text;
 }
+#else
+static uint32_t toggle_pack_component(uint32_t) {
+  return unavailable(GTAV_NATIVE_SHELL_ACTION_TOGGLE_PACK_COMPONENT,
+                     "pack weapons are not supported on PS4");
+}
+static const char* pack_weapon_label(int) { return nullptr; }
+static int pack_weapon_spawn(uint32_t) { return -1; }
+static int pack_weapon_wheel_slot(uint32_t) { return -1; }
+static const char kWheelSlotNames[8][10] = {
+    "Pistol", "SMG", "Rifle", "Sniper", "Melee", "Shotgun", "Heavy", "Throwable",
+};
+static const char* pack_weapon_footer(uint32_t) { return ""; }
+static int pack_weapon_components(uint32_t, uint32_t*, char*, size_t, int, uint32_t*) { return -1; }
+static int pack_weapon_hashes(uint32_t*, int) { return 0; }
+static int pack_weapon_tint_none(int) { return 0; }
+#endif

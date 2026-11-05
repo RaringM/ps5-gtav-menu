@@ -13,18 +13,31 @@ Each universal package automatically selects the matching title ID and exact gam
 | PPSA04264 (US) | 01.005.000 | Supported | Unavailable |
 | PPSA04264 (US) | 01.010.002 | Supported | Experimental |
 | PPSA04263 (EU) | 01.010.002 | Supported | Experimental |
+| PPSA04264 (US) | 01.011.001 | Supported | Experimental |
+| CUSA00411 (PS4 Legacy) | 01.57 | Experimental plugin | Experimental |
+
+On 01.011.001 the loader also grows the game's vehicle, ped and asset tables once per launch,
+which leaves room for far more add-on vehicles and peds
+(see [known limits](docs/user-guide.md#8-known-limits)). It must be running before GTA starts; a
+loader started into a running game keeps the stock tables.
+
+The PS4 Legacy row is a separate download, `GTAVMenu-PS4-CUSA00411-v01.57-plugin.zip`: a plugin for
+GoldHEN 2.3+ or nexHEN PS4 v1.00 (firmware 9.00 tested), installed and checked as described in the
+[PS4 plugin guide](docs/ps4-plugin.md).
 
 Other title IDs and versions are not supported. This project is for **Story Mode**.
 You need your own copy of the game, a jailbroken console, and a compatible payload launcher.
-Universal selection has been tested on both 01.010.002 titles; 01.005.000 selection remains untested.
+Universal selection has been tested on both 01.010.002 titles; 01.005.000 and 01.011.001 selection,
+and the OnionHEN and etaHEN deliveries on 01.011.001, remain untested. The 01.011.001 exact-target
+standalone loader passed its one-shot, persistent and pool-growth hardware gates.
 
 ## Install a package
 
-Choose **one** delivery. Each universal bundle supports all three builds above and includes setup instructions.
+Choose **one** delivery. Each universal bundle supports all four builds above and includes setup instructions.
 
 | Delivery | Installation |
 | --- | --- |
-| Standalone | Send `gtav-menu-daemon.elf` with your payload launcher before starting GTA. All three workers are embedded; no separate worker upload is needed. |
+| Standalone | Send `gtav-menu-daemon.elf` with your payload launcher before starting GTA. All four workers are embedded; no separate worker upload is needed. |
 | OnionHEN | Copy `GTAV00001.elf` to `/data/OnionHEN/plugins/`. In Toolbox, open **Payloads & Kernel > Plugins > GTAV Menu** and enable **Running**. The package targets OnionHEN v0.0.13. |
 | etaHEN | Copy `GTAV00001.plugin` to `/data/etaHEN/plugins/`. Enable **Running** under **Toolbox > Plugins**. Targets the etaHEN 2.5B plugin interface; see [tested setups](docs/user-guide.md#delivery-compatibility-and-updates). |
 
@@ -36,6 +49,23 @@ To stop or update a plugin, disable **Auto-start** and **Running** in its Toolbo
 `/data/GTAVMenu/daemon.lock` to disappear. For standalone, create an empty
 `/data/GTAVMenu/daemon.stop` file. Run only one loader at a time.
 After replacing an etaHEN plugin, reboot and reload etaHEN before enabling it to clear cached plugin code.
+
+An experimental native nexHEN module is also implemented for **PPSA04264
+01.010.002**. It requires the matching corrected protocol-4 loader because stock
+nexHEN v0.90's attach-based native path has repeatedly broken GTA streaming.
+After two fail-closed requests, the corrected v9/v7 route loaded and activated
+version 1.0.1 on hardware. The menu rendered, callbacks advanced, gameplay
+remained healthy and GTA exited normally. The nexHEN off row then issued a
+second load because stock v0.90 ShellUI discarded its false value, so that run
+did not exercise unload. Version 1.0.2 now propagates checked restoration
+failures and latches an unsafe stop; the paired v10 loader patch sends command
+32 with the exact row value. Their hardware follow-up completed one exact UI
+load/unload: callbacks and cleanup succeeded, the original frame hook and render
+slot were restored, the module was absent, the menu chord stopped opening it,
+brief gameplay remained healthy and GTA exited normally. Repeated sustained
+cycles remain required before this becomes a supported delivery. See the
+[native nexHEN guide](docs/nexhen-plugin.md); do not treat it as a supported
+release delivery yet.
 
 ## Controls and features
 
@@ -51,13 +81,13 @@ After replacing an etaHEN plugin, reboot and reload etaHEN before enabling it to
 - **Player and world:** skins, wardrobe, weapons and attachments, teleportation, weather and time.
 - **Scenes:** spawn and move objects, peds and vehicles; save and load your placements.
 - **Custom packs:** vehicles, wheels, weapons, peds, clothing, props, maps, interiors, textures
-  and effects on the 01.010.002 targets.
+  and effects on the 01.010.002 and 01.011.001 targets.
 - **Interface:** English and Brazilian Portuguese, configurable appearance and keybinds.
 
 ## Build and package
 
 Linux is the tested build host. Install **make**, **Python 3.11+**, **LLVM 20** (Clang, LLD and
-llvm-config), and **PS5 payload SDK v0.43**. Select the SDK and toolchain explicitly:
+llvm-config), and **PS5 payload SDK v0.44**. Select the SDK and toolchain explicitly:
 
 ```sh
 export PS5_PAYLOAD_SDK=/path/to/ps5-payload-sdk
@@ -72,6 +102,11 @@ Universal ELFs are written under `build/ps5/universal/production/`; the three bu
 Exact-target builds remain available: `make GTAV_TARGET=ppsa04263-01.010.002 all` builds the EU
 loader and worker, and `package-target` packages its three deliveries. The default target is
 `ppsa04264-01.010.002`; use a lowercase title/version from the table.
+
+`make package-nexhen` builds, validates and stages the hardware-unqualified
+native test module under `build/pkg/ppsa04264-01.010.002/nexhen/`. The target
+refuses every title/build other than PPSA04264 01.010.002 until the corrected
+broker gains another exact profile. Building or packaging does not deploy it.
 
 Alternatively, the included container pins the SDK and compiler:
 
@@ -88,7 +123,7 @@ Host deployment also needs **curl**, **socat**, and the console's FTP, ps5debug 
 you have control in Story Mode:
 
 ```sh
-export GTAV_TARGET=ppsa04264-01.010.002  # use ppsa04263-01.010.002 for EU
+export GTAV_TARGET=ppsa04264-01.010.002  # ppsa04263-01.010.002 for EU, ppsa04264-01.011.001
 export PS5_HOST=<console-ip>
 ./menu-ctl.sh cave-inject
 ./menu-ctl.sh doctor
@@ -96,7 +131,8 @@ export PS5_HOST=<console-ip>
 
 To start the loader **before** launching GTA, use `./menu-ctl.sh watch` instead. Add `--persist`
 to inject after each relaunch; `./menu-ctl.sh daemon-stop` stops that watcher. Use Toolbox to stop
-an OnionHEN or etaHEN plugin.
+an OnionHEN or etaHEN plugin. On 01.011.001, `watch` also grows the game's tables at launch;
+`--no-boot-pools` keeps the stock tables.
 
 For health checks of an installed universal package, use `GTAV_AUTO_TARGET=1 ./menu-ctl.sh doctor`.
 Source injection and pack conversion still use an explicit `GTAV_TARGET`.
@@ -115,7 +151,7 @@ Packs are installed separately and load only when you press **Load** in the menu
 ```
 
 In Story Mode, open **Custom Packs > Manage Packs** to select content, then return and press
-**Load N selected packs**. Up to 8 packs can be active, with 64 installed. Restart GTA to change
+**Load N selected packs**. Up to 16 packs can be active, with 128 installed. Restart GTA to change
 the loaded set; packs cannot be unloaded during a session.
 
 The published converters build runtime packs from supported PC **Legacy** mods and templates

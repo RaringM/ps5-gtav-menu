@@ -31,22 +31,8 @@ static int load_hash_array(const char* key, uint32_t value, const char* prefix, 
   return 0;
 }
 
-int gtav_feature_profile_save(const char* path, const GtavFeatureProfile* profile) {
-  GtavRootdirGuard rootdir;
-  FILE* fp;
-  int rooted;
-
-  if (!profile) return -1;
-
-  // Loader processes can enter the console root; injected workers use the mounted path already
-  // present in the game sandbox. Always leave the guard before touching the FILE.
-  rooted = gtav_rootdir_enter(&rootdir) == 0;
-  fp = fopen(path ? path : GTAV_FEATURE_PROFILE_DEFAULT_PATH, "w");
-  if (rooted) {
-    gtav_rootdir_leave(&rootdir);
-  }
-  if (!fp) return -1;
-
+/* Every key of the profile, one `key=value` line each. */
+static void write_profile(FILE* fp, const GtavFeatureProfile* profile) {
   fprintf(fp, "version=%u\n", profile->version);
   fprintf(fp, "toggle_mask=0x%016llX\n", (unsigned long long)profile->toggle_mask);
   fprintf(fp, "weather_index=%u\n", profile->weather_index);
@@ -102,9 +88,42 @@ int gtav_feature_profile_save(const char* path, const GtavFeatureProfile* profil
   fprintf(fp, "population_density_index=%u\n", profile->population_density_index);
   fprintf(fp, "speedometer_layout=%u\n", profile->speedometer_layout);
   fprintf(fp, "language_id=%u\n", profile->language_id);
+}
 
-  fclose(fp);
-  return 0;
+/* Written to `<path>.tmp` and renamed over `path` only after every write and the close succeeded,
+ * so a full disk, a short write or a failed close keeps the last saved profile (-1). */
+int gtav_feature_profile_save(const char* path, const GtavFeatureProfile* profile) {
+  GtavRootdirGuard rootdir;
+  char temp[256];
+  FILE* fp;
+  int rooted;
+  int failed;
+  const char* target = path ? path : GTAV_FEATURE_PROFILE_DEFAULT_PATH;
+
+  if (!profile) return -1;
+  const int length = snprintf(temp, sizeof(temp), "%s.tmp", target);
+  if (length < 0 || (size_t)length >= sizeof(temp)) return -1;
+
+  // Loader processes can enter the console root; injected workers use the mounted path already
+  // present in the game sandbox. Path operations run inside the guard, FILE writes outside it.
+  rooted = gtav_rootdir_enter(&rootdir) == 0;
+  fp = fopen(temp, "w");
+  if (rooted) {
+    gtav_rootdir_leave(&rootdir);
+  }
+  if (!fp) return -1;
+
+  write_profile(fp, profile);
+  failed = ferror(fp) != 0;
+  if (fclose(fp) != 0) failed = 1;
+
+  rooted = gtav_rootdir_enter(&rootdir) == 0;
+  if (!failed && rename(temp, target) != 0) failed = 1;
+  if (failed) (void)remove(temp);
+  if (rooted) {
+    gtav_rootdir_leave(&rootdir);
+  }
+  return failed ? -1 : 0;
 }
 
 int gtav_feature_profile_load(const char* path, GtavFeatureProfile* profile) {

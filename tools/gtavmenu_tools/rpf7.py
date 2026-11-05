@@ -24,7 +24,9 @@ __all__ = [
     "BLOCK",
     "DIRECTORY",
     "MAGIC",
+    "MEMBER_STORES",
     "OVERSIZE",
+    "STORES",
     "TAG_KEYED",
     "TAG_OPEN",
     "Rpf7Error",
@@ -33,10 +35,13 @@ __all__ = [
     "find_entry",
     "inflate_resource",
     "loose_resource",
+    "member_store",
     "oversize_prefix",
     "prefix_size",
     "read_table",
+    "store_member_counts",
     "stored_deflate",
+    "toc_store_counts",
 ]
 
 DIRECTORY = 0x7FFFFF00
@@ -113,6 +118,92 @@ def read_table(blob: bytes, basename: str, decrypt: TableCipher | None = None) -
             }
         )
     return entries, names
+
+
+# The engine store a member adds a slot to, by extension (src/common/custom_pack_checks.c
+# gtav_custom_pack_store_of_member; the worker's store gates use the same order and names).
+STORES = ("frag", "drawable", "txd", "typ", "mapdata", "bounds", "metadata", "dwd", "ptfx")
+MEMBER_STORES = {
+    "pft": "frag",
+    "pdr": "drawable",
+    "ptd": "txd",
+    "ptyp": "typ",
+    "pmap": "mapdata",
+    "pbn": "bounds",
+    "pmt": "metadata",
+    "pdd": "dwd",
+    "ppt": "ptfx",
+    "oft": "frag",
+    "odr": "drawable",
+    "otd": "txd",
+    "otyp": "typ",
+    "omap": "mapdata",
+    "obn": "bounds",
+    "omt": "metadata",
+    "odd": "dwd",
+    "opt": "ptfx",
+}
+
+
+def member_store(name: str) -> str | None:
+    """The store a member named `name` adds a slot to, or None: the extension after the last '.'
+    (ASCII case-insensitive), as gtav_custom_pack_member_store does."""
+    dot = name.rfind(".")
+    return MEMBER_STORES.get(name[dot + 1 :].lower()) if dot >= 0 else None
+
+
+def store_member_counts(entries: Sequence[dict]) -> dict[str, int]:
+    """Members per store of read_table() `entries`: {store: n for STORES, plus "other"}.
+
+    Directories are not members; a member's store follows its extension (member_store), any other
+    extension (cloth .pld, nav meshes, nested archives...) counts as "other". The count is an upper
+    bound of the slots registration adds: RegisterFile finds or adds a store slot by the member's
+    base name, so a name the store already holds adds none.
+    """
+    counts = dict.fromkeys((*STORES, "other"), 0)
+    for entry in entries:
+        if entry["kind"] != "dir":
+            counts[member_store(entry["name"]) or "other"] += 1
+    return counts
+
+
+def toc_store_counts(table: bytes, entries: int) -> dict | None:
+    """{"files", "other", "members": {store: n}} of a plain table (entries x 16 bytes, then the name
+    pool, no header), or None where gtav_custom_pack_toc_counts refuses it: fewer than two entries,
+    entries past the table, an empty name pool, a name offset outside the pool or an unterminated
+    name, a root (entry 0) that is not a directory, or a directory whose children (first, count) are
+    not after it, run past the table or overlap an earlier directory's (tables are laid out
+    breadth-first, as build() writes them). The worker counts the same way."""
+    if entries < 2 or entries > len(table) // 16:
+        return None
+    pool = table[entries * 16 :]
+    if not pool:
+        return None
+    members = dict.fromkeys(STORES, 0)
+    files = other = 0
+    children_end = 1  # the earlier directories' children end here (ascending, disjoint)
+    for i in range(entries):
+        q, first, children = struct.unpack_from("<QII", table, i * 16)
+        offset = q & 0xFFFF
+        end = pool.find(b"\0", offset) if offset < len(pool) else -1
+        if end < 0:
+            return None
+        directory = q >> 32 == DIRECTORY
+        if i == 0 and not directory:
+            return None
+        if directory:
+            if children:
+                if first <= i or first < children_end or first + children > entries:
+                    return None
+                children_end = first + children
+            continue
+        files += 1
+        store = member_store(pool[offset:end].decode("latin-1"))
+        if store:
+            members[store] += 1
+        else:
+            other += 1
+    return {"files": files, "other": other, "members": members}
 
 
 def build(members: Sequence[Member], archive: str, encrypt: TableCipher | None = None) -> bytes:

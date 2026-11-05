@@ -1,7 +1,9 @@
 // Source fragment of features.cpp, textually included by custom_rpf.inc inside the
-// CUSTOM_PACKS && PS5 branch of the runtime pack lane.
+// CUSTOM_PACKS branch of the runtime pack lane: the engine lane or the engine-less shell.
 //
-// One-press pack loading (worker state machine) and the Custom Packs page rows.
+// One-press pack loading (worker state machine) and the Custom Packs page rows. The engine-less
+// shell's load only reads the selected descriptors and applies the hide rows; its pages list the
+// natives-only rows (screen and particle effects, places).
 
 // One-press pack loading from the menu (Custom Packs page): a worker-side state machine walks the
 // proven host sequence (`menu-ctl pack-up`, then maps) by enqueueing the same main-thread actions
@@ -36,15 +38,17 @@ static char g_pack_al_detail[GTAV_FEATURE_MESSAGE_LEN];
 // the kit or wheel arrays the data row would grow. Nothing of the row ran (no parse), so the load
 // stays on it and asks again until the gate passes (gtav_custom_pack_gate_wait: every 2 s, at most
 // 3 min). Monotonic ms: the worker rate is a menu setting.
+#if GTAV_MENU_CUSTOM_PACK_ENGINE
 static uint64_t g_pack_al_wait_ms;  // when the wait started; 0 while not waiting
 static uint64_t g_pack_al_wait_sent_ms;
+#endif
 
 static void pack_al_toast(const char* text);
+#if GTAV_MENU_CUSTOM_PACK_ENGINE
 static uint64_t pack_al_now_ms() {
-  struct timespec now = {};
-  clock_gettime(CLOCK_MONOTONIC, &now);
-  return (uint64_t)now.tv_sec * 1000u + (uint64_t)now.tv_nsec / 1000000u;
+  return (uint64_t)time(NULL) * 1000u;
 }
+#endif
 
 // A load is walking its steps (the uninstall row waits: the steps read the selected packs' files).
 static int pack_autoload_running() {
@@ -52,43 +56,330 @@ static int pack_autoload_running() {
   return state != PACK_AL_IDLE && state != PACK_AL_DONE && state != PACK_AL_FAILED;
 }
 
-// Ped model store headroom of the merged selection, before Load (S2 2026-10-08: four add-on peds
-// took the store from 426 to its 430 cap). Each PED_METADATA_FILE row adds at least one ped model,
-// so a selection with more rows than free slots cannot load; the row's own gate (pack_data_gate)
-// would refuse it mid-load, after the earlier packs' rows ran (loads are one-way). Writes the
-// refusal naming the first pack past the headroom and returns 1; 0 when the rows fit or the store
-// is unreadable (the row gate stays the backstop, also for rows declaring several peds).
-static int pack_ped_slots_refusal(char* out, size_t size) {
-  uint32_t count = 0, capacity = 0;
-  if (pack_model_factory_block(kPedModelFactory, kPedModelFactoryVtable, &count, &capacity) != 0)
-    return 0;
-  uint32_t rows = 0;
-  for (int i = 0; i < g_pack.data_count && i < GTAV_CUSTOM_PACK_DATA_CAP; ++i) {
-    if (g_pack.data[i].type != GTAV_CUSTOM_PACK_DATA_PED_METADATA || ++rows <= capacity - count)
-      continue;
-    const int source = g_pack.data_source[i];
-    const char* pack = source < g_pack.source_count ? g_pack.source_ids[source] : "pack";
-    pack_world_note("pack load refused before start: ped rows=%u store=%u/%u data=%d pack=%s",
-                    (unsigned)rows, (unsigned)count, (unsigned)capacity, i, pack);
-    snprintf(out, size, "%.30s: ped model slots full (%u); deselect a ped pack", pack,
-             (unsigned)capacity);
-    return 1;
+// The stopped load changed nothing in the game: it was refused before the registration of its own
+// archives began (the engine lane; an additive load's earlier packs stay loaded) and before any
+// hide row (the engine-less shell hides without registering). Its merged rows and stop can be
+// forgotten, so the next Load starts over.
+static int pack_load_failed_clean() {
+  return __atomic_load_n(&g_pack_al_state, __ATOMIC_ACQUIRE) == PACK_AL_FAILED &&
+         g_rpf_register_started != g_pack_load_start.archive && !g_pack_hides_applied &&
+         !g_pack_hides_failed;
+}
+
+#if GTAV_MENU_CUSTOM_PACK_ENGINE
+// Additive loads (start_pack_append). The row counts an append grows, to undo a refused one.
+struct PackSetCounts {
+  int sources, extra_archives, data, labels, spawns, places, wicons;
+};
+static PackSetCounts g_pack_append_undo;
+static PackLoadStart g_pack_append_undo_start;
+
+static PackSetCounts pack_set_counts() {
+  return {g_pack.source_count, g_pack.extra_archive_count, g_pack.data_count, g_pack.label_count,
+          g_pack.spawn_count,  g_pack.place_count,         g_pack.wicon_count};
+}
+
+static void pack_set_restore(const PackSetCounts& counts) {
+  g_pack.source_count = counts.sources;
+  g_pack.extra_archive_count = counts.extra_archives;
+  g_pack.data_count = counts.data;
+  g_pack.label_count = counts.labels;
+  g_pack.spawn_count = counts.spawns;
+  g_pack.place_count = counts.places;
+  g_pack.wicon_count = counts.wicons;
+}
+
+// Only what an additive load walks again: archives, data files, labels, spawn rows, places and
+// wheel icons. Cards, typs, maps, collision, overrides and hides have steps that run once a game.
+static int pack_appendable(const GtavCustomPack& set) {
+  return !set.card_count && !set.typ_count && !set.map_count && !set.bounds_count &&
+         !set.override_count && !set.hide_count;
+}
+
+static int pack_set_has(const char* id) {
+  for (int s = 0; s < g_pack.source_count; ++s)
+    if (strcmp(g_pack.source_ids[s], id) == 0) return 1;
+  return 0;
+}
+
+// The selected packs this game has not loaded (worker thread; the merged set is published).
+static int pack_new_selected_count() {
+  if (!__atomic_load_n(&g_pack_parsed, __ATOMIC_ACQUIRE)) return 0;
+  int n = 0;
+  for (int i = 0; i < g_pack_selected_count; ++i) n += !pack_set_has(g_pack_selected[i]);
+  return n;
+}
+
+// A Load now adds packs to this game: the last load finished and its set has nothing that loads
+// once a game (custom_pack_select.inc toggle_pack_active's note).
+static int pack_append_possible() {
+  return __atomic_load_n(&g_pack_al_state, __ATOMIC_ACQUIRE) == PACK_AL_DONE &&
+         __atomic_load_n(&g_pack_parsed, __ATOMIC_ACQUIRE) && pack_appendable(g_pack);
+}
+#endif
+
+// Forget a load that failed clean (worker thread, when Load is pressed again: any step it queued
+// has run by then). A first load drops its merged set (readers stop at g_pack_parsed before the
+// selection check rebuilds g_pack); an additive one drops only the rows it appended.
+static void pack_forget_failed_load() {
+#if GTAV_MENU_CUSTOM_PACK_ENGINE
+  __atomic_store_n(&g_pack_store_refusal_sources, 0u, __ATOMIC_RELEASE);
+  if (g_pack_load_start.source > 0) {
+    __atomic_store_n(&g_pack_parsed, 0, __ATOMIC_RELEASE);
+    pack_set_restore(g_pack_append_undo);
+    g_pack_load_start = g_pack_append_undo_start;
+    __atomic_store_n(&g_pack_parsed, 1, __ATOMIC_RELEASE);
+    g_pack_al_detail[0] = '\0';
+    __atomic_store_n(&g_pack_al_state, (uint32_t)PACK_AL_DONE, __ATOMIC_RELEASE);
+    pack_world_note("pack add undone after a refusal that left nothing in the game");
+    return;
+  }
+#endif
+  __atomic_store_n(&g_pack_parsed, 0, __ATOMIC_RELEASE);
+  g_pack_al_detail[0] = '\0';
+  __atomic_store_n(&g_pack_al_state, (uint32_t)PACK_AL_IDLE, __ATOMIC_RELEASE);
+  pack_world_note("pack load restarted after a refusal that left nothing in the game");
+}
+
+#if GTAV_MENU_CUSTOM_PACK_ENGINE
+// A Load after a finished one: append the selected packs this game has not loaded to the merged
+// set, check them against the loaded packs and the game's free slots, and walk the steps from
+// where the last load stopped (g_pack_load_start). Refused here, nothing changes.
+static uint32_t start_pack_append() {
+  const uint32_t action = GTAV_NATIVE_SHELL_ACTION_PACK_AUTOLOAD;
+  pack_select_scan(1);
+  if (!g_pack_selection_valid)
+    return unavailable(action, "packs/active is invalid; fix it on the host");
+  if (!pack_new_selected_count()) return unavailable(action, "Selected packs are loaded");
+  if (!pack_appendable(g_pack))
+    return unavailable(action, "Loaded packs have maps or overrides; restart GTA to load more");
+  if (!pack_scratch_take(PACK_SCRATCH_LOAD)) return unavailable(action, "Pack list busy; retry");
+  GtavCustomPack& one = g_pack_scratch;
+  g_pack_append_undo = pack_set_counts();
+  g_pack_append_undo_start = g_pack_load_start;
+  const PackLoadStart start = {g_pack.source_count, 1 + g_pack.extra_archive_count,
+                               g_pack.data_count, g_pack.label_count};
+  static char refusal[GTAV_FEATURE_MESSAGE_LEN];
+  refusal[0] = '\0';
+  __atomic_store_n(&g_pack_parsed, 0, __ATOMIC_RELEASE);  // readers wait while the set grows
+  for (int i = 0; i < g_pack_selected_count && !refusal[0]; ++i) {
+    const char* id = g_pack_selected[i];
+    if (pack_set_has(id)) continue;
+    char what[64] = "";
+    if (!pack_select_parse(id, &one)) {
+      snprintf(refusal, sizeof(refusal), "%.40s: pack.cfg invalid; reinstall it", id);
+    } else if (!pack_appendable(one)) {
+      snprintf(refusal, sizeof(refusal), "%.36s has maps or overrides; restart GTA to load it", id);
+    } else if (gtav_custom_pack_clash(&g_pack, &one, what, sizeof(what)) !=
+               GTAV_CUSTOM_PACK_CLASH_NONE) {
+      snprintf(refusal, sizeof(refusal), "Deselect %.36s: %.32s", id, what);
+    } else {
+      const int source = g_pack.source_count;
+      pack_root_path(g_pack_dirs[source], sizeof(g_pack_dirs[source]), id, "/resources");
+      if (gtav_custom_pack_merge(&g_pack, &one) != 0)
+        snprintf(refusal, sizeof(refusal), "Deselect %.36s: over a limit", id);
+    }
+  }
+  if (!refusal[0]) {
+    PackClash clash;
+    if (pack_select_store_clash(&clash, start.source) != PACK_CLASH_NONE)
+      snprintf(refusal, sizeof(refusal), "%s", pack_clash_text(clash, g_pack.source_ids, 0));
+  }
+  if (refusal[0]) {
+    pack_set_restore(g_pack_append_undo);
+    __atomic_store_n(&g_pack_parsed, 1, __ATOMIC_RELEASE);
+    pack_scratch_release();
+    pack_world_note("pack add refused before start: %s", refusal);
+    return unavailable(action, refusal);
+  }
+  g_pack_load_start = start;
+  __atomic_store_n(&g_pack_parsed, 1, __ATOMIC_RELEASE);
+  pack_scratch_release();
+  pack_world_note("pack add sources=%d->%d archives=%d->%d data=%d->%d labels=%d->%d",
+                  start.source, g_pack.source_count, start.archive, 1 + g_pack.extra_archive_count,
+                  start.data, g_pack.data_count, start.label, g_pack.label_count);
+  g_pack_al_row = 0;
+  g_pack_al_ticks = 0;
+  g_pack_al_sent = 0;
+  g_pack_al_wait_ms = 0;
+  pack_step_refusal_clear();
+  snprintf(g_pack_al_status, sizeof(g_pack_al_status), "Adding: registering");
+  __atomic_store_n(&g_pack_al_state, (uint32_t)PACK_AL_REGISTER, __ATOMIC_RELEASE);
+  return ok(action, "custom pack loading");
+}
+
+#if defined(__ORBIS__)
+// The packs this game process holds, written when a load or an add finished, so a reloaded plugin
+// in the same process takes them over (pack_adopt_start) instead of asking for a restart:
+// "GTAVPACKS,1\npid=<pid>\npacks=<id>,...\narchives=<archive record>,...\n". Only a set an
+// additive load could extend is written; any other set removes the file.
+#define GTAV_PACK_LEDGER_PATH "/data/GTAVMenu/state/packs-loaded"
+static char g_pack_ledger_text[GTAV_CUSTOM_PACK_ACTIVE_MAX * (GTAV_CUSTOM_PACK_ID_MAX + 1) +
+                               GTAV_CUSTOM_PACK_ARCHIVE_CAP * 12 + 64];
+
+// The game process's id (the raw syscall: the dev worker has no libkernel).
+static int32_t pack_ledger_pid() {
+  return (int32_t)gtav_ps4_syscall3(GTAV_PS4_SYS_GETPID, 0, 0, 0);
+}
+
+static void pack_ledger_write() {
+  if (!pack_appendable(g_pack)) {
+    (void)unlink(GTAV_PACK_LEDGER_PATH);
+    return;
+  }
+  char* text = g_pack_ledger_text;
+  const size_t size = sizeof(g_pack_ledger_text);
+  size_t n = (size_t)snprintf(text, size, "GTAVPACKS,1\npid=%d\npacks=", (int)pack_ledger_pid());
+  for (int s = 0; s < g_pack.source_count && n < size; ++s)
+    n += (size_t)snprintf(text + n, size - n, "%s%s", s ? "," : "", g_pack.source_ids[s]);
+  if (n < size) n += (size_t)snprintf(text + n, size - n, "\narchives=");
+  for (int i = 0; i < pack_archive_count() && n < size; ++i)
+    n += (size_t)snprintf(text + n, size - n, "%s%d", i ? "," : "", (int)g_rpf_indices[i]);
+  if (n < size) n += (size_t)snprintf(text + n, size - n, "\n");
+  if (n >= size || pack_select_publish(GTAV_PACK_LEDGER_PATH ".tmp", GTAV_PACK_LEDGER_PATH, text,
+                                       n) != 0)
+    pack_world_note("pack ledger write failed");
+}
+
+// A decimal number (the ledger's pid and archive records); -1 when `text` holds anything else.
+static int32_t pack_ledger_number(const char* text) {
+  int64_t value = 0;
+  if (!*text) return -1;
+  for (; *text; ++text) {
+    if (*text < '0' || *text > '9' || value > INT32_MAX / 10) return -1;
+    value = value * 10 + (*text - '0');
+  }
+  return value <= INT32_MAX ? (int32_t)value : -1;
+}
+
+// The value of `key=` on its own line of `text`, copied to `out`; 0 when absent or too long.
+static int pack_ledger_field(const char* text, const char* key, char* out, size_t size) {
+  const size_t key_length = strlen(key);
+  for (const char* line = text; *line;) {
+    const char* end = strchr(line, '\n');
+    const size_t length = end ? (size_t)(end - line) : strlen(line);
+    if (length > key_length && strncmp(line, key, key_length) == 0 && line[key_length] == '=') {
+      const size_t value = length - key_length - 1;
+      if (value >= size) return 0;
+      memcpy(out, line + key_length + 1, value);
+      out[value] = '\0';
+      return 1;
+    }
+    if (!end) break;
+    line = end + 1;
   }
   return 0;
 }
 
+// A Load in a game whose earlier plugin instance loaded packs (the ledger names this pid): merge
+// that set as it was, so the game thread can check the game still holds it (custom_rpf.inc
+// adopt_pack_set). 1 when the adoption started; 0 leaves the ordinary load (no ledger, another
+// game, or packs that changed since). Starts the steps itself when it adopts.
+static int pack_adopt_start() {
+  const int64_t size = pack_select_read(GTAV_PACK_LEDGER_PATH, g_pack_ledger_text,
+                                        sizeof(g_pack_ledger_text) - 1);
+  if (size <= 0) return 0;
+  g_pack_ledger_text[size] = '\0';
+  char pid[16], packs[sizeof(g_pack_ledger_text)], archives[GTAV_CUSTOM_PACK_ARCHIVE_CAP * 12];
+  if (strncmp(g_pack_ledger_text, "GTAVPACKS,1\n", 12) != 0 ||
+      !pack_ledger_field(g_pack_ledger_text, "pid", pid, sizeof(pid)) ||
+      pack_ledger_number(pid) != pack_ledger_pid() ||
+      !pack_ledger_field(g_pack_ledger_text, "packs", packs, sizeof(packs)) ||
+      !pack_ledger_field(g_pack_ledger_text, "archives", archives, sizeof(archives)))
+    return 0;
+  if (!pack_scratch_take(PACK_SCRATCH_LOAD)) return 0;
+  GtavCustomPack& one = g_pack_scratch;
+  memset(&g_pack, 0, sizeof(g_pack));
+  int good = 1;
+  for (char *id = packs, *next = nullptr; good && id && *id; id = next) {
+    next = strchr(id, ',');
+    if (next) *next++ = '\0';
+    const int source = g_pack.source_count;
+    good = source < (int)GTAV_CUSTOM_PACK_ACTIVE_MAX && pack_select_parse(id, &one) &&
+           pack_appendable(one);
+    if (good) {
+      pack_root_path(g_pack_dirs[source], sizeof(g_pack_dirs[source]), id, "/resources");
+      good = gtav_custom_pack_merge(&g_pack, &one) == 0;
+    }
+  }
+  int indices = 0;
+  for (char *index = archives, *next = nullptr; good && index && *index; index = next) {
+    next = strchr(index, ',');
+    if (next) *next++ = '\0';
+    const int32_t record = pack_ledger_number(index);
+    good = indices < (int)GTAV_CUSTOM_PACK_ARCHIVE_CAP && record >= 0;
+    if (good) g_pack_adopt_indices[indices++] = record;
+  }
+  good = good && g_pack.source_count > 0 && indices == 1 + g_pack.extra_archive_count;
+  if (good) {
+    g_pack_adopt_pending = 1;
+    __atomic_store_n(&g_pack_parsed, 1, __ATOMIC_RELEASE);
+  } else {
+    memset(&g_pack, 0, sizeof(g_pack));
+  }
+  pack_scratch_release();
+  if (!good) {
+    pack_world_note("pack adopt skipped: the ledger does not match the installed packs");
+    return 0;
+  }
+  pack_world_note("pack adopt begin packs=%d archives=%d", g_pack.source_count, indices);
+  g_pack_al_row = 0;
+  g_pack_al_ticks = 0;
+  g_pack_al_sent = 0;
+  g_pack_al_wait_ms = 0;
+  pack_step_refusal_clear();
+  snprintf(g_pack_al_status, sizeof(g_pack_al_status), "Restoring: checking packs");
+  __atomic_store_n(&g_pack_al_state, (uint32_t)PACK_AL_REGISTER, __ATOMIC_RELEASE);
+  return 1;
+}
+
+// The game thread took the set over (custom_rpf.inc adopt_pack_set): every row of it is loaded.
+static void pack_adopt_finish() {
+  const int rows = g_pack.data_count;
+  const uint64_t all = rows >= 64 ? ~0ull : (1ull << rows) - 1ull;
+  g_pack_data_loaded = all;
+  __atomic_store_n(&g_pack_data_parsed, all, __ATOMIC_RELEASE);
+  g_pack_labels_added = g_pack.label_count;
+  snprintf(g_pack_al_status, sizeof(g_pack_al_status), "Ready: kept %d pack%s",
+           g_pack.source_count, g_pack.source_count == 1 ? "" : "s");
+  char text[GTAV_FEATURE_MESSAGE_LEN];
+  snprintf(text, sizeof(text), "Custom packs kept from before the reload: %d%s",
+           g_pack.source_count, pack_new_selected_count() ? "; press Add for the new ones" : "");
+  pack_al_toast(text);
+  pack_world_note("pack adopt done packs=%d archives=%d data=%d labels=%d", g_pack.source_count,
+                  pack_archive_count(), rows, g_pack.label_count);
+  __atomic_store_n(&g_pack_al_state, (uint32_t)PACK_AL_DONE, __ATOMIC_RELEASE);
+}
+#endif
+#endif
+
 // Refuses before the first step when the selection would not load (pack_select_clash: a clash, a
-// cap or a bad pack.cfg), naming the pack to deselect or reinstall: loads are one-way per process.
+// cap or a bad pack.cfg), naming the pack to deselect or reinstall. A load refused before anything
+// reached the game starts over with the current selection; anything registered stays for the
+// process, so after that a load is one-way.
 static uint32_t start_pack_autoload() {
   const uint32_t action = GTAV_NATIVE_SHELL_ACTION_PACK_AUTOLOAD;
   if (!gtav_custom_game_root_available())
     return unavailable(action, GTAV_CUSTOM_DATA_UNAVAILABLE);
-  if (g_pack_al_state == PACK_AL_FAILED)
-    return unavailable(action, "Load failed; restart GTA to load again");
+  if (g_pack_al_state == PACK_AL_FAILED) {
+    if (!pack_load_failed_clean())
+      return unavailable(action, "Load failed; restart GTA to load again");
+    pack_forget_failed_load();
+  }
+#if GTAV_MENU_CUSTOM_PACK_ENGINE
+  if (g_pack_al_state == PACK_AL_DONE) {
+    if (!gtav_frame_hook_is_active()) return unavailable(action, "Menu hook not active; reinject");
+    return start_pack_append();
+  }
+#endif
   if (g_pack_al_state != PACK_AL_IDLE)
     return unavailable(action, "Packs already loading or loaded");
   if (g_rpf_register_attempted) return unavailable(action, "Loaded by host commands; restart GTA");
   if (!gtav_frame_hook_is_active()) return unavailable(action, "Menu hook not active; reinject");
+#if GTAV_MENU_CUSTOM_PACK_ENGINE && defined(__ORBIS__)
+  // A reloaded plugin first takes over what its earlier instance loaded into this game.
+  if (pack_adopt_start()) return ok(action, "custom pack loading");
+#endif
   pack_select_scan(1);
   if (!g_pack_selection_valid)
     return unavailable(action, "packs/active is invalid; fix it on the host");
@@ -99,10 +390,7 @@ static uint32_t start_pack_autoload() {
       return unavailable(action, why);
     }
   }
-  char ped_refusal[GTAV_FEATURE_MESSAGE_LEN];
-  if (g_pack_selection_clash.kind == PACK_CLASH_NONE &&
-      pack_ped_slots_refusal(ped_refusal, sizeof(ped_refusal)))
-    return unavailable(action, ped_refusal);
+#if GTAV_MENU_CUSTOM_PACK_ENGINE
   // Early warning only: the kit/wheel growth is known once a carcols row is staged, after the
   // archives registered, and its gate then waits (pack_al_gate_wait). g_pack is the merged
   // selection the clash check just built.
@@ -117,11 +405,19 @@ static uint32_t start_pack_autoload() {
                     read ? (unsigned)vars.kit_capacity : 0u);
     pack_al_toast("Tuned car nearby (parked ones count): the load may wait");
   }
+#endif
   g_pack_al_row = 0;
   g_pack_al_ticks = 0;
   g_pack_al_sent = 0;
+#if GTAV_MENU_CUSTOM_PACK_ENGINE
   g_pack_al_wait_ms = 0;
+#endif
+  pack_step_refusal_clear();  // fail-fast reads only this load's refusals
+#if GTAV_MENU_CUSTOM_PACK_ENGINE
   snprintf(g_pack_al_status, sizeof(g_pack_al_status), "Loading: registering");
+#else
+  snprintf(g_pack_al_status, sizeof(g_pack_al_status), "Loading: reading packs");
+#endif
   __atomic_store_n(&g_pack_al_state, (uint32_t)PACK_AL_REGISTER, __ATOMIC_RELEASE);
   return ok(action, "custom pack loading");
 }
@@ -150,6 +446,7 @@ static int pack_al_source(uint32_t state, uint32_t row) {
     case PACK_AL_HIDE:
       source = row < (uint32_t)g_pack.hide_count ? g_pack.hide_source[row] : -1;
       break;
+#if GTAV_MENU_CUSTOM_PACK_ENGINE
     case PACK_AL_REGISTER: {
       const int archive = __atomic_load_n(&g_pack_fail_archive, __ATOMIC_ACQUIRE);
       if (archive == 0) source = 0;
@@ -157,6 +454,7 @@ static int pack_al_source(uint32_t state, uint32_t row) {
         source = g_pack.extra_archive_source[archive - 1];
       break;
     }
+#endif
     default:
       break;
   }
@@ -164,8 +462,71 @@ static int pack_al_source(uint32_t state, uint32_t row) {
   return source < g_pack.source_count ? source : -1;
 }
 
+// A store-headroom refusal's toast (custom_pack_checks.c gtav_custom_pack_store_reason): its store,
+// free and needed slots, and the fix. Before anything registered (`registering`), deselecting the
+// packs that add to the store frees the load (the exact gate recorded them,
+// g_pack_store_refusal_sources; none known: restart GTA); after a row ran, the pack it stopped at.
+// 0 when `refusal` is not a store refusal.
+static int pack_al_store_toast(const char* refusal, int registering, const char* pack, char* out,
+                               size_t size) {
+  char detail[GTAV_CUSTOM_PACK_STORE_DETAIL_MAX + 1];
+  int scope = GTAV_CUSTOM_PACK_STORE_ANY;
+  if (!gtav_custom_pack_store_reason(refusal, detail, sizeof(detail), &scope)) return 0;
+#if GTAV_MENU_CUSTOM_PACK_ENGINE
+  const uint32_t sources = registering && __atomic_load_n(&g_pack_parsed, __ATOMIC_ACQUIRE)
+                               ? __atomic_load_n(&g_pack_store_refusal_sources, __ATOMIC_ACQUIRE)
+                               : 0u;
+#else
+  const uint32_t sources = 0u;  // no store gate without the engine
+#endif
+  if (!registering && pack) {
+    snprintf(out, size, "%.30s: %s", pack, detail);
+  } else if (!sources) {
+    snprintf(out, size, "%s; restart GTA", detail);
+  } else {
+    const int prefix = snprintf(out, size, "%s: deselect ", detail);
+    if (prefix > 0 && (size_t)prefix < size)
+      pack_clash_ids(sources, g_pack.source_ids, pack_store_noun(scope), out + prefix,
+                     size - (size_t)prefix);
+  }
+  return 1;
+}
+
+#if GTAV_MENU_CUSTOM_PACK_ENGINE
+// A refusal that clears by itself: the game between phases, the parser busy, the startup header
+// cache still draining. REGISTER and DATA ask again for these.
+static int pack_al_transient(const char* refusal) {
+  return strcmp(refusal, "pack phase/thread gate refused") == 0 ||
+         strcmp(refusal, "parser is not idle") == 0 ||
+         strcmp(refusal, "pack startup header cache still active") == 0;
+}
+
+// The step answered with a refusal no retry can change: REGISTER and DATA are sent once, so any
+// refusal that does not clear by itself would only run out the 300-tick wait and fail anyway. A
+// registration that started (archives went to the game) and failed is final too: asking again only
+// finds "registration already attempted".
+static int pack_al_definite_refusal() {
+  char refusal[GTAV_FEATURE_MESSAGE_LEN];
+  pack_step_refusal(refusal, sizeof(refusal));
+  return refusal[0] && !pack_al_transient(refusal);
+}
+
+// A transient refusal: send the step again every retry period (the refusal it gives then is fresh).
+static int pack_al_retry_transient() {
+  char refusal[GTAV_FEATURE_MESSAGE_LEN];
+  pack_step_refusal(refusal, sizeof(refusal));
+  if (!refusal[0] || !pack_al_transient(refusal)) return 0;
+  if (g_pack_al_ticks % GTAV_PACK_AL_RETRY_TICKS == 0u) {
+    pack_step_refusal_clear();
+    g_pack_al_sent = 0;
+  }
+  return 1;
+}
+#endif
+
 // Stop at `stage`, naming the step's own refusal when it gave one (toast, page row, status), and
-// the pack it stopped at when one row's pack is known (toast and the load row's footer).
+// the pack it stopped at when one row's pack is known (toast and the load row's footer). A
+// store-headroom refusal names its store, its free and needed slots and the packs that need it.
 static void pack_al_fail(const char* stage) {
   char why[GTAV_FEATURE_MESSAGE_LEN + GTAV_CUSTOM_PACK_ID_MAX];
   char refusal[GTAV_FEATURE_MESSAGE_LEN];
@@ -174,8 +535,8 @@ static void pack_al_fail(const char* stage) {
     snprintf(why, sizeof(why), "%s: %s", stage, refusal);
   else
     snprintf(why, sizeof(why), "%s", stage);
-  const int source =
-      pack_al_source(__atomic_load_n(&g_pack_al_state, __ATOMIC_ACQUIRE), g_pack_al_row);
+  const uint32_t state = __atomic_load_n(&g_pack_al_state, __ATOMIC_ACQUIRE);
+  const int source = pack_al_source(state, g_pack_al_row);
   const char* pack = source >= 0 ? g_pack.source_ids[source] : nullptr;
   if (pack) snprintf(why + strlen(why), sizeof(why) - strlen(why), " pack=%s", pack);
   // The klog / pack-notes line and the status keep the technical stage + refusal; the page row and
@@ -187,22 +548,27 @@ static void pack_al_fail(const char* stage) {
   const char* reason = gtav_custom_pack_user_reason(refusal[0] ? refusal : stage);
   snprintf(g_pack_al_status, sizeof(g_pack_al_status), "Load failed: %s", reason);
   char toast[GTAV_FEATURE_MESSAGE_LEN];
-  if (pack)
-    snprintf(toast, sizeof(toast), "%.36s: %s", pack, reason);
-  else
-    snprintf(toast, sizeof(toast), "Custom packs failed: %s", reason);
+  // A store refusal's toast keeps 4 bytes for the toast's status glyph.
+  if (!pack_al_store_toast(refusal, state == PACK_AL_REGISTER, pack, toast, sizeof(toast) - 4u)) {
+    if (pack)
+      snprintf(toast, sizeof(toast), "%.36s: %s", pack, reason);
+    else
+      snprintf(toast, sizeof(toast), "Custom packs failed: %s", reason);
+  }
   snprintf(g_pack_al_detail, sizeof(g_pack_al_detail), "%s", toast);
   gtav_native_bridge_push_toast(toast, GTAV_FEATURE_RESULT_FAILED);
   __atomic_store_n(&g_pack_al_state, (uint32_t)PACK_AL_FAILED, __ATOMIC_RELEASE);
 }
 
 static void pack_al_next(uint32_t state, uint32_t row) {
+#if GTAV_MENU_CUSTOM_PACK_ENGINE
   if (g_pack_al_wait_ms) {  // the waiting data row went on (pack_al_gate_wait)
     pack_world_note("pack data %u carcols gate clear after %us", (unsigned)g_pack_al_row,
                     (unsigned)((pack_al_now_ms() - g_pack_al_wait_ms) / 1000u));
     pack_al_toast("Custom packs: tuned car gone, loading on");
     g_pack_al_wait_ms = 0;
   }
+#endif
   g_pack_al_row = row;
   g_pack_al_ticks = 0;
   g_pack_al_sent = 0;
@@ -229,7 +595,11 @@ static const char* pack_al_stage(uint32_t state) {
     case PACK_AL_LABELS:
       return "labels";
     case PACK_AL_MAP:
+#if GTAV_MENU_CUSTOM_PACK_ENGINE
       return g_pack_map_waiting_typs ? "waiting for archetypes" : "map request";
+#else
+      return "load";
+#endif
     case PACK_AL_MAP_FINISH:
       return "map activation";
     case PACK_AL_BOUNDS:
@@ -248,6 +618,7 @@ static void pack_al_send(uint32_t action, uint32_t param, int retry) {
   }
 }
 
+#if GTAV_MENU_CUSTOM_PACK_ENGINE
 // The data row's step refused with the carcols in-use refusal (or, once waiting, has not answered
 // yet or found the game busy): keep the load on the row and ask again. Returns 0 when the row is
 // not waiting (any other refusal fails the step as before).
@@ -334,10 +705,13 @@ static void pack_revert_tick() {
   if (stop) gtav_native_bridge_push_toast(stop, GTAV_FEATURE_RESULT_FAILED);
   __atomic_store_n(&g_revert_wait_ms, (uint64_t)0, __ATOMIC_RELEASE);
 }
+#endif
 
 static void pack_autoload_tick() {
   ++g_pack_worker_ticks;  // pack root rescan pacing (custom_pack_select.inc)
+#if GTAV_MENU_CUSTOM_PACK_ENGINE
   pack_revert_tick();
+#endif
   const uint32_t state = __atomic_load_n(&g_pack_al_state, __ATOMIC_ACQUIRE);
   if (state == PACK_AL_IDLE || state == PACK_AL_DONE || state == PACK_AL_FAILED) return;
   if (!gtav_frame_hook_is_active()) return;
@@ -349,26 +723,35 @@ static void pack_autoload_tick() {
   }
   const uint32_t row = g_pack_al_row;
   switch (state) {
+#if GTAV_MENU_CUSTOM_PACK_ENGINE
     case PACK_AL_REGISTER:
       // The Custom Packs selection check held the descriptor buffer (custom_rpf.inc
       // g_pack_scratch) when the registration ran: send it again.
       if (__atomic_exchange_n(&g_pack_register_busy, 0, __ATOMIC_ACQ_REL)) g_pack_al_sent = 0;
       pack_al_send(GTAV_NATIVE_SHELL_ACTION_REGISTER_PACK, 0, 0);
-      if (g_rpf_index >= 0) {
+#if defined(__ORBIS__)
+      if (__atomic_exchange_n(&g_pack_adopted, 0, __ATOMIC_ACQ_REL)) {
+        pack_adopt_finish();
+        break;
+      }
+#endif
+      if (g_rpf_index >= 0 && g_rpf_registered >= pack_archive_count()) {
         pack_al_next(PACK_AL_ARCHIVE, 0);
         snprintf(g_pack_al_status, sizeof(g_pack_al_status), "Loading: archive");
-      } else if (g_rpf_register_attempted || g_pack_al_ticks > 300u) {
-        if (g_pack_al_ticks > 300u) pack_al_fail("registration refused");
+      } else if (pack_al_definite_refusal() || g_pack_al_ticks > 300u) {
+        pack_al_fail("registration refused");
+      } else if (g_rpf_register_started != g_pack_load_start.archive) {
+        (void)pack_al_retry_transient();
       }
       break;
     case PACK_AL_ARCHIVE:
       pack_al_send(GTAV_NATIVE_SHELL_ACTION_LOAD_PACK_ARCHIVE, 0, 0);
-      if (pack_archives_resident()) {
+      if (pack_archives_resident(g_pack_load_start.archive)) {
         char text[GTAV_FEATURE_MESSAGE_LEN];
         snprintf(text, sizeof(text), "Custom packs: %d archive(s) streamed, loading data",
-                 pack_archive_count());
+                 pack_archive_count() - g_pack_load_start.archive);
         pack_al_toast(text);
-        pack_al_next(PACK_AL_DATA, 0);
+        pack_al_next(PACK_AL_DATA, (uint32_t)g_pack_load_start.data);
       }
       break;
     case PACK_AL_DATA:
@@ -385,8 +768,10 @@ static void pack_autoload_tick() {
         pack_al_next(PACK_AL_PUMP, row);
       else if (__atomic_load_n(&g_pack_data_parsed, __ATOMIC_ACQUIRE) & (1ull << row))  // sync row
         pack_al_next(PACK_AL_DATA, row + 1u);
-      else if (!pack_al_gate_wait(row) && g_pack_al_ticks > 300u)
+      else if (!pack_al_gate_wait(row) && (g_pack_al_ticks > 300u || pack_al_definite_refusal()))
         pack_al_fail("data row refused");
+      else if (!g_pack_al_wait_ms)
+        (void)pack_al_retry_transient();
       break;
     case PACK_AL_PUMP:
       pack_al_send(GTAV_NATIVE_SHELL_ACTION_PUMP_PACK_DATA, 0, 1);
@@ -411,14 +796,30 @@ static void pack_autoload_tick() {
         pack_al_next(PACK_AL_TYPS, row + 1u);
       break;
     case PACK_AL_LABELS:
-      if (!g_pack.label_count) {
+      if (g_pack_labels_added >= g_pack.label_count) {  // none, or none new
         pack_al_next(PACK_AL_BOUNDS, 0);
         break;
       }
       pack_al_send(GTAV_NATIVE_SHELL_ACTION_ADD_PACK_LABELS, 0, 0);
       // Bounds before maps: an interior map binds its MLO's resident .pbn when it finishes.
-      if (g_pack_labels_added) pack_al_next(PACK_AL_BOUNDS, 0);
+      if (g_pack_labels_added >= g_pack.label_count) pack_al_next(PACK_AL_BOUNDS, 0);
       break;
+#else
+    case PACK_AL_REGISTER: {
+      // Engine-less: read and merge the selected descriptors; nothing registers. Then the hide
+      // rows (PACK_AL_MAP past the last map row hands over to them) and done.
+      const char* refusal = pack_load_descriptor();
+      if (refusal && __atomic_exchange_n(&g_pack_register_busy, 0, __ATOMIC_ACQ_REL))
+        break;  // the selection check held the descriptor buffer: read again next tick
+      if (refusal) {
+        note_pack_step_refusal(GTAV_NATIVE_SHELL_ACTION_REGISTER_PACK, refusal);
+        pack_al_fail("pack descriptors");
+        break;
+      }
+      pack_al_next(PACK_AL_MAP, (uint32_t)g_pack.map_count);
+      break;
+    }
+#endif
     case PACK_AL_MAP:
       // After the last map: the hide rows, then back here (all applied) to finish.
       if (row >= (uint32_t)g_pack.map_count && g_pack.hide_count &&
@@ -429,22 +830,34 @@ static void pack_autoload_tick() {
       if (row >= (uint32_t)g_pack.map_count) {
         snprintf(g_pack_al_status, sizeof(g_pack_al_status), "Ready: %.38s", g_pack.pack_id);
         gtav_status_eventf(GTAV_MENU_EVENT_NATIVE_SHELL, "pack autoload done id=%s", g_pack.pack_id);
+        // This load's packs only: an additive load names what it added.
         int kinds[7] = {};
         for (int i = 0; i < g_pack.spawn_count; ++i)
-          if (g_pack.spawns[i].kind < 7u) kinds[g_pack.spawns[i].kind]++;
+          if (g_pack.spawns[i].kind < 7u && g_pack.spawn_source[i] >= g_pack_load_start.source)
+            kinds[g_pack.spawns[i].kind]++;
+        char text[GTAV_FEATURE_MESSAGE_LEN];
+#if GTAV_MENU_CUSTOM_PACK_ENGINE
         // Each pack particle dictionary should now have a PtFxAssetStore slot (klog only).
         pack_ptfx_report();
-        char text[GTAV_FEATURE_MESSAGE_LEN];
         snprintf(text, sizeof(text),
-                 "Custom packs ready: %d vehicles, %d props, %d peds, %d weapons, %d effects, %d maps",
-                 kinds[GTAV_CUSTOM_PACK_SPAWN_VEHICLE], kinds[GTAV_CUSTOM_PACK_SPAWN_OBJECT],
+                 "Custom packs %s: %d vehicles, %d props, %d peds, %d weapons, %d effects, %d maps",
+                 g_pack_load_start.source ? "added" : "ready", kinds[GTAV_CUSTOM_PACK_SPAWN_VEHICLE], kinds[GTAV_CUSTOM_PACK_SPAWN_OBJECT],
                  kinds[GTAV_CUSTOM_PACK_SPAWN_PED], kinds[GTAV_CUSTOM_PACK_SPAWN_WEAPON],
                  kinds[GTAV_CUSTOM_PACK_SPAWN_TIMECYCLE] + kinds[GTAV_CUSTOM_PACK_SPAWN_PTFX],
                  g_pack.map_count);
+#else
+        snprintf(text, sizeof(text), "Custom packs ready: %d effects, %d places, %d hides",
+                 kinds[GTAV_CUSTOM_PACK_SPAWN_TIMECYCLE] + kinds[GTAV_CUSTOM_PACK_SPAWN_PTFX],
+                 g_pack.place_count, g_pack.hide_count);
+#endif
         pack_al_toast(text);
+#if GTAV_MENU_CUSTOM_PACK_ENGINE && defined(__ORBIS__)
+        pack_ledger_write();  // a reloaded plugin takes this set over
+#endif
         __atomic_store_n(&g_pack_al_state, (uint32_t)PACK_AL_DONE, __ATOMIC_RELEASE);
         break;
       }
+#if GTAV_MENU_CUSTOM_PACK_ENGINE
       snprintf(g_pack_al_status, sizeof(g_pack_al_status), "Loading: map %u/%d", (unsigned)row + 1u,
                g_pack.map_count);
       // Retried: load_pack_map refuses until every typ row is resident.
@@ -477,6 +890,9 @@ static void pack_autoload_tick() {
       else if (g_pack_bounds_finished & (1u << row))
         pack_al_next(PACK_AL_BOUNDS, row + 1u);
       break;
+#else
+      break;
+#endif
     case PACK_AL_HIDE:
       if (row >= (uint32_t)g_pack.hide_count) {
         pack_world_note("pack hides applied %d/%d", __builtin_popcountll(g_pack_hides_applied),
@@ -507,9 +923,16 @@ static int pack_map_place(uint32_t row, int32_t* x, int32_t* y, int32_t* z, cons
                           int* interior) {
   if (row >= GTAV_PACK_PLACE_PARAM) {
     const uint32_t place = row - GTAV_PACK_PLACE_PARAM;
+#if GTAV_MENU_CUSTOM_PACK_ENGINE
     if (!__atomic_load_n(&g_pack_parsed, __ATOMIC_ACQUIRE) ||
         place >= (uint32_t)g_pack.place_count || g_rpf_index < 0)
       return 0;
+#else
+    if (!__atomic_load_n(&g_pack_parsed, __ATOMIC_ACQUIRE) ||
+        place >= (uint32_t)g_pack.place_count ||
+        __atomic_load_n(&g_pack_al_state, __ATOMIC_ACQUIRE) != PACK_AL_DONE)
+      return 0;
+#endif
     *x = g_pack.places[place].x;
     *y = g_pack.places[place].y;
     *z = g_pack.places[place].z;
@@ -517,9 +940,13 @@ static int pack_map_place(uint32_t row, int32_t* x, int32_t* y, int32_t* z, cons
     *interior = 0;
     return 1;
   }
+#if GTAV_MENU_CUSTOM_PACK_ENGINE
   if (!__atomic_load_n(&g_pack_parsed, __ATOMIC_ACQUIRE) || row >= (uint32_t)g_pack.map_count ||
       !g_pack.map_places[row].text[0] || g_rpf_index < 0)
     return 0;
+#else
+  return 0;  // a map row's place needs its map, which needs the archive lane
+#endif
   *x = g_pack.map_places[row].x;
   *y = g_pack.map_places[row].y;
   *z = g_pack.map_places[row].z;
@@ -534,9 +961,9 @@ static int pack_map_place(uint32_t row, int32_t* x, int32_t* y, int32_t* z, cons
 // loaded; then the installed-list row and every installed pack (up to GTAV_PACK_INSTALLED_MAX),
 // each a selection toggle; last, while any pack is installed, the "Uninstall: <id> < n/m >" row
 // (custom_pack_select.inc uninstall_pack). The menu (native_bridge.cpp build_custom_pack_items)
-// sorts the rows into the Custom Packs folders: the load row on the root, the installed list and
-// the uninstall row under Manage Packs, and the content rows by kind under Vehicles / Weapons /
-// Peds / Objects / Effects / Locations, each pack's rows under its header.
+// sorts the rows into the Custom Packs folders: the load row on the root and again atop Manage
+// Packs with the uninstall row and the installed list, and the content rows by kind under
+// Vehicles / Weapons / Peds / Objects / Effects / Locations, each pack's rows under its header.
 // Menu action for a descriptor spawn kind (param: the model or weapon name's joaat).
 static uint32_t pack_spawn_action(uint32_t kind) {
   switch (kind) {
@@ -569,6 +996,26 @@ static GtavPackMenuRow* pack_menu_row(GtavPackMenuRow* rows, int* count, uint32_
   return row;
 }
 
+// The newly selected packs a Load adds to a finished load (start_pack_append); none without the
+// engine.
+static int pack_adding(uint32_t state) {
+#if GTAV_MENU_CUSTOM_PACK_ENGINE
+  return state == PACK_AL_DONE && g_pack_selection_valid ? pack_new_selected_count() : 0;
+#else
+  (void)state;
+  return 0;
+#endif
+}
+
+// A selection change still loads in this game: a finished load takes more packs.
+static int pack_takes_more() {
+#if GTAV_MENU_CUSTOM_PACK_ENGINE
+  return pack_append_possible();
+#else
+  return 0;
+#endif
+}
+
 extern "C" int gtav_features_pack_menu(GtavPackMenuRow* rows, int max) {
   if (!rows || max < 1) return 0;
   const uint32_t state = __atomic_load_n(&g_pack_al_state, __ATOMIC_ACQUIRE);
@@ -577,11 +1024,12 @@ extern "C" int gtav_features_pack_menu(GtavPackMenuRow* rows, int max) {
   const int idle = state == PACK_AL_IDLE && !g_rpf_register_attempted;
   const int nothing_selected = idle && g_pack_selection_valid && g_pack_selected_count == 0;
   const int unavailable_here = !gtav_custom_game_root_available();
+  const int adding = pack_adding(state);
   // A failed load stays selectable: its footer names the pack it stopped at (gtav_features_pack_
   // footer) and Cross says to restart GTA.
   GtavPackMenuRow* first = pack_menu_row(
       rows, &count, GTAV_NATIVE_SHELL_ACTION_PACK_AUTOLOAD, 0,
-      !unavailable_here && ((idle && !nothing_selected) || state == PACK_AL_FAILED),
+      !unavailable_here && ((idle && !nothing_selected) || adding || state == PACK_AL_FAILED),
       unavailable_here   ? GTAV_CUSTOM_DATA_UNAVAILABLE
       : nothing_selected ? "Select packs in Manage Packs first"
                          : "Packs are loading or loaded");
@@ -601,32 +1049,58 @@ extern "C" int gtav_features_pack_menu(GtavPackMenuRow* rows, int max) {
     snprintf(first->label, sizeof(first->label), "Load blocked: over a limit");
   else if (clash == PACK_CLASH_INVALID)
     snprintf(first->label, sizeof(first->label), "Load blocked: bad pack.cfg");
+  else if (clash == PACK_CLASH_STORE) {
+    const char* store =
+        gtav_custom_pack_store_reason(g_pack_selection_clash.what, nullptr, 0, nullptr);
+    snprintf(first->label, sizeof(first->label), "Load blocked: %s",
+             store ? store : "game slots full");
+  }
   else if (idle)
     snprintf(first->label, sizeof(first->label), "Load %d selected pack%s", g_pack_selected_count,
              g_pack_selected_count == 1 ? "" : "s");
+  else if (adding)
+    snprintf(first->label, sizeof(first->label), "Add %d selected pack%s", adding,
+             adding == 1 ? "" : "s");
   else
     snprintf(first->label, sizeof(first->label), "%s", g_pack_al_status);
   if (unavailable_here) return count;
+#if GTAV_MENU_CUSTOM_PACK_ENGINE
   const int loaded = state == PACK_AL_DONE || (state == PACK_AL_IDLE && g_rpf_index >= 0);
+#else
+  const int loaded = state == PACK_AL_DONE;
+#endif
   const char* not_loaded = "Load the packs first";
   if (__atomic_load_n(&g_pack_parsed, __ATOMIC_ACQUIRE)) {
     for (int source = 0; source < g_pack.source_count && count < max; ++source) {
+      // An earlier load's packs stay usable while an additive load runs (or after it failed).
+      const int ready = loaded || source < g_pack_load_start.source;
       // Every pack gets its header: the menu groups each folder's rows under it.
       GtavPackMenuRow* header =
           pack_menu_row(rows, &count, GTAV_NATIVE_SHELL_ACTION_NONE, 0, 0, nullptr);
       snprintf(header->label, sizeof(header->label), "%.47s", g_pack.source_ids[source]);
       for (int i = 0; i < g_pack.spawn_count && count < max; ++i) {
         if (g_pack.spawn_source[i] != source) continue;
+#if !GTAV_MENU_CUSTOM_PACK_ENGINE
+        // Engine-less: only stock screen and particle effects; the other kinds come from archives.
+        if (g_pack.spawns[i].kind != GTAV_CUSTOM_PACK_SPAWN_TIMECYCLE &&
+            g_pack.spawns[i].kind != GTAV_CUSTOM_PACK_SPAWN_PTFX)
+          continue;
+#endif
         GtavPackMenuRow* row = pack_menu_row(
             rows, &count,
-            pack_spawn_action(g_pack.spawns[i].kind), pack_joaat(g_pack.spawns[i].model), loaded, not_loaded);
+            pack_spawn_action(g_pack.spawns[i].kind), pack_joaat(g_pack.spawns[i].model), ready, not_loaded);
+#if GTAV_MENU_CUSTOM_PACK_ENGINE
         // A weapon reads as the wheel names it: its pack's label for the meta's HumanNameHash.
-        const char* weapon_name = g_pack.spawns[i].kind == GTAV_CUSTOM_PACK_SPAWN_WEAPON && loaded
+        const char* weapon_name = g_pack.spawns[i].kind == GTAV_CUSTOM_PACK_SPAWN_WEAPON && ready
                                       ? pack_weapon_label(i)
                                       : nullptr;
         snprintf(row->label, sizeof(row->label), "%s",
                  weapon_name ? weapon_name : g_pack.spawns[i].text);
+#else
+        snprintf(row->label, sizeof(row->label), "%s", g_pack.spawns[i].text);
+#endif
       }
+#if GTAV_MENU_CUSTOM_PACK_ENGINE
       for (int m = 0; m < g_pack.map_count && count < max; ++m) {
         if (g_pack.map_source[m] != source || !g_pack.map_places[m].text[0]) continue;
         GtavPackMenuRow* row = pack_menu_row(rows, &count, GTAV_NATIVE_SHELL_ACTION_TELEPORT_PACK_MAP,
@@ -635,26 +1109,28 @@ extern "C" int gtav_features_pack_menu(GtavPackMenuRow* rows, int max) {
         // Under the Locations folder: the place itself is the label.
         snprintf(row->label, sizeof(row->label), "%s", g_pack.map_places[m].text);
       }
+#endif
       for (int p = 0; p < g_pack.place_count && count < max; ++p) {
         if (g_pack.place_source[p] != source) continue;
         GtavPackMenuRow* row = pack_menu_row(rows, &count, GTAV_NATIVE_SHELL_ACTION_TELEPORT_PACK_MAP,
-                                             GTAV_PACK_PLACE_PARAM + (uint32_t)p, loaded, not_loaded);
+                                             GTAV_PACK_PLACE_PARAM + (uint32_t)p, ready, not_loaded);
         // Same action as a map row's place, so the menu files it under Locations too.
         snprintf(row->label, sizeof(row->label), "%s", g_pack.places[p].text);
       }
     }
   }
   // Installed packs: the selection the next load reads (this process's load, or the next launch's).
-  // The list row comes first; the menu turns it into the page selector and shows one page of the
-  // toggles below it (param = installed index, so host `pack-select N` needs no page).
+  // The list row comes first; the menu shows it as the heading above every toggle (param =
+  // installed index, as host `pack-select N` uses).
   if (count < max) {
     GtavPackMenuRow* list = pack_menu_row(rows, &count, GTAV_NATIVE_SHELL_ACTION_TOGGLE_PACK_ACTIVE,
-                                          GTAV_PACK_MENU_PAGE_ROW, 1, nullptr);
+                                          GTAV_PACK_MENU_LIST_ROW, 1, nullptr);
     if (!g_pack_selection_valid)
       snprintf(list->label, sizeof(list->label), "packs/active is invalid");
     else
       snprintf(list->label, sizeof(list->label), "%s (%d)",
-               idle ? "Installed packs" : "Installed, next launch", g_pack_installed_count);
+               idle || pack_takes_more() ? "Installed packs" : "Installed, next launch",
+               g_pack_installed_count);
   }
   for (int i = 0; i < g_pack_installed_count && count < max; ++i) {
     GtavPackMenuRow* row = pack_menu_row(rows, &count, GTAV_NATIVE_SHELL_ACTION_TOGGLE_PACK_ACTIVE,
@@ -675,6 +1151,7 @@ extern "C" int gtav_features_pack_menu(GtavPackMenuRow* rows, int max) {
                       running ? "Wait for the pack load to finish" : "Fix packs/active on the host");
     snprintf(row->label, sizeof(row->label), "Uninstall: %.36s", g_pack_installed[target]);
   }
+#if GTAV_MENU_CUSTOM_PACK_ENGINE
   // Once packs with stock overrides are registered (the load re-points them): put those stock assets
   // back (two-press confirm, param 0). The game thread refuses while any of them is in use.
   if (g_rpf_index >= 0 && !pack_autoload_running() &&
@@ -691,39 +1168,58 @@ extern "C" int gtav_features_pack_menu(GtavPackMenuRow* rows, int max) {
     else
       snprintf(row->label, sizeof(row->label), "Revert overrides (%d)", g_pack.override_count);
   }
+#endif
   return count;
 }
 
 // Worker: footer text for a Custom Packs row (native_bridge.cpp item_description). An installed
 // pack's toggle (param = installed index): its Manage Packs line (pack_select_info). The load row:
-// before a load, the selection's clash with both pack ids; after a failed load, the pack and reason.
+// before a load, the selection's clash with both pack ids, else the game's free slots for packs
+// (pack_select_census); after a failed load, the pack and reason.
 // A pack weapon row (Weapon Browser Custom, the Weapons folder): its wheel slot, borrowed icon and
 // component count (pack_weapon_footer).
 extern "C" const char* gtav_features_pack_footer(uint32_t action, uint32_t param) {
-  if (action == GTAV_NATIVE_SHELL_ACTION_TOGGLE_PACK_ACTIVE && param != GTAV_PACK_MENU_PAGE_ROW)
-    return pack_select_info(param);
+#if GTAV_MENU_CUSTOM_PACK_ENGINE
+  if (action == GTAV_NATIVE_SHELL_ACTION_TOGGLE_PACK_ACTIVE)
+    return param != GTAV_PACK_MENU_LIST_ROW ? pack_select_info(param) : pack_select_census();
   if (action == GTAV_NATIVE_SHELL_ACTION_GIVE_WEAPON) return pack_weapon_footer(param);
+#else
+  if (action == GTAV_NATIVE_SHELL_ACTION_TOGGLE_PACK_ACTIVE)
+    return param != GTAV_PACK_MENU_LIST_ROW ? pack_select_info(param) : "";
+#endif
   if (action >= GTAV_NATIVE_SHELL_ACTION_CYCLE_ATTACH_SUPP &&
       action <= GTAV_NATIVE_SHELL_ACTION_REMOVE_ATTACHMENTS)
     return wattach_footer();
   if (action != GTAV_NATIVE_SHELL_ACTION_PACK_AUTOLOAD) return "";
   const uint32_t state = __atomic_load_n(&g_pack_al_state, __ATOMIC_ACQUIRE);
   if (state == PACK_AL_FAILED) return g_pack_al_detail;
+#if GTAV_MENU_CUSTOM_PACK_ENGINE
   if (g_pack_al_wait_ms)
     return "A tuned car nearby (parked ones and yours count) uses parts this load moves; go away "
            "and the load goes on";
+#endif
+#if GTAV_MENU_CUSTOM_PACK_ENGINE
+  if (state == PACK_AL_DONE && g_pack_selection_valid && pack_new_selected_count())
+    return pack_select_census();  // what the packs to add can use
+#endif
   if (state != PACK_AL_IDLE || g_rpf_register_attempted || !g_pack_selection_valid) return "";
   static char text[160];
   const PackClash& clash = g_pack_selection_clash;
   if (clash.kind == PACK_CLASH_NAME && clash.other >= 0)
     snprintf(text, sizeof(text), "%.40s and %.40s: same %.40s; deselect one",
              g_pack_selected[clash.other], g_pack_selected[clash.pack], clash.what);
+  else if (clash.kind == PACK_CLASH_STORE)  // the footer has room for every pack id
+    pack_store_clash_text(clash, g_pack_selected, 0, text, sizeof(text));
   else if (const char* why = clash.kind != PACK_CLASH_BUSY
                                  ? pack_clash_text(clash, g_pack_selected, 0)
                                  : nullptr)
     snprintf(text, sizeof(text), "%s", why);
   else
+#if GTAV_MENU_CUSTOM_PACK_ENGINE
+    return pack_select_census();  // nothing in the way: the slots the game has free for packs
+#else
     text[0] = '\0';
+#endif
   return text;
 }
 
@@ -750,8 +1246,12 @@ static int scene_pack_model(uint32_t model, const char** pack_id, const char** n
     if (pack_id) *pack_id = g_pack.source_ids[source];
     if (name) *name = g_pack.spawns[i].model;
     if (ready) {
+#if GTAV_MENU_CUSTOM_PACK_ENGINE
       const uint32_t state = __atomic_load_n(&g_pack_al_state, __ATOMIC_ACQUIRE);
       *ready = state == PACK_AL_DONE || (state == PACK_AL_IDLE && g_rpf_index >= 0);
+#else
+      *ready = 0;  // pack models come from archives
+#endif
     }
     return 1;
   }

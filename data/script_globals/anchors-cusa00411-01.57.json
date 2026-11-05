@@ -1,0 +1,51 @@
+{
+  "_comment": [
+    "Script-globals anchors for the PS4 Legacy build CUSA00411 01.57 (consumed by",
+    "devtools/generators/generate_script_globals_header.py through the PS4 target manifest).",
+    "Addresses are absolute live virtual addresses: the executable maps at its fixed base",
+    "(normalized ELF vaddr + 0x400000, no ASLR). PS5 and PC values must not be reused.",
+    "Evidence: research/docs/cusa00411-01.57-script-globals.md."
+  ],
+  "gameBuild": "GTA V Legacy (PS4) CUSA00411 / 01.57",
+  "targetId": "cusa00411-01.57",
+  "_targetIdComment": [
+    "Target-specific anchors for CUSA00411 01.57.",
+    "Both the globals base and global indices move between builds; never reuse these values."
+  ],
+  "analysisInputSha256": "88ef9deb170fee58de3b539492f24a0ed9cb77123a14afb056218fc7441addcf",
+  "despawnGlobalIndex": {
+    "macro": "GTAV_DESPAWN_GLOBAL_INDEX",
+    "value": 4521040,
+    "note": "A read-only live bytecode scan of shop_controller on CUSA00411 01.57 (PID 4936, 2026-11-03) returned exactly one hit at code offset 836600, global 4521040 (block 17, slot 64592, value 0). The same function also carries the CyprusMenu 1.56 despawn prefix. The runtime writes only after an explicit vehicle spawn arms the capability."
+  },
+  "prologueGlobalIndex": {
+    "macro": "GTAV_PROLOGUE_GLOBAL_INDEX",
+    "value": 0,
+    "note": "Unset for 01.57; Skip Prologue remains disabled, as on every PS5 target."
+  },
+  "prologueGlobalCandidates": [],
+  "anchors": [
+    {
+      "name": "SCRIPT_TABLE",
+      "macro": "GTAV_SCRIPT_TABLE_ADDR",
+      "addr": null,
+      "verifiedLive": false,
+      "lead": "Must stay null: 01.57 keeps programs in a byte-indexed hash map at 0x420C958, not the {items*, pad, count} table the derive path walks. The baked index uses the DIRECT path, which never reads it.",
+      "method": [
+        "Registry layout proven from the scrProgram ctor 0x2220260 and four lookups (script-globals doc section 4.2).",
+        "Live walk on PID 4936: bucket 0x0B chain 77 -> 68 -> 43 -> 36 reached shop_controller (name read back) and was identical on two passes."
+      ]
+    },
+    {
+      "name": "GLOBALS_BASE",
+      "macro": "GTAV_GLOBALS_BASE_ADDR",
+      "addr": "0x420cfb8",
+      "verifiedLive": true,
+      "lead": "sm_Globals u64[64] in BSS; writer sub_2220600, VM GLOBAL_U24 handlers and the standalone accessor 0x2224280 all index it.",
+      "method": [
+        "Static: the GLOBAL_U24/_LOAD/_STORE handlers in the VM 0x22221E0 decompose id as block = id >> 18, slot = id & 0x3FFFF, address = table[block] + 8*slot.",
+        "Live (PID 4936, two identical passes): 15 non-null block pointers for blocks {0,1,5-12,16-20} with the slot counts of the earlier capture (block 17 = 120169); global 4521040 resolved to a readable slot holding 0, read only."
+      ]
+    }
+  ]
+}

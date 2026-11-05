@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """Build a runtime pack for the worker's pack lane (archive route).
 
-Output: <output-root>/<id>/resources/{<archive>.rpf, pack.cfg, <data>.meta}. Each archive is a PS5
+Output: <output-root>/<id>/resources/{<archive>.rpf, pack.cfg, <data>.meta}. Each archive is an
 RPF7 (gtavmenu_tools.rpf7) of loose RSC7 resources stored as-is (the 16-byte RSC7 header is the
-opaque prefix, flags from the header). Every member is re-read and inflated before anything is
-written. pack.cfg comes from gtavmenu_tools.runtime_pack, the format the worker parses. Refuses to
-overwrite an existing pack directory.
+opaque prefix, flags from the header). PS5 packs use .p* members and PS4 packs use .o* members.
+Every member is re-read and inflated before anything is written. pack.cfg comes from
+gtavmenu_tools.runtime_pack, the format the worker parses. Refuses to overwrite an existing pack
+directory.
 
 Archives are written with tag OPEN and a plaintext table: the worker encrypts the table in place
 with the game's own keys before the engine sees it (gtavmenu_tools.rpf_toc), so building a pack

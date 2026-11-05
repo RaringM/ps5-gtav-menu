@@ -12,9 +12,11 @@ GTAV_ALLOW_UNVALIDATED_TOOLCHAIN ?= 0
 # which path it gets.
 GTAV_SDK_HAS_PROC_COPYIO := $(shell grep -qs 'kernel_proc_copyin' \
   "$(PS5_PAYLOAD_SDK)/target/include/ps5/kernel.h" && echo 1 || echo 0)
-PS5_HOST ?= 192.168.0.57
+# The console's address: set PS5_HOST=<console-ip> for the deploy targets (no default).
+PS5_HOST ?=
 PS5_PORT ?= 9021
-PS5_FTP_PORT ?= 1337
+# The console's FTP server; etaHEN's built-in FTP listens on 1337 instead (PS5_FTP_PORT=1337).
+PS5_FTP_PORT ?= 2121
 PS5DEBUG_HOST ?= $(PS5_HOST)
 PS5DEBUG_PORT ?= 744
 PYTHON ?= python3
@@ -29,6 +31,7 @@ ONIONHEN_PACKAGE_DIR ?= build/pkg/$(GTAV_TARGET)/onionhen
 ETAHEN_PLUGIN_VERSION ?= 1.00
 ETAHEN_RUNTIME_VERSION ?= $(ETAHEN_PLUGIN_VERSION)
 ETAHEN_PACKAGE_DIR ?= build/pkg/$(GTAV_TARGET)/etahen
+NEXHEN_PACKAGE_DIR ?= build/pkg/$(GTAV_TARGET)/nexhen
 ETAHEN_RUNTIME ?= 0
 
 # The primary target remains 01.010.002. Other exact targets are admitted only by a schema-2 JSON
@@ -62,6 +65,9 @@ GTAV_TARGET_SCRIPT_GLOBALS := $(call target_profile_value,script_globals)
 GTAV_TARGET_PHASE_INTERCEPT := $(call target_profile_value,phase_intercept)
 GTAV_TARGET_PHASE_DRAW_LIST := $(call target_profile_value,phase_draw_list)
 GTAV_TARGET_CUSTOM_PACKS := $(call target_profile_value,custom_packs)
+GTAV_TARGET_BOOT_POOLS := $(call target_profile_value,boot_pools)
+GTAV_TARGET_BOOT_POOLS_HEADER := $(call target_profile_value,boot_pools_header)
+GTAV_TARGET_CUSTOM_LANE_HEADER := $(call target_profile_value,custom_lane_header)
 GTAV_TARGET_INJECTION_LANE := $(call target_profile_value,injection_lane)
 GTAV_TARGET_PROBE_NOSTOP := $(call target_profile_value,probe_nostop)
 GTAV_TARGET_NOSTOP_IO := $(call target_profile_value,nostop_io)

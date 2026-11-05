@@ -31,7 +31,7 @@
 // Pack-note mirror. Hardware runs lost worker klog lines mid-run (the klog forwarder
 // stopped delivering them while system lines kept coming), and the status event ring overflows,
 // so every "GTAVMenu pack ..." line is also kept in a small in-memory ring that the worker thread
-// writes to /data/gtavmenu/custom/GTAV_PACK_NOTES_NAME (temp + rename) when shared /data
+// writes to /data/GTAVMenu/custom/GTAV_PACK_NOTES_NAME (temp + rename) when shared /data
 // is available, about once a second; `menu-ctl.sh pack-notes`
 // fetches it over FTP. Writers may be the game thread or the worker: a slot is claimed with an
 // atomic counter and published with its sequence number, so the flusher skips a half-written slot.

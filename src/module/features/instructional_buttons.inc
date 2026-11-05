@@ -50,6 +50,11 @@ static uint32_t g_instr_drawing;
 // scaleform handle (0 = not requested yet) + the generation the slots were last built for.
 static int g_instr_handle = 0;
 static uint64_t g_instr_built_gen = UINT64_MAX;
+// 1 once the current handle has reported loaded. A movie belongs to the script thread that
+// requested it, and the frame hook runs inside whichever script called the hooked native, so the
+// movie can be released under us when that script ends; a handle that stops reporting loaded after
+// it was loaded is dropped and requested again.
+static int g_instr_was_loaded = 0;
 #if GTAV_MENU_PHASE_DRAW_LIST
 static uint64_t g_instr_phase_handle;
 static uint64_t g_instr_phase_readers;
@@ -116,8 +121,8 @@ static int instr_natives_ready(void) {
 }
 
 // GET_CONTROL_INSTRUCTIONAL_BUTTONS_STRING(2, controlId, allowXOSwap) -> the controller's glyph
-// markup string (game-owned buffer, reused between calls). Copy it out immediately so a follow-up
-// call for a second glyph cannot clobber it. control 2 / allowXOSwap 1 mirror the documented usage.
+// markup string, in a game-owned buffer the game rewrites on later calls. Copy it out immediately.
+// control 2 / allowXOSwap 1 mirror the documented usage.
 static void instr_copy_glyph(int control_id, char* dst, size_t cap) {
   dst[0] = '\0';
   if (control_id < 0) return;
@@ -312,9 +317,19 @@ static void instructional_game_thread_tick(void) {
       g_instr_handle ? invoke_return_ctx<int>(0, g_n.has_scaleform_movie_loaded, g_instr_handle) : 0;
   __atomic_store_n(&g_instr_dbg_loaded, loaded ? 1 : 0, __ATOMIC_RELAXED);
   if (!g_instr_handle || !loaded) {
+#if GTAV_MENU_PHASE_DRAW_LIST
+    __atomic_store_n(&g_instr_phase_handle, 0u, __ATOMIC_RELEASE);
+#endif
     __atomic_store_n(&g_instr_drawing, 0u, __ATOMIC_RELEASE);
+    if (g_instr_was_loaded) {
+      // Released under us: request a fresh movie next frame and rebuild its slots.
+      g_instr_handle = 0;
+      g_instr_was_loaded = 0;
+      g_instr_built_gen = UINT64_MAX;
+    }
     return;
   }
+  g_instr_was_loaded = 1;
   // Rebuild the data slots ONLY when the focused row's buttons change (g_instr_gen). Rebuilding
   // every frame relayouts the whole Scaleform and tanks the framerate -- that was the menu lag.
   // The built slots persist in the movie; DRAW just re-renders them each frame.

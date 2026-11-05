@@ -76,6 +76,10 @@ int gtav_proc_find_game(const char* title_id, int* pid_out);
 // after enumeration; a launch/foreground change fails instead of returning a mix.
 int gtav_proc_foreground(char* title_id, size_t title_capacity, int* pid_out, uint64_t* token_out);
 
+// The running big app's id (unique per launch), 0 when there is none. One system-service call with
+// no pid scan: cheap enough to poll every few milliseconds for a launch or an exit.
+uint64_t gtav_proc_foreground_app_id(void);
+
 // Per-instance identity for `pid`: the system app id, which is unique per app launch. Lets a caller
 // distinguish a recycled-same-pid NEW game instance from the original (the app id changes across a
 // relaunch even if the pid is reused). Returns the app id (>0) or 0 if unknown -- the pid is not a

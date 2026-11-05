@@ -185,7 +185,7 @@ static void install_kit_visuals_ctx(int worker, int vehicle) {
       used = n > 0 ? used + (size_t)n : used;
     }
   }
-#if GTAV_MENU_ENABLE_CUSTOM_PACKS  // the worker klog (pack-notes) is linked with the pack lane
+#if GTAV_MENU_ENABLE_CUSTOM_PACKS && GTAV_MENU_CUSTOM_PACK_ENGINE  // klog of the engine lane
   const uint32_t model =
       g_n.get_entity_model ? invoke_return_ctx<uint32_t>(worker, g_n.get_entity_model, vehicle) : 0u;
   char line[192];
@@ -957,7 +957,7 @@ static uint32_t cycle_livery(uint32_t param) {
   g_livery_stage = lvl;
   g_mod_stage_vehicle = 0;  // the per-slot rows and Part re-read the car
   g_kit_part_vehicle = 0;
-#if GTAV_MENU_ENABLE_CUSTOM_PACKS  // the worker klog (pack-notes) is linked with the pack lane
+#if GTAV_MENU_ENABLE_CUSTOM_PACKS && GTAV_MENU_CUSTOM_PACK_ENGINE  // klog of the engine lane
   const int fitted =
       g_n.get_vehicle_mod ? invoke_return<int>(g_n.get_vehicle_mod, v, GTAV_VEH_MOD_LIVERY) : -2;
   const uint32_t model =

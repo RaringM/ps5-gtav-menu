@@ -19,6 +19,8 @@
 
 #if defined(__PROSPERO__) || defined(__ORBIS__)
 #include <dirent.h>
+#endif
+#if defined(__PROSPERO__)
 #include <pthread.h>
 
 // The target SDK's libkernel stubs export this platform spelling, while its declared
@@ -164,6 +166,14 @@ extern "C" void gtav_menu_frame_tick(void);
 #define GTAV_MENU_ENABLE_VEHICLE_PREVIEW 0
 #endif
 
+#ifndef GTAV_MENU_ENABLE_EFFECTS
+#define GTAV_MENU_ENABLE_EFFECTS 1
+#endif
+
+#ifndef GTAV_MENU_ENABLE_VEHICLE_CLASSES
+#define GTAV_MENU_ENABLE_VEHICLE_CLASSES 1
+#endif
+
 // Runtime pack lane, one release flag (make CUSTOM_PACKS): the custom-asset engine layer
 // (features/custom_engine.inc), features/custom_rpf.inc and its custom_pack_*.inc fragments. Its
 // engine steps run on the game thread from the frame hook; the streaming natives come with vehicle
@@ -171,10 +181,29 @@ extern "C" void gtav_menu_frame_tick(void);
 #ifndef GTAV_MENU_ENABLE_CUSTOM_PACKS
 #define GTAV_MENU_ENABLE_CUSTOM_PACKS 0
 #endif
-#if GTAV_MENU_ENABLE_CUSTOM_PACKS &&                                     \
-    !(GTAV_MENU_ENABLE_VEHICLE_PREVIEW && GTAV_MENU_ENABLE_FRAME_HOOK && \
+// The engine half of the pack lane: archive registration, data files, maps, labels and the store
+// census on the target's GTAV_LANE_* addresses. 0 builds the engine-less shell: descriptors and
+// selection on platform file IO, and only rows that are plain natives (places, stock hides, stock
+// screen and particle effects). Every engine step then refuses with GTAV_CUSTOM_PACK_ENGINE_REASON.
+#ifndef GTAV_MENU_CUSTOM_PACK_ENGINE
+#define GTAV_MENU_CUSTOM_PACK_ENGINE 1
+#endif
+#ifndef GTAV_CUSTOM_PACK_ENGINE_REASON
+#define GTAV_CUSTOM_PACK_ENGINE_REASON "needs the custom-pack engine"
+#endif
+// A worker without a kernel log (GTAV_MENU_HAS_WORKER_KLOG=0: the PS4 one-shot worker, whose host
+// reads the control block) leaves these engine-lane needs to its target manifest.
+#ifndef GTAV_MENU_HAS_WORKER_KLOG
+#define GTAV_MENU_HAS_WORKER_KLOG 1
+#endif
+#if GTAV_MENU_ENABLE_CUSTOM_PACKS && GTAV_MENU_CUSTOM_PACK_ENGINE && GTAV_MENU_HAS_WORKER_KLOG && \
+    !(GTAV_MENU_ENABLE_VEHICLE_PREVIEW && GTAV_MENU_ENABLE_FRAME_HOOK &&                          \
       GTAV_MENU_PHASE_DRAW_LIST && GTAV_MENU_ENABLE_WORKER_KLOG)
 #error "CUSTOM_PACKS requires vehicle preview, the frame hook, the phase draw list and worker klog"
+#endif
+// The shell's rows run on the frame-hook drain; it needs no klog, preview or phase list.
+#if GTAV_MENU_ENABLE_CUSTOM_PACKS && !GTAV_MENU_CUSTOM_PACK_ENGINE && !GTAV_MENU_ENABLE_FRAME_HOOK
+#error "the engine-less pack lane requires the frame hook"
 #endif
 
 #include "gtavmenu/native_invoke.hpp"
@@ -188,6 +217,12 @@ extern "C" void gtav_menu_frame_tick(void);
 #include <sys/stat.h>
 #include <time.h>
 #include <unistd.h>
+#if GTAV_MENU_ENABLE_CUSTOM_PACKS && !GTAV_MENU_CUSTOM_PACK_ENGINE
+#include <dirent.h>  // the shell lists the pack root (custom_pack_select.inc)
+#endif
+#if GTAV_MENU_CUSTOM_PACK_ENGINE && defined(__ORBIS__)
+#include "gtavmenu/ps4_syscall.h"  // the pack ledger's pid (custom_pack_autoload.inc)
+#endif
 
 // Feature addresses are pinned to the reproducible offline resolution
 // (native name -> public joaat -> crossmap -> handler). They are only compiled
@@ -925,7 +960,7 @@ static float feat_cosf(float x) {
 // weapon rows (Weapon Tint, Give Max Ammo, the browser give) call.
 static int weapon_tint_note(uint32_t weapon, uint32_t index);
 static void give_max_ammo_extra(int ped);
-#if GTAV_MENU_ENABLE_CUSTOM_PACKS
+#if GTAV_MENU_ENABLE_CUSTOM_PACKS && GTAV_MENU_CUSTOM_PACK_ENGINE
 static const char* weapon_given_note(uint32_t weapon);
 #endif
 
@@ -968,6 +1003,9 @@ static const char* weapon_given_note(uint32_t weapon);
 #include "features/keybinds.inc"
 #include "features/session.inc"
 #include "features/spooner.inc"
+#if GTAV_MENU_CUSTOM_PACK_ENGINE && defined(GTAV_MENU_CUSTOM_LANE_HEADER)
+#include GTAV_MENU_CUSTOM_LANE_HEADER
+#endif
 #include "features/custom_engine.inc"
 #include "features/custom_rpf.inc"
 #include "features/weapon_components.inc"
@@ -1611,7 +1649,7 @@ extern "C" int gtav_features_profile_load_default(void) {
 static int8_t g_vehicle_class_cache[GTAV_MENU_VEHICLE_ROWS_MAX];
 static int g_vehicle_class_cached;
 
-static void build_vehicle_class_cache() {
+[[maybe_unused]] static void build_vehicle_class_cache() {
   uint32_t n = gtav_vehicle_catalog_count;
   const uint32_t cap = (uint32_t)(sizeof(g_vehicle_class_cache) / sizeof(g_vehicle_class_cache[0]));
   if (n > cap) n = cap;
@@ -1623,14 +1661,48 @@ static void build_vehicle_class_cache() {
   __atomic_store_n(&g_vehicle_class_cached, 1, __ATOMIC_RELEASE);
 }
 
+// Incremental warm-up for a target whose catalog is not its own build's (the PS4 Legacy worker
+// shares the Enhanced catalog): at most CHUNK entries per frame, and only models the executable's
+// CD image actually has (others stay -1, "unknown"). 0 = the whole catalog in one frame, unguarded.
+#ifndef GTAV_MENU_VEHICLE_CLASS_WARM_CHUNK
+#define GTAV_MENU_VEHICLE_CLASS_WARM_CHUNK 0
+#endif
+#if GTAV_MENU_VEHICLE_CLASS_WARM_CHUNK
+static uint32_t g_vehicle_class_warm_next;
+
+static void build_vehicle_class_cache_chunk() {
+  uint32_t n = gtav_vehicle_catalog_count;
+  const uint32_t cap = (uint32_t)(sizeof(g_vehicle_class_cache) / sizeof(g_vehicle_class_cache[0]));
+  if (n > cap) n = cap;
+  uint32_t i = g_vehicle_class_warm_next;
+  const uint32_t stop = (n - i > GTAV_MENU_VEHICLE_CLASS_WARM_CHUNK)
+                            ? i + (uint32_t)GTAV_MENU_VEHICLE_CLASS_WARM_CHUNK
+                            : n;
+  for (; i < stop; ++i) {
+    const uint32_t h = gtav_vehicle_catalog[i].model_hash;
+    int c = -1;
+    if (!g_n.is_model_in_cdimage || invoke_return<int>(g_n.is_model_in_cdimage, h)) {
+      c = invoke_return<int>(g_n.get_vehicle_class_from_name, h);
+    }
+    g_vehicle_class_cache[i] = (int8_t)((c >= 0 && c <= 31) ? c : -1);
+  }
+  g_vehicle_class_warm_next = i;
+  if (i >= n) __atomic_store_n(&g_vehicle_class_cached, 1, __ATOMIC_RELEASE);
+}
+#endif
+
 // Game-thread warmer: reached from the frame-hook tick's first valid-context frame.
 // No-op after the first build (a single volatile read per tick). The worker never calls it
 // (a worker GET_VEHICLE_CLASS_FROM_NAME dereferences a null script context on 01.010.002).
 #if GTAV_MENU_ENABLE_FRAME_HOOK
-static void warm_vehicle_class_cache_game_thread() {
+[[maybe_unused]] static void warm_vehicle_class_cache_game_thread() {
   if (__atomic_load_n(&g_vehicle_class_cached, __ATOMIC_ACQUIRE)) return;
   if (!g_n.get_hash_key || !g_n.get_vehicle_class_from_name) return;
+#if GTAV_MENU_VEHICLE_CLASS_WARM_CHUNK
+  build_vehicle_class_cache_chunk();
+#else
   build_vehicle_class_cache();
+#endif
 }
 #endif
 
@@ -1892,18 +1964,43 @@ extern "C" void gtav_features_init_frame_hook(void) {
 #endif
 }
 
-extern "C" void gtav_features_shutdown(void) {
+// Shutdown runs in three steps so a platform whose menu lives on the game thread (the PS4 one-shot
+// hook) can keep ticking that thread while owned entities are released: begin turns every feature
+// off, busy reports pending game-thread cleanup, finish drops queued jobs. gtav_features_shutdown
+// is the composition a worker-thread platform (PS5) uses, waiting for the frame hook to do the
+// cleanup.
+extern "C" void gtav_features_shutdown_begin(void) {
   g_menu_open = 0;
   disable_all_features();
 #if GTAV_MENU_ENABLE_FRAME_HOOK
   crowd_request_stop(1);
-  // Let the existing game-thread tick release streaming requests and owned crowd entities.
-  for (int i = 0; i < 50 && __atomic_load_n(&g_crowd_busy, __ATOMIC_ACQUIRE); ++i) usleep(10000);
-  if (__atomic_load_n(&g_crowd_busy, __ATOMIC_ACQUIRE))
+#endif
+}
+
+extern "C" int gtav_features_shutdown_busy(void) {
+#if GTAV_MENU_ENABLE_FRAME_HOOK
+  return __atomic_load_n(&g_crowd_busy, __ATOMIC_ACQUIRE) != 0;
+#else
+  return 0;
+#endif
+}
+
+extern "C" void gtav_features_shutdown_finish(void) {
+#if GTAV_MENU_ENABLE_FRAME_HOOK
+  if (gtav_features_shutdown_busy())
     gtav_status_event(GTAV_MENU_EVENT_SHUTDOWN, "crowd cleanup could not run before shutdown");
   gtav_frame_hook_clear_jobs();
 #endif
   gtav_status_event(GTAV_MENU_EVENT_SHUTDOWN, "features shutdown complete");
+}
+
+extern "C" void gtav_features_shutdown(void) {
+  gtav_features_shutdown_begin();
+#if GTAV_MENU_ENABLE_FRAME_HOOK
+  // Let the existing game-thread tick release streaming requests and owned crowd entities.
+  for (int i = 0; i < 50 && gtav_features_shutdown_busy(); ++i) usleep(10000);
+#endif
+  gtav_features_shutdown_finish();
 }
 
 extern "C" uint32_t gtav_features_activate(uint32_t action) {
@@ -2909,11 +3006,13 @@ static void reassert_toggles_game_thread(void) {
     if (frame == s_last_frame) return;  // already re-asserted this frame
     s_last_frame = frame;
   }
+#if GTAV_MENU_ENABLE_VEHICLE_CLASSES
   // Vehicle-class cache: built here on the game/script thread (valid context) the first
   // frame the hook fires, so the spawner class filter never calls
   // GET_VEHICLE_CLASS_FROM_NAME from the scePad worker (which dereferences a null script
   // context on 01.010.002). No-op after the first build.
   warm_vehicle_class_cache_game_thread();
+#endif
   apply_held_toggles();
 }
 #endif

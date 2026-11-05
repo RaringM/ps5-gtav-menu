@@ -6,6 +6,7 @@
 
 #include "gtavmenu/abi.h"
 #include "gtavmenu/command_mailbox.h"
+#include "gtavmenu/custom_assets.h"
 #include "gtavmenu/custom_pack_runtime.h"
 #include "gtavmenu/feature_catalog.h"
 #include "gtavmenu/feature_profile.h"
@@ -16,7 +17,9 @@
 #include "gtavmenu/menu_draw_list.h"
 #include "gtavmenu/status.h"
 
+#include "gtavmenu/menu_timing.h"
 #include "gtavmenu/native_invoke.hpp"
+#include "gtavmenu/target_capabilities.h"
 
 #include <stdint.h>
 #include <stdio.h>
@@ -28,6 +31,7 @@
 // catalog-not-ready behavior when a test intentionally compiles just this unit.
 extern "C" const char* gtav_locale_translate(const char* key) __attribute__((weak));
 extern "C" int gtav_locale_set(uint32_t id) __attribute__((weak));
+extern "C" uint32_t gtav_locale_id(void) __attribute__((weak));
 extern "C" int gtav_features_vehicle_classes_ready(void) __attribute__((weak));
 extern "C" int gtav_features_pack_menu(GtavPackMenuRow* rows, int max) __attribute__((weak));
 extern "C" const char* gtav_features_pack_footer(uint32_t action, uint32_t param)
@@ -39,11 +43,15 @@ extern "C" int gtav_features_pack_vehicle_name(uint32_t model_hash, char* out, i
 // installed pack (GTAV_PACK_TOGGLE_ROWS, custom_pack_select.inc GTAV_PACK_INSTALLED_MAX), the
 // uninstall row and the revert-overrides row. The browsers' "Custom" rows read the spawn rows
 // from the same buffer.
-#define GTAV_PACK_TOGGLE_ROWS 64u
+#define GTAV_PACK_TOGGLE_ROWS 128u
 #define GTAV_PACK_WORKER_ROWS                                                                 \
   (1u + GTAV_CUSTOM_PACK_ACTIVE_MAX + GTAV_CUSTOM_PACK_SPAWN_CAP + GTAV_CUSTOM_PACK_MAP_CAP + \
    GTAV_CUSTOM_PACK_PLACE_CAP + 1u + GTAV_PACK_TOGGLE_ROWS + 2u)
 extern "C" int gtav_features_setting_enabled(uint32_t action) __attribute__((weak));
+extern "C" uint64_t gtav_features_toggle_mask(void) __attribute__((weak));
+extern "C" const char* gtav_features_value_label(uint32_t action) __attribute__((weak));
+extern "C" void gtav_features_snapshot(GtavFeatureState* out) __attribute__((weak));
+extern "C" const char* gtav_locale_display_name(uint32_t id) __attribute__((weak));
 
 static const char* localized(const char* text) {
   if (!text) return "";
@@ -60,6 +68,10 @@ static const char* localized(const char* text) {
 
 #ifndef GTAV_MENU_WORKER_TEXT_OVERLAY_INTERVAL
 #define GTAV_MENU_WORKER_TEXT_OVERLAY_INTERVAL 1
+#endif
+
+#ifndef GTAV_MENU_ENABLE_HUD
+#define GTAV_MENU_ENABLE_HUD 1
 #endif
 
 // Vehicle-spawner image preview (default off; GTAV_MENU_ENABLE_VEHICLE_PREVIEW=1). The texture dict
@@ -165,10 +177,10 @@ extern "C" uint32_t gtav_native_bridge_render_interval(void) {
 // menu row / SET_TOAST_TICKS mailbox command, mirroring g_render_interval. Kept outside
 // the build gate so the setter/getter ABI is stable in every build. (Lifetime is counted
 // in worker ticks, so it scales inversely with worker_hz.)
-static uint32_t g_toast_ticks = 270u;
+static uint32_t g_toast_ticks = GTAV_MENU_TICKS_60(270u);
 
 extern "C" void gtav_native_bridge_set_toast_ticks(uint32_t ticks) {
-  if (ticks >= 30u && ticks <= 1800u) g_toast_ticks = ticks;
+  if (ticks >= GTAV_MENU_TICKS_60(30u) && ticks <= GTAV_MENU_TICKS_60(1800u)) g_toast_ticks = ticks;
 }
 extern "C" uint32_t gtav_native_bridge_toast_ticks(void) {
   return g_toast_ticks;
@@ -1534,14 +1546,12 @@ static_assert(sizeof(kCustomPackFolders) / sizeof(kCustomPackFolders[0]) == GTAV
 static ShellItem g_custom_pack_items[1u + GTAV_PACK_FOLDER_COUNT];
 static uint32_t g_custom_pack_item_count;
 // Selection state of the installed-pack toggle rows, by row param (installed index); the worker
-// lists up to 64 installed packs (custom_pack_select.inc GTAV_PACK_INSTALLED_MAX).
+// lists up to GTAV_PACK_TOGGLE_ROWS installed packs (custom_pack_select.inc
+// GTAV_PACK_INSTALLED_MAX).
 static uint8_t g_pack_toggle_on[GTAV_PACK_TOGGLE_ROWS];
-// The installed list is shown a page at a time: the worker's installed-list row becomes a
-// "< page/pages >" selector when there is more than one page (gtav_native_bridge_adjust flips it).
-#define GTAV_PACK_PAGE_ROWS 12u
-// Manage Packs: the selector (or the list heading), one page of toggles, the uninstall row and the
-// revert-overrides row.
-static ShellItem g_pack_manage_items[1u + GTAV_PACK_PAGE_ROWS + 2u];
+// Manage Packs: the controls (the load row, the uninstall row and the revert-overrides row), the
+// installed list's heading and every installed pack; the menu scrolls, so the list has no pages.
+static ShellItem g_pack_manage_items[4u + GTAV_PACK_TOGGLE_ROWS];
 static uint32_t g_pack_manage_item_count;
 // The content folders share one pool: every spawn, map and place row of the merged set, a heading
 // per pack in each folder, and a "(none)" row per empty folder.
@@ -1549,10 +1559,6 @@ static uint32_t g_pack_manage_item_count;
   (GTAV_CUSTOM_PACK_SPAWN_CAP + GTAV_CUSTOM_PACK_MAP_CAP + GTAV_CUSTOM_PACK_PLACE_CAP + \
    (GTAV_PACK_FOLDER_COUNT - 1u) * GTAV_CUSTOM_PACK_ACTIVE_MAX + GTAV_PACK_FOLDER_COUNT)
 static ShellItem g_pack_folder_items[GTAV_PACK_FOLDER_ITEMS];
-static uint32_t g_pack_page;
-static uint32_t g_pack_page_count;
-static uint32_t g_pack_page_row = UINT32_MAX;  // page selector's row index, while it is one
-static char g_pack_page_value[16];
 
 // The Custom Packs pages: the root and its folders (the rebuild and the label-follow paths key on
 // it).
@@ -1606,48 +1612,30 @@ static void fill_pack_row(ShellItem* dst, const GtavPackMenuRow* src) {
       src->ready ? nullptr : (src->reason ? src->reason : "Not available yet");
 }
 
-// Manage Packs from the worker rows: the installed-list row (the page selector with more than one
-// page, else a plain heading), the current page of toggles, the uninstall row and the revert row.
+// Manage Packs from the worker rows: the controls first (the load row, so packs load from the page
+// that selects them, then uninstall and revert), then the installed list under its heading. 0
+// when the worker sent no installed list (packs unavailable): the page shows the load row's reason.
 static uint32_t build_pack_manage_rows(const GtavPackMenuRow* rows, int n) {
-  uint32_t installed = 0;
-  for (int i = 0; i < n; ++i)
-    installed += rows[i].action == GTAV_NATIVE_SHELL_ACTION_TOGGLE_PACK_ACTIVE &&
-                 rows[i].param != GTAV_PACK_MENU_PAGE_ROW;
-  g_pack_page_count = (installed + GTAV_PACK_PAGE_ROWS - 1u) / GTAV_PACK_PAGE_ROWS;
-  if (g_pack_page >= g_pack_page_count)
-    g_pack_page = g_pack_page_count ? g_pack_page_count - 1u : 0u;
-  const uint32_t first = g_pack_page * GTAV_PACK_PAGE_ROWS;
+  int listed = 0;
+  for (int i = 1; i < n && !listed; ++i)
+    listed = rows[i].action == GTAV_NATIVE_SHELL_ACTION_TOGGLE_PACK_ACTIVE;
+  if (!listed) return 0;
   const uint32_t cap = sizeof(g_pack_manage_items) / sizeof(g_pack_manage_items[0]);
-  uint32_t count = 0, seen = 0;
-  for (int i = 0; i < n && count < cap; ++i) {
-    if (rows[i].action == GTAV_NATIVE_SHELL_ACTION_TOGGLE_PACK_ACTIVE &&
-        rows[i].param == GTAV_PACK_MENU_PAGE_ROW) {
-      ShellItem* dst = &g_pack_manage_items[count++];
-      dst->submenu = SHELL_MENU_NONE;
-      dst->param = GTAV_PACK_MENU_PAGE_ROW;
-      dst->unavailable_reason = nullptr;
-      if (g_pack_page_count > 1u) {
-        g_pack_page_row = count - 1u;
-        snprintf(dst->label, sizeof(dst->label), "%.47s", rows[i].label);
-        snprintf(g_pack_page_value, sizeof(g_pack_page_value), "%u/%u", g_pack_page + 1u,
-                 g_pack_page_count);
-        dst->type = SHELL_ROW_LIST;
-        dst->action = rows[i].action;  // TOGGLE_PACK_ACTIVE + param GTAV_PACK_MENU_PAGE_ROW
-      } else {
-        snprintf(dst->label, sizeof(dst->label), "-- %.40s --", rows[i].label);
-        dst->type = SHELL_ROW_DISABLED;
-        dst->action = GTAV_NATIVE_SHELL_ACTION_NONE;
-      }
-      continue;
+  uint32_t count = 0;
+  fill_pack_row(&g_pack_manage_items[count++], &rows[0]);  // load row / progress
+  for (int i = 1; i < n && count < cap; ++i)
+    if (rows[i].action == GTAV_NATIVE_SHELL_ACTION_UNINSTALL_PACK ||
+        rows[i].action == GTAV_NATIVE_SHELL_ACTION_REVERT_PACK_OVERRIDES)
+      fill_pack_row(&g_pack_manage_items[count++], &rows[i]);
+  for (int i = 1; i < n && count < cap; ++i) {
+    if (rows[i].action != GTAV_NATIVE_SHELL_ACTION_TOGGLE_PACK_ACTIVE) continue;
+    if (rows[i].param == GTAV_PACK_MENU_LIST_ROW) {
+      char heading[sizeof(g_pack_manage_items[0].label)];
+      snprintf(heading, sizeof(heading), "-- %.40s --", rows[i].label);
+      fill_disabled_row(&g_pack_manage_items[count++], heading, nullptr);
+    } else {
+      fill_pack_row(&g_pack_manage_items[count++], &rows[i]);
     }
-    if (rows[i].action == GTAV_NATIVE_SHELL_ACTION_TOGGLE_PACK_ACTIVE) {
-      const uint32_t index = seen++;
-      if (index < first || index >= first + GTAV_PACK_PAGE_ROWS) continue;
-    } else if (rows[i].action != GTAV_NATIVE_SHELL_ACTION_UNINSTALL_PACK &&
-               rows[i].action != GTAV_NATIVE_SHELL_ACTION_REVERT_PACK_OVERRIDES) {
-      continue;
-    }
-    fill_pack_row(&g_pack_manage_items[count++], &rows[i]);
   }
   return count;
 }
@@ -1681,16 +1669,26 @@ static void build_custom_pack_items() {
   uint32_t folder_rows[GTAV_PACK_FOLDER_COUNT] = {};
   uint32_t folder_start[GTAV_PACK_FOLDER_COUNT] = {};
   uint32_t used = 0;
-  g_pack_page_row = UINT32_MAX;
   g_pack_manage_item_count = 0;
+  // Without the shared /data (the worker's load row says so) there is nothing to manage or browse:
+  // the root is info rows only, so the cursor rests on them and the footer shows the whole fix.
+  int no_data = 0;
 #if GTAV_MENU_ENABLE_NATIVE_FEATURES
   const int n = fetch_pack_rows();
+  no_data = n > 0 && !g_pack_rows[0].ready && g_pack_rows[0].reason &&
+            strcmp(g_pack_rows[0].reason, GTAV_CUSTOM_DATA_UNAVAILABLE) == 0;
   if (n > 0) {
     fill_pack_row(&g_custom_pack_items[count++], &g_pack_rows[0]);  // load row / progress
-    g_pack_manage_item_count = build_pack_manage_rows(g_pack_rows, n);
-    for (uint32_t f = 1; f < GTAV_PACK_FOLDER_COUNT; ++f) {
-      folder_start[f] = used;
-      folder_rows[f] = build_pack_folder_rows(g_pack_rows, n, f, &used);
+    if (no_data) {
+      const char* reason = g_custom_pack_items[0].unavailable_reason;
+      fill_disabled_row(&g_custom_pack_items[count++], GTAV_CUSTOM_DATA_FIX_ROW, reason);
+      fill_disabled_row(&g_custom_pack_items[count++], GTAV_CUSTOM_DATA_RETRY_ROW, reason);
+    } else {
+      g_pack_manage_item_count = build_pack_manage_rows(g_pack_rows, n);
+      for (uint32_t f = 1; f < GTAV_PACK_FOLDER_COUNT; ++f) {
+        folder_start[f] = used;
+        folder_rows[f] = build_pack_folder_rows(g_pack_rows, n, f, &used);
+      }
     }
   }
 #endif
@@ -1703,7 +1701,7 @@ static void build_custom_pack_items() {
     dst->unavailable_reason = "Needs a CUSTOM_PACKS=1 build";
     dst->param = 0;
     count = 1;
-  } else {
+  } else if (!no_data) {
     // Manage Packs always; a content folder only while it has rows.
     for (uint32_t f = 0; f < GTAV_PACK_FOLDER_COUNT; ++f)
       if (f == 0u || folder_rows[f]) g_custom_pack_items[count++] = kCustomPackFolders[f];
@@ -2416,8 +2414,6 @@ static const char* shell_list_value(uint32_t action) {
       snprintf(buf, sizeof(buf), "%u", c ? (unsigned)*c : 0u);
       return buf;
     }
-    // Custom Packs installed-list page selector ("2/5"), set by build_custom_pack_items.
-    if (item->action == GTAV_NATIVE_SHELL_ACTION_TOGGLE_PACK_ACTIVE) return g_pack_page_value;
     const char* v = shell_list_value(item->action);
     return v[0] ? v : "...";
   }
@@ -2478,8 +2474,22 @@ static int shell_item_is_hook_gated(const ShellItem* item) {
 #endif
 }
 
+static int shell_item_is_target_unavailable(const ShellItem* item) {
+#if GTAV_MENU_TARGET_CAPABILITIES
+  return item && !gtav_target_action_supported(item->action);
+#else
+  (void)item;
+  return 0;
+#endif
+}
+
+extern "C" int gtav_native_bridge_action_supported(uint32_t action) {
+  return gtav_target_action_supported(action);
+}
+
 static int shell_item_is_unavailable(const ShellItem* item) {
   if (!item) return 0;
+  if (shell_item_is_target_unavailable(item)) return 1;
   // A toggle/list row may name a hard, static prerequisite via unavailable_reason (e.g. "Load the
   // pack in Custom Packs first"); render it LOCKed with that reason until the row clears the
   // field. Rows that only wait for the main-thread hook use the live gate below instead, so they
@@ -2517,6 +2527,15 @@ static void refresh_strings() {
   }
   snprintf(g_snapshot.selected_label, sizeof(g_snapshot.selected_label), "%s", selected_label());
   snprintf(g_snapshot.mode, sizeof(g_snapshot.mode), "%s", mode);
+}
+
+// Late binding for a platform that validates the getters on the game thread first (PS4 one-shot
+// worker): gtav_native_bridge_init refreshes its snapshot through GET_FRAME_COUNT, which must not
+// run on the loader thread that calls init there.
+extern "C" void gtav_native_bridge_bind_frame_getters(uint64_t get_frame_count,
+                                                      uint64_t get_game_timer) {
+  g_table.get_frame_count = get_frame_count;
+  g_table.get_game_timer = get_game_timer;
 }
 
 static uint64_t resolved_frame_count(uint64_t fallback) {
@@ -2686,9 +2705,9 @@ static void get_game_timer_canary(uint64_t worker_tick) {
 #define GTAV_MENU_PANEL_VALUE_PAD 0.012f
 #define GTAV_MENU_PANEL_GLYPH_MID 0.012f
 // Open-fade ramp length in worker ticks (alpha 0->1 + a small slide into place).
-#define GTAV_MENU_PANEL_FADE_IN_TICKS 10u
+#define GTAV_MENU_PANEL_FADE_IN_TICKS GTAV_MENU_TICKS_60(10u)
 // Selection-glide duration in worker ticks (eased travel of the highlight to the focused row).
-#define GTAV_MENU_SEL_GLIDE_TICKS 6u
+#define GTAV_MENU_SEL_GLIDE_TICKS GTAV_MENU_TICKS_60(6u)
 
 // Short help text for the footer, keyed by action. The per-action strings live in the
 // shared single-source list include/gtavmenu/feature_descriptions.def (the same X-macro
@@ -2721,6 +2740,7 @@ static const char* action_description(uint32_t action) {
       snprintf(buf, sizeof(buf), "%s", why);
     return buf;
   }
+  if (shell_item_is_target_unavailable(item)) return localized("(not supported on this target)");
   if (shell_item_is_unavailable(item)) {
     return item->unavailable_reason ? item->unavailable_reason : "";
   }
@@ -2778,7 +2798,7 @@ static inline int menu_fade_alpha(int a, float fade) {
 
 // Motion-feedback decay: 1.0 on the event tick, ramping linearly to 0 over GTAV_MENU_FLASH_TICKS.
 // Pure function of the tick counters (over-render safe). 0 when no flash is pending or it elapsed.
-#define GTAV_MENU_FLASH_TICKS 8u
+#define GTAV_MENU_FLASH_TICKS GTAV_MENU_TICKS_60(8u)
 [[maybe_unused]] static float flash_decay(uint64_t tick, uint64_t flash_tick) {
   if (g_reduce_motion) return 0.0f;
   if (flash_tick == 0u || tick < flash_tick) return 0.0f;
@@ -2895,14 +2915,10 @@ static void hint_push(HintButton* out, uint32_t* n, uint32_t cap, uint8_t glyph,
       break;
     case SHELL_ROW_LIST:
       // Pick-then-apply rows (and live rows whose Cross applies the shown value) advertise Cross =
-      // Apply; live settings apply on Left/Right alone. The Custom Packs page selector only pages
-      // (its action is the pack toggle, so it is not in list_kinds.def: a SETTING entry would also
-      // swallow Cross on installed pack 0's toggle).
+      // Apply; live settings apply on Left/Right alone.
       hint_push(out, &n, cap, HINT_GLYPH_DPAD_LR, "Adjust");
-      if ((gtav_native_bridge_list_kind(sel->action) == GTAV_LIST_KIND_CHOICE ||
-           gtav_native_bridge_list_kind(sel->action) == GTAV_LIST_KIND_SETTING_APPLY) &&
-          !(sel->action == GTAV_NATIVE_SHELL_ACTION_TOGGLE_PACK_ACTIVE &&
-            sel->param == GTAV_PACK_MENU_PAGE_ROW))
+      if (gtav_native_bridge_list_kind(sel->action) == GTAV_LIST_KIND_CHOICE ||
+          gtav_native_bridge_list_kind(sel->action) == GTAV_LIST_KIND_SETTING_APPLY)
         hint_push(out, &n, cap, HINT_GLYPH_CROSS, "Apply");
       hint_push(out, &n, cap, HINT_GLYPH_CIRCLE, "Back");
       break;
@@ -3165,8 +3181,8 @@ static const char* menu_truncate_to_width(char* dst, size_t cap, const char* src
 // tail fits, hold ~1 s at the end, restart. The window start is a pure function of the ticks since
 // the selection changed, so over-rendering the same tick draws the same frame. Ticks are worker
 // ticks (60-120 Hz; the 60 Hz default makes the pause ~1 s).
-#define GTAV_MENU_MARQUEE_PAUSE_TICKS 60u
-#define GTAV_MENU_MARQUEE_STEP_TICKS 8u
+#define GTAV_MENU_MARQUEE_PAUSE_TICKS GTAV_MENU_TICKS_60(60u)
+#define GTAV_MENU_MARQUEE_STEP_TICKS GTAV_MENU_TICKS_60(8u)
 static uint32_t g_marquee_menu = 0xFFFFFFFFu;
 static uint32_t g_marquee_index = 0xFFFFFFFFu;
 static uint64_t g_marquee_since;
@@ -4233,8 +4249,8 @@ static void worker_text_overlay(uint64_t worker_tick, int visible) {
   // Fade ramps (worker ticks). 12 + 18 == 30 == the minimum toast lifetime, so even the
   // shortest toast reaches full opacity. With g_render_interval > 1 the renderer samples
   // only every Nth tick, so the ramp looks steppier but stays correct.
-  const uint64_t kFadeIn = 12u;
-  const uint64_t kFadeOut = 18u;
+  const uint64_t kFadeIn = GTAV_MENU_TICKS_60(12u);
+  const uint64_t kFadeOut = GTAV_MENU_TICKS_60(18u);
   float y = 0.85f;  // newest toast sits lowest; older stack upward
 
   for (uint32_t i = 0; i < GTAV_TOAST_SLOTS; ++i) {
@@ -4347,7 +4363,7 @@ static void emit_unavailable_item(const ShellItem* item) {
     static uint64_t s_last_toast_tick = 0u;
     const uint32_t action = item ? item->action : 0u;
     const uint64_t now = g_snapshot.worker_tick;
-    if (action != s_last_toast_action || (now - s_last_toast_tick) >= 30u) {
+    if (action != s_last_toast_action || (now - s_last_toast_tick) >= GTAV_MENU_TICKS_60(30u)) {
       gtav_native_bridge_push_toast(reason, GTAV_FEATURE_RESULT_UNAVAILABLE);
       s_last_toast_action = action;
       s_last_toast_tick = now;
@@ -4648,6 +4664,30 @@ static void preview_set_hovered_model(uint32_t model_hash) {
 // Phase-side consumer shared by the static certification gate and the real interactive renderer.
 // It reads only one claimed immutable generation and performs no allocation, blocking, formatting,
 // logging, file I/O, gameplay native, or mutable menu-state access.
+// Optional per-kind submission counters for host telemetry (the PS4 control block mirrors them).
+#ifndef GTAV_MENU_PHASE_DRAW_COUNTERS
+#define GTAV_MENU_PHASE_DRAW_COUNTERS 0
+#endif
+// Legacy (PS4) handlers read a trailing zero argument for DRAW_RECT and
+// END_TEXT_COMMAND_DISPLAY_TEXT that the Enhanced call sites omit; the slot is zero either way, but
+// pass it explicitly there.
+#ifndef GTAV_MENU_NATIVE_LEGACY_TRAILING_ARGS
+#define GTAV_MENU_NATIVE_LEGACY_TRAILING_ARGS 0
+#endif
+#if GTAV_MENU_PHASE_DRAW_COUNTERS
+static uint64_t g_phase_draw_counts[4];  // rects, texts, sprites, lists
+extern "C" void gtav_native_bridge_phase_draw_counts(uint64_t* rects, uint64_t* texts,
+                                                     uint64_t* sprites, uint64_t* lists) {
+  if (rects) *rects = __atomic_load_n(&g_phase_draw_counts[0], __ATOMIC_RELAXED);
+  if (texts) *texts = __atomic_load_n(&g_phase_draw_counts[1], __ATOMIC_RELAXED);
+  if (sprites) *sprites = __atomic_load_n(&g_phase_draw_counts[2], __ATOMIC_RELAXED);
+  if (lists) *lists = __atomic_load_n(&g_phase_draw_counts[3], __ATOMIC_RELAXED);
+}
+#define GTAV_PHASE_DRAW_COUNT(kind) (++g_phase_draw_counts[(kind)])
+#else
+#define GTAV_PHASE_DRAW_COUNT(kind) ((void)0)
+#endif
+
 static int consume_phase_draw_list(void) {
   if (render_is_parked() || !g_has_table || !g_table.draw_rect || !text_native_ready()) return 0;
   const GtavMenuDrawList* list = gtav_menu_draw_list_acquire();
@@ -4670,7 +4710,12 @@ static int consume_phase_draw_list(void) {
     const GtavMenuDrawCommand* command = &list->commands[i];
     if (command->kind == GTAV_MENU_DRAW_RECT) {
       const GtavMenuDrawRect* r = &command->payload.rect;
+#if GTAV_MENU_NATIVE_LEGACY_TRAILING_ARGS
+      invoke_void(g_table.draw_rect, r->x, r->y, r->width, r->height, r->r, r->g, r->b, r->a, 0);
+#else
       invoke_void(g_table.draw_rect, r->x, r->y, r->width, r->height, r->r, r->g, r->b, r->a);
+#endif
+      GTAV_PHASE_DRAW_COUNT(0);
     } else if (command->kind == GTAV_MENU_DRAW_TEXT) {
       const GtavMenuDrawText* t = &command->payload.text;
       invoke_void(g_table.set_text_font, t->font);
@@ -4683,13 +4728,20 @@ static int consume_phase_draw_list(void) {
       invoke_void(g_table.set_text_wrap, t->wrap_start, t->wrap_end);
       invoke_void(g_table.begin_text_command_display_text, "STRING");
       invoke_void(g_table.add_text_component_substring_player_name, t->text);
+#if GTAV_MENU_NATIVE_LEGACY_TRAILING_ARGS
+      invoke_void(g_table.end_text_command_display_text, t->x, t->y, 0);
+#else
       invoke_void(g_table.end_text_command_display_text, t->x, t->y);
+#endif
+      GTAV_PHASE_DRAW_COUNT(1);
     } else if (command->kind == GTAV_MENU_DRAW_SPRITE) {
       const GtavMenuDrawSprite* s = &command->payload.sprite;
       invoke_void(g_table.draw_sprite, s->dict, s->texture, s->x, s->y, s->width, s->height,
                   s->heading, s->r, s->g, s->b, s->a, s->p11, s->p12);
+      GTAV_PHASE_DRAW_COUNT(2);
     }
   }
+  GTAV_PHASE_DRAW_COUNT(3);
   gtav_menu_draw_list_release(list);
 #if GTAV_MENU_ENABLE_INSTRUCTIONAL_SCALEFORM && GTAV_MENU_ENABLE_NATIVE_FEATURES
   (void)gtav_features_instructional_phase_draw();
@@ -4844,14 +4896,14 @@ extern "C" void gtav_native_bridge_worker_tick(uint64_t worker_tick, int visible
   return;
 #endif
   g_last_worker_tick = worker_tick;  // base for toast expiry + motion-feedback flash decay
-  if (menu_is_custom_pack(g_current_menu) && (worker_tick % 30u) == 0u) {
+  if (menu_is_custom_pack(g_current_menu) && (worker_tick % GTAV_MENU_TICKS_60(30u)) == 0u) {
     build_custom_pack_items();
     clamp_current_selection();
     republish_snapshot();
   }
   // The browsers' "Custom" rows follow the pack load (rows unlock once the packs are loaded), in
   // the Custom view and in "All" while the active packs declare rows of that kind.
-  if ((worker_tick % 30u) == 0u) {
+  if ((worker_tick % GTAV_MENU_TICKS_60(30u)) == 0u) {
     const int ped_custom =
         g_ped_category_index == kPedFilterCustom ||
         (g_ped_category_index == 0u &&
@@ -4958,9 +5010,11 @@ extern "C" void gtav_native_bridge_worker_tick(uint64_t worker_tick, int visible
 #endif
   get_game_timer_canary(worker_tick);
   worker_text_overlay(worker_tick, visible);
+#if GTAV_MENU_ENABLE_HUD
   // The HUD overlay is independent of the menu panel: it draws whether or not the
   // shell is visible (self-guards on the HUD master toggle + text natives).
   render_hud_overlay(worker_tick);
+#endif
   // Zombie Outbreak survival HUD: visibility-independent like the info HUD; self-guards on the
   // active-minigame gate + text natives, so it is a no-op unless the survival mode is running.
   render_zombie_hud(worker_tick);
@@ -5367,24 +5421,6 @@ extern "C" uint32_t gtav_native_bridge_adjust(int dir) {
                        f->names[v], shell_menu(g_current_menu)->item_count);
     return GTAV_NATIVE_SHELL_ACTION_NONE;
   }
-  // Custom Packs installed-list pages: flipping re-filters the page here (render state, like the
-  // category cyclers above). The selector keeps its row index, so the cursor stays on it.
-  if (item->action == GTAV_NATIVE_SHELL_ACTION_TOGGLE_PACK_ACTIVE &&
-      item->param == GTAV_PACK_MENU_PAGE_ROW) {
-    if (g_pack_page_count > 1u)
-      g_pack_page = (dir < 0) ? (g_pack_page + g_pack_page_count - 1u) % g_pack_page_count
-                              : (g_pack_page + 1u) % g_pack_page_count;
-    build_custom_pack_items();
-    if (g_pack_page_row < g_pack_manage_item_count)
-      g_selected_by_menu[SHELL_MENU_PACK_MANAGE] = g_pack_page_row;
-    clamp_current_selection();
-    g_last_action_param = (dir < 0) ? 2u : 1u;
-    g_snapshot.last_action = GTAV_NATIVE_SHELL_ACTION_NONE;
-    republish_snapshot();
-    gtav_status_eventf(GTAV_MENU_EVENT_NATIVE_SHELL, "shell pack page=%u/%u rows=%u",
-                       g_pack_page + 1u, g_pack_page_count, g_pack_manage_item_count);
-    return GTAV_NATIVE_SHELL_ACTION_NONE;
-  }
   // A Left/Right step on a pick-then-apply row starts (or continues) a staged pick: remember the
   // value it started from, so the row reads pending until Cross applies or the user steps back.
   if (gtav_native_bridge_list_kind(item->action) == GTAV_LIST_KIND_CHOICE) {
@@ -5424,6 +5460,15 @@ extern "C" int gtav_native_bridge_selected_is_cycler(void) {
 extern "C" int gtav_native_bridge_selected_is_toggle(void) {
   const ShellItem* item = selected_item();
   return (item && item->type == SHELL_ROW_TOGGLE) ? 1 : 0;
+}
+
+extern "C" uint32_t gtav_native_bridge_current_menu(void) {
+  return g_current_menu;
+}
+
+extern "C" uint32_t gtav_native_bridge_selected_action(void) {
+  const ShellItem* item = selected_item();
+  return item ? item->action : (uint32_t)GTAV_NATIVE_SHELL_ACTION_NONE;
 }
 
 extern "C" uint32_t gtav_native_bridge_activate(void) {
@@ -5606,6 +5651,55 @@ extern "C" void gtav_native_bridge_set_list_value(uint32_t action, const char* v
     NB_TRACE("list-value store saturated (%u slots); cycler %u dropped -- raise g_list_values",
              (unsigned)n, action);
   }
+}
+
+#if GTAV_MENU_ENABLE_NATIVE_FEATURES
+static void sync_feature_list_value(uint32_t action) {
+  if (gtav_features_value_label) {
+    const char* value = gtav_features_value_label(action);
+    if (value && value[0]) gtav_native_bridge_set_list_value(action, value);
+  }
+  if (action == GTAV_NATIVE_SHELL_ACTION_CYCLE_SPEEDOMETER_LAYOUT) {
+    gtav_native_bridge_set_list_value(
+        action, gtav_native_bridge_speedometer_layout() ? "Compact" : "Classic");
+  } else if (action == GTAV_NATIVE_SHELL_ACTION_CYCLE_LANGUAGE && gtav_locale_display_name &&
+             gtav_locale_id) {
+    gtav_native_bridge_set_list_value(action, gtav_locale_display_name(gtav_locale_id()));
+  }
+}
+#endif
+
+extern "C" void gtav_native_bridge_sync_feature_action_state(uint32_t action) {
+#if GTAV_MENU_ENABLE_NATIVE_FEATURES
+  if (gtav_features_toggle_mask) {
+    gtav_native_bridge_set_feature_toggles(gtav_features_toggle_mask());
+  }
+  sync_feature_list_value(action);
+#else
+  (void)action;
+#endif
+}
+
+extern "C" void gtav_native_bridge_sync_feature_state(void) {
+#if GTAV_MENU_ENABLE_NATIVE_FEATURES
+  if (gtav_features_toggle_mask) {
+    gtav_native_bridge_set_feature_toggles(gtav_features_toggle_mask());
+  }
+  for (uint32_t action = 3; action < GTAV_NATIVE_SHELL_ACTION_COUNT; ++action) {
+    sync_feature_list_value(action);
+  }
+#endif
+}
+
+extern "C" void gtav_native_bridge_push_feature_toast(void) {
+#if GTAV_MENU_ENABLE_NATIVE_FEATURES
+  if (!gtav_features_snapshot) return;
+  GtavFeatureState state;
+  gtav_features_snapshot(&state);
+  if (state.last_result != GTAV_FEATURE_RESULT_NONE) {
+    gtav_native_bridge_push_toast(localized(state.last_message), state.last_result);
+  }
+#endif
 }
 
 // An unapplied pick is dropped when the cursor leaves its row: another row or menu, Back, or the

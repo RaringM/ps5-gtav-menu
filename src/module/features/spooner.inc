@@ -98,7 +98,7 @@ static uint32_t save_map() {
   GtavRootdirGuard guard;
   int rooted = gtav_rootdir_enter(&guard) == 0;
   // Only children of an already accessible /data may be created.
-  mkdir("/data/gtavmenu", 0777);
+  mkdir("/data/GTAVMenu", 0777);
   mkdir(GTAV_CUSTOM_GAME_ROOT, 0777);
   mkdir(dir, 0777);
   FILE* fp = fopen(temp, "w");
@@ -181,6 +181,15 @@ static SceneEntry scene_world_entry(const SceneEntry* source) {
 static int create_scene_entity(const SceneEntry* source) {
   SceneEntry world = scene_world_entry(source);
   int handle = 0;
+  // A full roster skips the row (counted as skipped) rather than create an entity nothing tracks.
+  const int room = world.kind == GTAV_SCENE_MAP_VEHICLE ? spawned_vehicle_room()
+                   : world.kind == GTAV_SCENE_MAP_PED   ? spawned_ped_room()
+                                                        : spawned_object_room();
+  if (room <= 0) {
+    if (g_n.set_model_as_no_longer_needed)
+      invoke_void_ctx(0, g_n.set_model_as_no_longer_needed, (int)world.model);
+    return 0;
+  }
   if (world.kind == GTAV_SCENE_MAP_VEHICLE && g_n.create_vehicle) {
     handle = invoke_return_ctx<int>(0, g_n.create_vehicle, (int)world.model, world.x, world.y,
                                     world.z, world.rz, 0, 0);
@@ -316,28 +325,19 @@ static uint32_t cancel_map_load() {
   return ok(action, "map load cancelled");
 }
 
-// The map file Load Map reads: the newer of the in-game save (<custom root>/maps, scene_map_dir)
-// and `menu-ctl.sh map-upload`'s console copy (GTAV_CUSTOM_MAP_PATH; a different directory on the
-// case-sensitive /data), else the legacy path. Opens it for reading; its path goes to `path`.
+// The map file Load Map reads: the in-game save, which is also where `menu-ctl.sh map-upload`
+// writes (GTAV_CUSTOM_MAP_PATH below the custom root), else the legacy upload path. Opens it for
+// reading; its path goes to `path`.
 static FILE* scene_open_map(char* path, size_t size) {
   char saved[112];
   char dir[96];
   scene_map_dir(dir, sizeof(dir));
   snprintf(saved, sizeof(saved), "%s/active.map.cfg", dir);
-  const char* candidates[3] = {saved, GTAV_CUSTOM_MAP_PATH, GTAV_LEGACY_MAP_PATH};
+  const char* candidates[2] = {saved, GTAV_LEGACY_MAP_PATH};
   GtavRootdirGuard guard;
   const int rooted = gtav_rootdir_enter(&guard) == 0;
-  int pick = -1;
-  time_t newest = 0;
-  for (int i = 0; i < 2; ++i) {
-    struct stat st;
-    if (stat(candidates[i], &st) != 0 || !S_ISREG(st.st_mode)) continue;
-    if (pick < 0 || st.st_mtime > newest) {
-      pick = i;
-      newest = st.st_mtime;
-    }
-  }
-  if (pick < 0) pick = 2;
+  struct stat st;
+  const int pick = stat(candidates[0], &st) == 0 && S_ISREG(st.st_mode) ? 0 : 1;
   FILE* fp = fopen(candidates[pick], "r");
   if (rooted) gtav_rootdir_leave(&guard);
   snprintf(path, size, "%s", candidates[pick]);

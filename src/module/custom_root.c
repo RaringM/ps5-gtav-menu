@@ -48,7 +48,7 @@ void gtav_custom_game_root_init(void) {
   __atomic_store_n(&g_custom_root_state, state, __ATOMIC_RELEASE);
   if (gtav_worker_klog)
     gtav_worker_klog(state == ROOT_AVAILABLE ? "GTAVMenu pack root " CUSTOM_ROOT_DATA
-                                             : "GTAVMenu pack unavailable: shared /data missing");
+                                             : "GTAVMenu " GTAV_CUSTOM_DATA_UNAVAILABLE);
 }
 
 const char* gtav_custom_game_root(void) {

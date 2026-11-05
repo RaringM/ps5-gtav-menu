@@ -27,6 +27,10 @@ GTAV_MENU_PHASE_DRAW_LIST := $(GTAV_TARGET_PHASE_DRAW_LIST)
 # target manifest sets features.customPacks (the 01.010.002 executables). `?=` so both
 # `make all CUSTOM_PACKS=0` and `CUSTOM_PACKS=0 make all` build the lane-off variant.
 CUSTOM_PACKS ?= $(GTAV_TARGET_CUSTOM_PACKS)
+# Boot-time pool growth (data/boot_pools), on where the manifest sets features.bootPools after the
+# target's hardware gate. It acts only in loaders that wait for the game (watch, --persist,
+# OnionHEN, etaHEN); a one-shot inject into a running game logs a miss.
+BOOT_POOLS ?= $(GTAV_TARGET_BOOT_POOLS)
 
 PAYLOAD_LOADER_PROBE_NOSTOP := $(GTAV_TARGET_PROBE_NOSTOP)
 PAYLOAD_LOADER_NOSTOP_IO := $(GTAV_TARGET_NOSTOP_IO)

@@ -21,7 +21,7 @@
   "build": {
     "channel": "primary",
     "toolchain": {
-      "payloadSdk": "0.43",
+      "payloadSdk": "0.44",
       "llvmMajor": 20
     },
     "nativeAddresses": {
@@ -57,6 +57,11 @@
       "classicInject": false,
       "selfStartWorker": true,
       "installRenderPhase": true
+    },
+    "customLane": {
+      "json": "data/custom_lane/ppsa04264-01.010.002.json",
+      "header": "gtavmenu/custom_lane_addresses_ppsa04264-01.010.002_generated.h",
+      "sha256": "10da38aacacd42ab30a35ae5a33df4a7b04452dff0d3d7db0ad25934995b0a82"
     }
   },
   "runtime": {

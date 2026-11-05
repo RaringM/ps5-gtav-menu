@@ -17,10 +17,25 @@ static_assert(GTAV_VEH_MOD_LAST_INDEXED + 1 == (int)GTAV_SAVED_VEHICLE_MOD_SLOTS
 static uint32_t g_saved_vehicle_model[GTAV_SAVED_VEHICLE_SLOTS];
 static uint32_t g_saved_vehicle_mods[GTAV_SAVED_VEHICLE_SLOTS][GTAV_SAVED_VEHICLE_MOD_SLOTS];
 static uint32_t g_saved_vehicle_slot = 0;
-// Set when a SPAWN_SAVED_VEHICLE job is in flight; consumed by the post-create hook below. Latches
-// which slot's mods to apply (g_saved_vehicle_slot can change before the game-thread hook drains).
+// The build a SPAWN_SAVED_VEHICLE request carries: its model and a copy of the slot's mods, so a
+// slot edited or re-saved while the model streams changes nothing. The next spawn attempt takes it
+// (saved_vehicle_build_begin): applied only when that attempt creates this model, dropped otherwise,
+// and dropped by a spawn job that fails before creating anything.
 static int g_pending_saved_build = 0;
-static uint32_t g_pending_saved_slot = 0;
+static uint32_t g_pending_saved_model = 0;
+static uint32_t g_pending_saved_mods[GTAV_SAVED_VEHICLE_MOD_SLOTS];
+// Set only inside the spawn attempt that took the pending build (spawn_vehicle_model_hash).
+static int g_spawn_saved_build = 0;
+
+static void saved_vehicle_build_begin(uint32_t model) {
+  g_spawn_saved_build = g_pending_saved_build && g_pending_saved_model == model;
+  g_pending_saved_build = 0;
+}
+static void saved_vehicle_build_end() { g_spawn_saved_build = 0; }
+static void saved_vehicle_build_cancel() {
+  g_pending_saved_build = 0;
+  g_spawn_saved_build = 0;
+}
 
 // True when the currently-selected garage slot holds a saved vehicle (drives the overwrite confirm).
 static int saved_vehicle_slot_occupied(void) {
@@ -30,10 +45,10 @@ static int saved_vehicle_slot_occupied(void) {
 // Re-apply the saved mod loadout to a freshly created vehicle, on the game-thread spawn-job
 // context. Returns 1 if a pending saved build was consumed (skips the maxed/invincible defaults).
 static int apply_saved_vehicle_build(int worker, int vehicle) {
-  if (!g_pending_saved_build) return 0;
-  g_pending_saved_build = 0;
+  if (!g_spawn_saved_build) return 0;
+  g_spawn_saved_build = 0;
   if (!vehicle || !g_n.set_vehicle_mod || !g_n.set_vehicle_mod_kit) return 1;
-  const uint32_t* mods = g_saved_vehicle_mods[g_pending_saved_slot % GTAV_SAVED_VEHICLE_SLOTS];
+  const uint32_t* mods = g_pending_saved_mods;
   invoke_void_ctx(worker, g_n.set_vehicle_mod_kit, vehicle, 0);
   for (int t = 0; t <= GTAV_VEH_MOD_LAST_INDEXED; ++t) {
     invoke_void_ctx(worker, g_n.set_vehicle_mod, vehicle, t, (int)mods[t], 0);
@@ -69,8 +84,9 @@ static uint32_t spawn_saved_vehicle() {
   const uint32_t action = GTAV_NATIVE_SHELL_ACTION_SPAWN_SAVED_VEHICLE;
   const uint32_t slot = g_saved_vehicle_slot % GTAV_SAVED_VEHICLE_SLOTS;
   if (!g_saved_vehicle_model[slot]) return unavailable(action, "slot is empty");
+  g_pending_saved_model = g_saved_vehicle_model[slot];
+  memcpy(g_pending_saved_mods, g_saved_vehicle_mods[slot], sizeof(g_pending_saved_mods));
   g_pending_saved_build = 1;
-  g_pending_saved_slot = slot;
   gtav_features_run_spawn_hash_job(GTAV_NATIVE_SHELL_ACTION_SPAWN_VEHICLE,
                                    g_saved_vehicle_model[slot], nullptr);
   return g_state.last_result;

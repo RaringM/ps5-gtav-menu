@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Cut a multi-vehicle add-on's data files down to the one converted model.
+"""Cut an add-on's data files down to the one converted model.
 
 Add-on packs often hold several cars in one dlc.rpf with shared data files: vans123 (LaFerrari) has
 aventador, laferrari and raptor2017; the Gta5KoRn pack has 48. The importer keeps those files
@@ -16,8 +16,9 @@ what the model uses; every other file and every resource stay byte-identical:
     none (a retail handlingId such as POLICE: the car keeps the game's own handling, no HANDLING row);
   - carvariations.meta: the model's <variationData> item;
   - carcols.meta: the <Kits> items the variation names, the <Lights>/<Sirens> items whose id the
-    variation's lightSettings/sirenSettings name, and no <Wheels> (an add-on rim list for the LSC
-    wheel menu, not part of any one car; the worker refuses carcols wheels, custom_pack_data.inc);
+    variation's lightSettings/sirenSettings name. A multi-car input loses <Wheels> (an add-on rim
+    list for the LSC wheel menu, not part of any one car). A single-car input preserves its wheels
+    so the converter can require --drop-wheels when the source ships their models;
     when none of the model's kits, lights or sirens is in the file (a retail 0_default_modkit and
     retail light/siren ids), the file is removed: convert_vehicle.py then skips the content.xml row
     with a note and the pack has no CARCOLS row (no --kit-id/--light-id needed);
@@ -26,7 +27,8 @@ what the model uses; every other file and every resource stay byte-identical:
     file; prepare_vehicle_layouts.py renames every mod definition per model);
   - other files: unchanged.
 Kept items are byte-identical, with the whitespace before each of them. Refused when the model is not
-declared exactly once or when there is nothing to remove (a single-car pack needs no selection).
+declared exactly once or when there is nothing to remove. A single-model vehicles.meta can still
+ship unrelated variations, handling, kits or lights, which are filtered too.
 
   repair_pc_select_model.py --fixture build/assets/convert-<id>/fixtures/laferrari-import \\
       --material-report <its material report> --output <new fixture>   (convert_vehicle.py --repair select-model)
@@ -133,8 +135,6 @@ def select(model: str, metas: dict[str, str]) -> tuple[dict[str, str], dict]:
     mine = [item for item in items if fold(field(item, "modelName")) == model]
     if len(mine) != 1:
         raise SelectError(f"vehicles.meta declares {model} {len(mine)} times (of {len(items)} vehicles)")
-    if len(items) == 1:
-        raise SelectError(f"vehicles.meta declares only {model}: nothing to select")
     vehicle = mine[0]
     handling_id, txd = fold(field(vehicle, "handlingId")), fold(field(vehicle, "txdName"))
     text, kept, dropped = keep_items(vehicles, "InitDatas", lambda item: fold(field(item, "modelName")) == model)
@@ -191,11 +191,15 @@ def select(model: str, metas: dict[str, str]) -> tuple[dict[str, str], dict]:
         report["lights"] = {"kept": kept, "dropped": dropped}
         text, kept, dropped = keep_items(text, "Sirens", lambda item: value(item, "id") == siren)
         report["sirens"] = {"kept": kept, "dropped": dropped}
-        text, wheels = drop_element(text, "Wheels")
+        wheels = False
+        if len(items) > 1:
+            text, wheels = drop_element(text, "Wheels")
         report["wheelsDropped"] = wheels
+        wheel_array = element(text, "Wheels")
+        have_wheels = bool(wheel_array and wheel_array.group(1) and top_items(wheel_array.group(1)))
         # Nothing of the model's left (retail kit such as 0_default_modkit, retail light/siren ids): the
         # file goes, so the pack has no CARCOLS row and needs no --kit-id/--light-id.
-        empty = not any(report[key]["kept"] for key in ("kits", "lights", "sirens"))
+        empty = not have_wheels and not any(report[key]["kept"] for key in ("kits", "lights", "sirens"))
         out["carcols"] = None if empty else text
         report["carcolsRemoved"] = empty
     if "layouts" in metas:
@@ -211,6 +215,8 @@ def select(model: str, metas: dict[str, str]) -> tuple[dict[str, str], dict]:
     for text in out.values():
         if text is not None:
             xml.dom.minidom.parseString(text.encode("utf-8"))  # every meta we write must stay XML
+    if out == metas:
+        raise SelectError(f"metadata already contains only {model}: nothing to select")
     return out, report
 
 
@@ -234,7 +240,7 @@ def main(argv: list[str] | None = None) -> int:
 
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--fixture", type=Path, required=True)
-    parser.add_argument("--material-report", type=Path, required=True, help="recorded (convert_vehicle repair chain)")
+    parser.add_argument("--material-report", type=Path, help="optional material report identity for provenance")
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--model", help="model name (default: the fixture manifest's model)")
     args = parser.parse_args(argv)
@@ -267,7 +273,9 @@ def main(argv: list[str] | None = None) -> int:
         "tool": "tools/repair_pc_select_model.py",
         "reason": "multi-vehicle add-on: data files cut down to the converted model's records",
         "sourceFixtureManifestSha256": hashlib.sha256((args.fixture / "manifest.json").read_bytes()).hexdigest(),
-        "materialReportSha256": hashlib.sha256(args.material_report.read_bytes()).hexdigest(),
+        "materialReportSha256": (
+            hashlib.sha256(args.material_report.read_bytes()).hexdigest() if args.material_report else None
+        ),
         "files": files,
         **report,
     }

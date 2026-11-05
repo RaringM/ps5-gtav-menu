@@ -22,60 +22,60 @@ static int roster_handle_alive(int handle) {
   return 1;
 }
 
-static void spawned_roster_add(int* roster, int* count, int handle) {
-  if (handle <= 0 || !roster || !count) return;
-  for (int i = 0; i < *count; ++i) {
-    if (roster[i] == handle) return;
-  }
+// Drops handles the game no longer has (keeping `parallel`, when given, in lockstep) and returns
+// the free slots left.
+static int spawned_roster_compact(int* roster, int* parallel, int* count) {
   int out = 0;
   for (int i = 0; i < *count; ++i) {
-    if (roster_handle_alive(roster[i])) roster[out++] = roster[i];
+    if (!roster_handle_alive(roster[i])) continue;
+    if (parallel) parallel[out] = parallel[i];
+    roster[out++] = roster[i];
   }
   *count = out;
-  if (*count >= GTAV_SPAWNED_ROSTER_MAX) {
-    memmove(&roster[0], &roster[1], sizeof(roster[0]) * (GTAV_SPAWNED_ROSTER_MAX - 1));
-    *count = GTAV_SPAWNED_ROSTER_MAX - 1;
+  return GTAV_SPAWNED_ROSTER_MAX - out;
+}
+
+static const char kSpawnedVehiclesFull[] = "Spawned vehicle limit reached; clear spawned vehicles";
+static const char kSpawnedPedsFull[] = "Spawned ped limit reached; clear spawned peds";
+static const char kSpawnedObjectsFull[] = "Spawned object limit reached; clear spawned objects";
+
+// Free slots per kind. Every spawn path asks before it creates anything, so a full roster refuses
+// the spawn instead of forgetting a live entity that Clear could then never delete.
+static int spawned_vehicle_room() {
+  return spawned_roster_compact(g_spawned_vehicle_roster, nullptr, &g_spawned_vehicle_count);
+}
+static int spawned_ped_room() {
+  return spawned_roster_compact(g_spawned_ped_roster, nullptr, &g_spawned_ped_count);
+}
+static int spawned_object_room() {
+  return spawned_roster_compact(g_spawned_object_roster, g_spawned_object_model,
+                                &g_spawned_object_count);
+}
+
+// Tracks `handle` (and its model, for objects). A tracked entity is never displaced: on a full
+// roster the new handle stays untracked, which a caller that checked the room never meets.
+static void spawned_roster_add(int* roster, int* parallel, int* count, int handle, int value) {
+  if (handle <= 0 || !roster || !count) return;
+  for (int i = 0; i < *count; ++i) {
+    if (roster[i] != handle) continue;
+    if (parallel) parallel[i] = value;
+    return;
   }
+  if (spawned_roster_compact(roster, parallel, count) <= 0) return;
+  if (parallel) parallel[*count] = value;
   roster[(*count)++] = handle;
 }
 
 static void track_spawned_vehicle(int handle) {
-  spawned_roster_add(g_spawned_vehicle_roster, &g_spawned_vehicle_count, handle);
+  spawned_roster_add(g_spawned_vehicle_roster, nullptr, &g_spawned_vehicle_count, handle, 0);
 }
 static void track_spawned_ped(int handle) {
-  spawned_roster_add(g_spawned_ped_roster, &g_spawned_ped_count, handle);
+  spawned_roster_add(g_spawned_ped_roster, nullptr, &g_spawned_ped_count, handle, 0);
 }
-// Object-roster add that also records the model hash (parallel array) so the move mode can
-// duplicate. Mirrors spawned_roster_add's dedup / dead-compaction / oldest-drop, maintaining both
-// arrays in lockstep -- the generic spawned_roster_add can't, since it knows only the handle
-// array. Objects use this in place of a bare track_spawned_object (vehicles/peds don't need it).
+// Objects also record the model hash (parallel array) so the move mode can duplicate them.
 static void track_spawned_object_model(int handle, int model) {
-  if (handle <= 0) return;
-  for (int i = 0; i < g_spawned_object_count; ++i) {
-    if (g_spawned_object_roster[i] == handle) {
-      g_spawned_object_model[i] = model;
-      return;
-    }
-  }
-  int out = 0;
-  for (int i = 0; i < g_spawned_object_count; ++i) {
-    if (roster_handle_alive(g_spawned_object_roster[i])) {
-      g_spawned_object_roster[out] = g_spawned_object_roster[i];
-      g_spawned_object_model[out] = g_spawned_object_model[i];
-      ++out;
-    }
-  }
-  g_spawned_object_count = out;
-  if (g_spawned_object_count >= GTAV_SPAWNED_ROSTER_MAX) {
-    memmove(&g_spawned_object_roster[0], &g_spawned_object_roster[1],
-            sizeof(g_spawned_object_roster[0]) * (GTAV_SPAWNED_ROSTER_MAX - 1));
-    memmove(&g_spawned_object_model[0], &g_spawned_object_model[1],
-            sizeof(g_spawned_object_model[0]) * (GTAV_SPAWNED_ROSTER_MAX - 1));
-    g_spawned_object_count = GTAV_SPAWNED_ROSTER_MAX - 1;
-  }
-  g_spawned_object_roster[g_spawned_object_count] = handle;
-  g_spawned_object_model[g_spawned_object_count] = model;
-  ++g_spawned_object_count;
+  spawned_roster_add(g_spawned_object_roster, g_spawned_object_model, &g_spawned_object_count,
+                     handle, model);
 }
 
 // Model hash recorded for a live object handle (0 if unknown / not menu-spawned). Used only by

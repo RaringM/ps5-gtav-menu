@@ -37,8 +37,9 @@ mod as downloaded --convert-*--> build/custom-assets/<id>/ --pack-validate--> --
   Franklin Torso 14 / Legs 6, and new MP Male Legs styles. Other names and slots refuse;
   see [stock input coverage](stock-conversion.md). Pass `--game DIR` for your read-only game copy,
   or `--stock-cache DIR` for an already verified cache. `--target TARGET` selects the catalog
-  (currently `ppsa04264-01.010.002`); `--stock-manifest FILE` accepts a relocated copy of that
-  exact reviewed metadata. `GTAV_HOST_BUILD_DIR` relocates work, outputs and default caches.
+  (currently only `ppsa04264-01.010.002`; 01.011.001 has none); `--stock-manifest FILE` accepts a
+  relocated copy of that exact reviewed metadata. `GTAV_HOST_BUILD_DIR` relocates work, outputs and
+  default caches.
 - **Mods for GTA V Enhanced (PC).** Every converter reads both texture dictionary builds: the
   "Legacy" PC `.ytd` and the "Enhanced" one. Enhanced models (`.ydr`, `.ydd`, `.yft`) are not read
   yet; most Enhanced mods also ship a Legacy build, so point the command at that one.
@@ -60,7 +61,13 @@ game's typ files the same way and writes `build/archetype-index/<target>.json`. 
 GTA V runs. The lists are pinned for PPSA04264 01.010.002 (the default `GTAV_TARGET`). Selecting
 `GTAV_TARGET=ppsa04263-01.010.002` reads the EU game's source and checks against those same reviewed
 pins; archive sizes and every resource hash must match. The index keeps its selected EU output name
-and records the US pin provenance. Other versions have no fallback.
+and records the US pin provenance. Other versions have no fallback: 01.011.001 has no template or
+archetype-index pins of its own, so with `GTAV_TARGET=ppsa04264-01.011.001` both commands refuse.
+Fetch the templates with a 01.010.002 target from a 01.010.002 game copy; the converters read that
+cache whatever the target. With the 01.011.001 target the convert commands find no index by
+default: `convert-map` and `convert-mapmod` then keep stock objects unchecked and add no retail typ
+rows (`convert-mapmod` also leaves interiors out), and `convert-mlo` refuses unless
+`--archetype-index FILE` names one. Validation uses the selected target's game tables (section 6).
 
 Verified template cache entries and a completed index are reused without rereading the source. A
 cached run does not verify a different game image. To check another source, use a new empty
@@ -77,7 +84,7 @@ injected, have the game export them:
 PS5_HOST=<console-ip> ./menu-ctl.sh export-templates
 ```
 
-The menu writes them to `/data/gtavmenu/custom/exports/`. GTA must have access to the console's
+The menu writes them to `/data/GTAVMenu/custom/exports/`. GTA must have access to the console's
 shared `/data` through ShadowMountPlus or the HEN setup; otherwise the export is refused.
 The command confirms that the live worker uses that path, waits for each new export success, and
 verifies the downloaded bytes even if the host cache is already populated. Every convert command takes
@@ -383,9 +390,13 @@ clash in the first place:
   converted weapon gets slot order numbers right after its donor's. Give two weapons of one class
   distinct `--orders`.
 - **Menu texts** (spawn rows, teleports) are printable ASCII without `~`, under 40 characters.
-- **Add-on peds:** the game has room for about 4 add-on peds per GTA process, across every loaded
-  pack. Load refuses a selection with more (`<pack>: ped model slots full (430); deselect a ped
-  pack`) before anything loads. Plan ped packs with that in mind; clothing packs do not count.
+- **Add-on peds:** the game has room for about 4 add-on peds per GTA process on 01.010.002 (430
+  ped models), across every loaded pack. On 01.011.001 it has room for about 105 (540) when the loader
+  started before GTA (boot-time pool growth), else 5 (440), and then its ped metadata store has
+  1 free slot, so no ped or clothing pack loads. Load refuses a selection that does not fit
+  (`Ped model slots full (<n> free, need <m>): deselect <packs>`) before anything loads. Plan ped
+  packs with that in mind; clothing packs do not take ped model slots, but their `.pmt` takes a ped
+  metadata slot.
 
 ## 6. Validate and install
 
@@ -398,9 +409,12 @@ PS5_HOST=<console-ip> ./menu-ctl.sh pack-install build/custom-assets/villa-int-v
 ```
 
 `pack-validate` checks rows, limits, sizes, hashes, carcols ids, and with `--against` the merge
-rules (names, caps, cross-pack typ dependencies). `pack-install` validates again, uploads with
-readback and updates the console's installed list; `--activate` / `--activate-add` set the
-selection the next Load uses. `pack-uninstall ID [--purge]` removes a pack.
+rules (names, caps, cross-pack typ dependencies). It also counts the game tables of `GTAV_TARGET`,
+so set it to the build the packs are for. Without a target each table takes its strictest known
+build, where 01.011.001's stock ped metadata refuses any ped pack. For 01.011.001 the count includes
+boot-time pool growth; `BOOT_POOLS=0` checks its stock tables. `pack-install` validates again,
+uploads with readback and updates the console's installed list; `--activate` / `--activate-add`
+set the selection the next Load uses. `pack-uninstall ID [--purge]` removes a pack.
 
 ## 7. Test on a console
 
@@ -408,7 +422,8 @@ Packs load once per GTA process, so test each change in a fresh GTA process.
 
 1. Select the packs from the host before GTA starts (`pack-install --activate` / `--activate-add`,
    or `pack-select N`).
-2. Start GTA V, load Story Mode, and inject: `./menu-ctl.sh cave-inject`.
+2. Start GTA V, load Story Mode, and inject: `./menu-ctl.sh cave-inject`. On 01.011.001, run
+   `./menu-ctl.sh watch` before you start GTA instead, so the larger tables apply.
 3. Start following the pack lines **before** you press Load. The console keeps only the last 128
    lines, and a busy load can push early lines out:
 

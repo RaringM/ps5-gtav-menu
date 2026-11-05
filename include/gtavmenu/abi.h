@@ -55,6 +55,8 @@ enum {
   GTAV_MENU_ERROR_HOOK_INSTALL_FAILED = 4,
   GTAV_MENU_ERROR_THREAD_CREATE_FAILED = 5,
   GTAV_MENU_ERROR_LIVE_HOOK_DISABLED = 6,
+  GTAV_MENU_ERROR_CALLBACK_QUIESCE_FAILED = 7,
+  GTAV_MENU_ERROR_SHUTDOWN_FAILED = 8,
 };
 
 enum {
@@ -143,7 +145,7 @@ void gtav_menu_tick(void);
 /* gtav_menu_worker_tick (scePad worker thread) and gtav_menu_frame_tick (game thread,
  * driven by the PLAYER_PED_ID frame hook) are declared in gtavmenu/menu.h. */
 void gtav_menu_toggle(void);
-void gtav_menu_shutdown(void);
+int gtav_menu_shutdown(void);
 int gtav_menu_cam_exists_i32(int cam);
 void gtav_menu_control_update_step_hook(void);
 void gtav_menu_draw_rect_native_hook(void* native_arg);

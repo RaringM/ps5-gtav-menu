@@ -24,6 +24,7 @@ MODULE_SRCS := \
 	src/module/log_ring.c \
 	src/module/main.c \
 	src/module/menu.c \
+	src/module/menu_controller.c \
 	src/module/menu_draw_list.c \
 	src/module/native_bridge.cpp \
 	src/module/native_job_queue.c \
@@ -57,6 +58,8 @@ help:
 	@echo "  make package-onionhen          Stage the OnionHEN plugin for installation"
 	@echo "  make etahen                    Build the Toolbox-managed etaHEN plugin"
 	@echo "  make package-etahen            Stage the etaHEN plugin for installation"
+	@echo "  make nexhen                    Build the native corrected-nexHEN module"
+	@echo "  make package-nexhen            Stage the hardware-unqualified nexHEN test module"
 	@echo "  make payload-loader-build      Build the SDK payload loader (the injector)"
 	@echo "  make feature-menu-frame-hook-playerped-build  Build the injected menu worker ELF"
 	@echo "  make deploy-payload-loader     Deploy the loader to PS5 (prospero-deploy)"
@@ -77,7 +80,7 @@ custom-map:
 
 require-ps5-sdk:
 	@test "$(PS5_TOOLCHAIN_AVAILABLE)" = "1" || { \
-		echo "error: PS5 payload SDK not found at $(PS5_PAYLOAD_SDK); set PS5_PAYLOAD_SDK to a v0.43-compatible SDK" >&2; \
+		echo "error: PS5 payload SDK not found at $(PS5_PAYLOAD_SDK); set PS5_PAYLOAD_SDK to a v0.44-compatible SDK" >&2; \
 		exit 1; \
 	}
 	@llvm_version="$$($(PS5_PAYLOAD_SDK)/bin/prospero-llvm-config --version 2>/dev/null)"; \
@@ -106,6 +109,8 @@ BUILD_LOGIC_SHA256 := $(shell shasum -a 256 Containerfile Makefile make/config.m
 TARGET_MANIFEST_SHA256 := $(shell shasum -a 256 $(GTAV_TARGET_MANIFEST) 2>/dev/null | cut -d' ' -f1)
 LOADER_TARGET_CFLAGS := $(shell $(PYTHON) tools/target_loader_config.py \
 	--target-manifest $(GTAV_TARGET_MANIFEST) --cflags)
+LOADER_TARGET_CFLAGS += -DGTAV_PAYLOAD_BOOT_POOLS=$(BOOT_POOLS) -DGTAV_PAYLOAD_BOOT_POOLS_FORCE=$(BOOT_POOLS_FORCE) \
+	$(if $(GTAV_TARGET_BOOT_POOLS_HEADER),-DGTAV_BOOT_POOL_PROFILE_HEADER=\"$(GTAV_TARGET_BOOT_POOLS_HEADER)\")
 
 FORCE:
 
@@ -148,6 +153,7 @@ $(BUILD_CONFIG_STAMP): FORCE tools/write_build_stamp.py tools/target_loader_conf
 		--set pad_input=$(ENABLE_PAD_INPUT) --set pad_hook=$(PAD_HOOK) \
 		--set vehicle_preview=$(GTAV_MENU_ENABLE_VEHICLE_PREVIEW) \
 		--set custom_packs=$(GTAV_MENU_ENABLE_CUSTOM_PACKS) \
+		--set boot_pools=$(BOOT_POOLS) --set boot_pools_force=$(BOOT_POOLS_FORCE) \
 		--set custom_dlc_snapshot=0 \
 		--set custom_dlc_overlay=0 \
 		--set effective_dlclist_capture=0 \
@@ -394,6 +400,8 @@ payload-loader-build: $(PAYLOAD_LOADER_ELF)
 # the recipe compiles $(PAYLOAD_LOADER_SRCS) explicitly (not $^).
 $(PAYLOAD_LOADER_ELF): $(PAYLOAD_LOADER_SRCS) src/payload_loader/embedded_worker.S \
 		$(FEATURE_MENU_FRAME_HOOK_PLAYERPED_ELF) include/gtavmenu/loader_pins_generated.h \
+		$(if $(GTAV_TARGET_BOOT_POOLS_HEADER),include/$(GTAV_TARGET_BOOT_POOLS_HEADER)) include/gtavmenu/boot_pool.h \
+		include/gtavmenu/boot_pool_stub.h \
 		include/gtavmenu/daemon_control.h include/gtavmenu/daemon_lifecycle.h \
 		include/gtavmenu/render_phase_discovery.h $(BUILD_CONFIG_STAMP) $(BUILD_VERSION_HEADER) | $(BUILD_PROFILE_DIR) require-ps5-sdk
 	$(CC) $(CFLAGS) $(LOADER_VERSION_CFLAGS) \
@@ -438,7 +446,11 @@ $(PAYLOAD_LOADER_ELF): $(PAYLOAD_LOADER_SRCS) src/payload_loader/embedded_worker
 		$(LDFLAGS) -o $@ $(PAYLOAD_LOADER_SRCS) src/payload_loader/embedded_worker.S \
 			$(PAYLOAD_LOADER_LDLIBS)
 
+# Recipe guard for the targets that talk to the console.
+require-ps5-host = @test -n "$(strip $(PS5_HOST))" || { echo "set PS5_HOST=<console-ip> to deploy" >&2; exit 1; }
+
 deploy-payload-loader: $(PAYLOAD_LOADER_ELF)
+	$(require-ps5-host)
 	$(PS5_DEPLOY) -h $(PS5_HOST) -p $(PS5_PORT) $<
 
 # menu-ctl builds a delivery-specific loader first (watch/persistent/readiness settings included).
@@ -448,6 +460,7 @@ deploy-payload-loader: $(PAYLOAD_LOADER_ELF)
 # prerequisites; menu-ctl verifies the file exists after its exact build before invoking it.
 deploy-built-payload-loader: | require-ps5-sdk
 	@test -f "$(PAYLOAD_LOADER_ELF)" || { echo "missing built loader: $(PAYLOAD_LOADER_ELF)" >&2; exit 1; }
+	$(require-ps5-host)
 	$(PS5_DEPLOY) -h $(PS5_HOST) -p $(PS5_PORT) $(PAYLOAD_LOADER_ELF)
 
 # The release daemon uses the same readiness and lifecycle gates as watch --persist. Re-enter make
@@ -498,6 +511,8 @@ $(FEATURE_MENU_FRAME_HOOK_PLAYERPED_ELF): $(MODULE_SRCS) $(MODULE_DEPS) $(BUILD_
 	$(PYTHON) tools/patch_inject_skip_sdk_patch.py $@
 	@# The loader refuses a worker larger than its in-game allocation; fail here instead of at inject.
 	$(PYTHON) tools/check_worker_span.py $@ --limit $(PAYLOAD_LOADER_CAVE_ALLOC) || { rm -f $@; exit 1; }
+	@# The injector resolves imports by name with no weak fallback; fail here instead of at inject.
+	$(PYTHON) tools/check_worker_imports.py $@ || { rm -f $@; exit 1; }
 
 feature-menu-frame-hook-playerped-build: $(FEATURE_MENU_FRAME_HOOK_PLAYERPED_ELF)
 

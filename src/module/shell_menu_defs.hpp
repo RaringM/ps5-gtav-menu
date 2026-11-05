@@ -1,5 +1,11 @@
 #pragma once
 
+// 1 when the platform has a free-running worker loop whose rate the Worker Hz row sets (PS5). The
+// PS4 one-shot hook ticks once per game frame, so its build drops that row.
+#ifndef GTAV_MENU_HAS_WORKER_LOOP
+#define GTAV_MENU_HAS_WORKER_LOOP 1
+#endif
+
 // Menu-definition data for the shell: the ShellItem/ShellMenu types, the menu/row
 // enums, and the static const k*Items[] layout tables (one array per menu screen).
 // This is "what the menu looks like", split out from native_bridge.cpp's "how it
@@ -222,8 +228,10 @@ static const ShellItem kMenuSettingsItems[] = {
      0},
     {"Menu Width", SHELL_ROW_LIST, SHELL_MENU_NONE, GTAV_NATIVE_SHELL_ACTION_CYCLE_PANEL_WIDTH,
      nullptr, 0},
+#if GTAV_MENU_HAS_WORKER_LOOP
     {"Worker Hz", SHELL_ROW_LIST, SHELL_MENU_NONE, GTAV_NATIVE_SHELL_ACTION_CYCLE_WORKER_HZ,
      nullptr, 0},
+#endif
     {"Toast Time", SHELL_ROW_LIST, SHELL_MENU_NONE, GTAV_NATIVE_SHELL_ACTION_CYCLE_TOAST_TIME,
      nullptr, 0},
     {"Motion", SHELL_ROW_LIST, SHELL_MENU_NONE, GTAV_NATIVE_SHELL_ACTION_CYCLE_MOTION, nullptr, 0},

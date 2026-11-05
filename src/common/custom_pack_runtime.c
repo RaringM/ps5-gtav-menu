@@ -69,9 +69,13 @@ static int pair_spawn_valid(const char* value) {
 
 // Stock member an override row may replace: [<folder>/]<stem>.<ptd|pft|pdr|pdd>, folder [a-z0-9_]
 // (one level: the member's folder inside its stock archive, e.g. player_one/), stem [a-z0-9_+]
-// (`+hi`).
+// (`+hi`). PS4 builds replace the PS4 forms of the same resources (otd/oft/odr/odd).
 static int override_member_valid(const char* value) {
+#if defined(__ORBIS__)
+  static const char* const kExtensions[] = {"otd", "oft", "odr", "odd"};
+#else
   static const char* const kExtensions[] = {"ptd", "pft", "pdr", "pdd"};
+#endif
   const size_t length = strlen(value);
   const char* slash = strchr(value, '/');
   const char* stem = slash ? slash + 1 : value;
@@ -1012,7 +1016,9 @@ void gtav_custom_pack_component_label(const char* name, const char* row, char* o
       {"CAMO", "Camo"},
       {"RAILCOVER", "Rail Cover"},
   };
+#if defined(__clang__)
 #pragma clang loop unroll(disable)
+#endif
   for (size_t k = 0; k < sizeof(kKinds) / sizeof(kKinds[0]); ++k)
     if (contains_word(part, kKinds[k].key)) {
       copy_text(out, size, kKinds[k].label, strlen(kKinds[k].label));

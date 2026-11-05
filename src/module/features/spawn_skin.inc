@@ -140,7 +140,23 @@ extern "C" {
 volatile uint32_t gtav_skin_stage = 0;
 }
 
+// Defined in saved_vehicles.inc (included later): a pending saved build belongs to one spawn
+// attempt of its own model.
+static void saved_vehicle_build_begin(uint32_t model);
+static void saved_vehicle_build_end();
+static void saved_vehicle_build_cancel();
+
+// For the length of one spawn attempt: the attempt takes a pending saved build of its model, and
+// whatever it does not apply is gone when the attempt returns.
+struct SavedVehicleBuildScope {
+  explicit SavedVehicleBuildScope(uint32_t model) { saved_vehicle_build_begin(model); }
+  ~SavedVehicleBuildScope() { saved_vehicle_build_end(); }
+  SavedVehicleBuildScope(const SavedVehicleBuildScope&) = delete;
+  SavedVehicleBuildScope& operator=(const SavedVehicleBuildScope&) = delete;
+};
+
 static uint32_t spawn_vehicle_model_hash(uint32_t model, int allow_block) {
+  const SavedVehicleBuildScope saved_build(model);
   gtav_spawn_stage = 1;
   g_state.last_param = model;
 #if defined(GTAV_MENU_ENABLE_SCRIPT_GLOBALS) && GTAV_MENU_ENABLE_SCRIPT_GLOBALS
@@ -206,6 +222,14 @@ static uint32_t spawn_vehicle_model_hash(uint32_t model, int allow_block) {
       }
     }
   }
+  // A full roster refuses, unless this spawn replaces the previous menu vehicle (its slot frees
+  // once the new one is seated).
+  if (spawned_vehicle_room() <= 0 && !(g_spawn_replace_previous && previous_owned)) {
+    if (g_n.set_model_as_no_longer_needed)
+      invoke_void_ctx(allow_block, g_n.set_model_as_no_longer_needed, model);
+    gtav_spawn_stage = 0;
+    return direct_spawn_result(GTAV_FEATURE_RESULT_FAILED, kSpawnedVehiclesFull);
+  }
   int occupied = invoke_return<int>(g_n.get_vehicle_ped_is_in, ped, 0);
   if (occupied < 0) occupied = 0;
   const int anchor = occupied ? occupied : ped;
@@ -259,14 +283,19 @@ static uint32_t spawn_vehicle_model_hash(uint32_t model, int allow_block) {
   }
   if (g_n.set_vehicle_forward_speed && speed > 0.0f)
     invoke_void_ctx(worker, g_n.set_vehicle_forward_speed, vehicle, speed);
-  // The roster is the authority: world and mission vehicles are never eligible.
+  // The roster is the authority: world and mission vehicles are never eligible. The old car is
+  // claimed first, as Delete Vehicle and Clear Vehicles do; one the game kept stays tracked, so
+  // Clear Vehicles can still delete it (PS4 attempt 062: an unclaimed car outlived its delete,
+  // left the roster and was never cleared).
   if (g_spawn_replace_previous && previous_owned && previous_menu_vehicle != vehicle &&
       g_n.delete_entity) {
     for (int i = 0; i < g_spawned_vehicle_count; ++i) {
       if (g_spawned_vehicle_roster[i] != previous_menu_vehicle) continue;
       int owned = previous_menu_vehicle;
+      if (g_n.set_entity_as_mission_entity)
+        invoke_void_ctx(worker, g_n.set_entity_as_mission_entity, owned, 1, 1);
       invoke_void_ctx(worker, g_n.delete_entity, &owned);
-      g_spawned_vehicle_roster[i] = 0;
+      if (!roster_handle_alive(previous_menu_vehicle)) g_spawned_vehicle_roster[i] = 0;
       break;
     }
   }
@@ -752,6 +781,12 @@ static void run_prewarm_model_job(uint32_t param) {
 #endif
 }
 
+// A spawn job that ends before it creates anything: a saved build it carried is dropped with it.
+static void spawn_job_failed(uint32_t result, const char* message) {
+  saved_vehicle_build_cancel();
+  direct_spawn_result(result, message);
+}
+
 extern "C" void gtav_features_run_spawn_hash_job(uint32_t action, uint32_t model, void* ctx) {
   (void)ctx;
   static ModelStreamJob job;
@@ -763,17 +798,17 @@ extern "C" void gtav_features_run_spawn_hash_job(uint32_t action, uint32_t model
   if (model_stream_defer_to_next_frame(action, model, &job)) return;
   if (!g_n.request_model || !g_n.has_model_loaded) {
     job.pending = 0;
-    direct_spawn_result(GTAV_FEATURE_RESULT_UNAVAILABLE, "missing model streaming natives");
+    spawn_job_failed(GTAV_FEATURE_RESULT_UNAVAILABLE, "missing model streaming natives");
     return;
   }
   if (g_n.is_model_valid && !invoke_return_ctx<int>(0, g_n.is_model_valid, model)) {
     job.pending = 0;
-    direct_spawn_result(GTAV_FEATURE_RESULT_FAILED, "model not valid");
+    spawn_job_failed(GTAV_FEATURE_RESULT_FAILED, "model not valid");
     return;
   }
   if (g_n.is_model_in_cdimage && !invoke_return_ctx<int>(0, g_n.is_model_in_cdimage, model)) {
     job.pending = 0;
-    direct_spawn_result(GTAV_FEATURE_RESULT_FAILED, "model not in cdimage");
+    spawn_job_failed(GTAV_FEATURE_RESULT_FAILED, "model not in cdimage");
     return;
   }
 
@@ -788,16 +823,16 @@ extern "C" void gtav_features_run_spawn_hash_job(uint32_t action, uint32_t model
       }
       return;
     case MODEL_STREAM_QUEUE_FULL:
-      direct_spawn_result(GTAV_FEATURE_RESULT_FAILED, "main-thread job queue full");
+      spawn_job_failed(GTAV_FEATURE_RESULT_FAILED, "main-thread job queue full");
       return;
     case MODEL_STREAM_NO_HOOK:
-      direct_spawn_result(GTAV_FEATURE_RESULT_FAILED, "frame hook unavailable");
+      spawn_job_failed(GTAV_FEATURE_RESULT_FAILED, "frame hook unavailable");
       return;
     case MODEL_STREAM_TIMEOUT:
-      direct_spawn_result(GTAV_FEATURE_RESULT_FAILED, "model not loaded");
+      spawn_job_failed(GTAV_FEATURE_RESULT_FAILED, "model not loaded");
       return;
     case MODEL_STREAM_NOT_RESIDENT:
-      direct_spawn_result(GTAV_FEATURE_RESULT_FAILED, "model not streamed in");
+      spawn_job_failed(GTAV_FEATURE_RESULT_FAILED, "model not streamed in");
       return;
   }
 

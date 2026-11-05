@@ -1,7 +1,13 @@
-# Universal deliveries retain three separately compiled, exact-target workers.
-# The host orchestrator builds them sequentially and validates every manifest,
-# configuration, hash and mapped span before generating the runtime registry.
+# Universal deliveries retain separately compiled, exact-target workers, one per
+# supported target. The host orchestrator builds them sequentially and validates every
+# manifest, configuration, hash and mapped span before generating the runtime registry.
 UNIVERSAL_DELIVERIES ?= standalone onionhen etahen
+# Boot-time pool growth for the registry rows whose manifests enable it. 0 builds a
+# diagnostic loader that keeps stock pools everywhere; it cannot be packaged.
+UNIVERSAL_BOOT_POOLS ?= 1
+ifeq ($(filter 0 1,$(strip $(UNIVERSAL_BOOT_POOLS))),)
+$(error UNIVERSAL_BOOT_POOLS must be 0 or 1, not '$(UNIVERSAL_BOOT_POOLS)')
+endif
 UNIVERSAL_DIR := $(BUILD_DIR)/universal/production
 UNIVERSAL_DELIVERY_DIR := $(UNIVERSAL_DIR)/$(GTAV_DELIVERY)
 UNIVERSAL_PACKAGE_DIR ?= build/pkg/universal
@@ -14,12 +20,13 @@ UNIVERSAL_RUNTIME := $(UNIVERSAL_DELIVERY_DIR)/$(if $(filter standalone,$(GTAV_D
 universal: | require-ps5-sdk
 	$(PYTHON) tools/build_universal.py --sdk "$(PS5_PAYLOAD_SDK)" --build-dir "$(BUILD_DIR)" \
 		--deliveries $(UNIVERSAL_DELIVERIES) --onion-version $(ONIONHEN_PLUGIN_VERSION) \
-		--eta-version $(ETAHEN_PLUGIN_VERSION)
+		--eta-version $(ETAHEN_PLUGIN_VERSION) --boot-pools $(UNIVERSAL_BOOT_POOLS)
 
 package-universal: | require-ps5-sdk
 	$(PYTHON) tools/build_universal.py --sdk "$(PS5_PAYLOAD_SDK)" --build-dir "$(BUILD_DIR)" \
 		--deliveries $(UNIVERSAL_DELIVERIES) --onion-version $(ONIONHEN_PLUGIN_VERSION) \
-		--eta-version $(ETAHEN_PLUGIN_VERSION) --package --package-dir "$(UNIVERSAL_PACKAGE_DIR)"
+		--eta-version $(ETAHEN_PLUGIN_VERSION) --boot-pools $(UNIVERSAL_BOOT_POOLS) \
+		--package --package-dir "$(UNIVERSAL_PACKAGE_DIR)"
 
 # Only common safety/lifecycle gates are compile-time settings. Every live target
 # address, render contract and custom-pack capability comes from loader_profiles.h.
@@ -43,7 +50,8 @@ UNIVERSAL_CFLAGS := $(CFLAGS) $(LOADER_VERSION_CFLAGS) -I$(UNIVERSAL_DIR) -I$(UN
 	-DGTAV_PAYLOAD_SP_READY_POLL_USEC=$(PAYLOAD_LOADER_SP_READY_POLL_USEC) \
 	-DGTAV_PAYLOAD_SP_READY_POLL_MAX_USEC=$(PAYLOAD_LOADER_SP_READY_POLL_MAX_USEC) \
 	-DGTAV_PAYLOAD_INJECT_GUARD=1 \
-	-DGTAV_LOADER_VERIFY_VERSION=1 -DGTAV_MENU_EMBEDDED_WORKER=1
+	-DGTAV_LOADER_VERIFY_VERSION=1 -DGTAV_MENU_EMBEDDED_WORKER=1 \
+	-DGTAV_PAYLOAD_BOOT_POOLS=$(UNIVERSAL_BOOT_POOLS) -DGTAV_PAYLOAD_BOOT_POOLS_FORCE=0
 
 _universal-link: $(UNIVERSAL_INPUTS) | require-ps5-sdk
 	$(CC) $(UNIVERSAL_CFLAGS) \

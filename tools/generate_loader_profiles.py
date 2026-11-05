@@ -11,6 +11,7 @@ import subprocess
 import sys
 from pathlib import Path
 
+from gtavmenu_tools.boot_pool_profile import profile_fields, render_overrides
 from gtavmenu_tools.target_profile import expected_build_config, integer, load_manifest, sha256_file
 from gtavmenu_tools.universal_package import TARGETS as SUPPORTED_TARGETS
 from gtavmenu_tools.universal_package import expected_contract, inventory_sha256
@@ -119,6 +120,12 @@ def validate_identities(rows: list[dict]) -> None:
         )
         if identity in identities or row["targetId"] in ids or signature in signatures:
             raise ValueError("duplicate or ambiguous title/build profile")
+        boot_pools = row["contract"].get("bootPools")
+        if boot_pools is not None and (
+            boot_pools["targetId"] != row["targetId"]
+            or boot_pools["caveAddress"] != integer(loader["caveAddress"], "caveAddress")
+        ):
+            raise ValueError(f"{row['target']}: boot-pool profile does not belong to this row's build and cave")
         identities.add(identity)
         signatures.add(signature)
         ids.add(row["targetId"])
@@ -142,6 +149,17 @@ def render_header(rows: list[dict]) -> str:
         lines.append(
             f"extern const uint8_t gtav_universal_worker_{index}_start[], gtav_universal_worker_{index}_end[];"
         )
+    boot_pools = [row["contract"].get("bootPools") for row in rows]
+    if any(boot_pools):
+        lines.append('#include "gtavmenu/boot_pool.h"')
+    for index, values in enumerate(boot_pools):
+        if not values:
+            continue
+        overrides = f"gtav_universal_boot_pool_overrides_{index}"
+        lines.extend(render_overrides(values, overrides))
+        lines.append(f"static const GtavBootPoolProfile gtav_universal_boot_pool_{index} = {{")
+        lines.extend(f"    {field}," for field in profile_fields(values, overrides))
+        lines.append("};")
     lines.append("static const GtavLoaderTargetProfile gtav_loader_profiles[] = {")
     for index, row in enumerate(rows):
         loader = row["contract"]["loader"]
@@ -169,6 +187,7 @@ def render_header(rows: list[dict]) -> str:
                 f'    .cave_address = {number(loader["caveAddress"])},',
                 f'    .cave_allocation = {number(loader["caveAllocationBytes"])},',
                 f'    .custom_packs = {int(row["customPacks"])},',
+                f"    .boot_pools = {f'&gtav_universal_boot_pool_{index}' if boot_pools[index] else 'NULL'},",
                 "    .render = {",
             ]
         )

@@ -1,0 +1,230 @@
+{
+  "schemaVersion": 2,
+  "platform": "ps4",
+  "targetId": "cusa00411-01.57",
+  "titleId": "CUSA00411",
+  "contentVersion": "01.57",
+  "contentId": "EP1004-CUSA00411_00-GTAVDIGITALDOWNL",
+  "identity": {
+    "processName": "eboot.bin",
+    "processPath": "/app0/eboot.bin",
+    "sandboxPath": "/mnt/sandbox/CUSA00411_000/app0",
+    "firmware": "9.00",
+    "firmwareBcd": "0x384",
+    "platformId": 4,
+    "protocolVersion": "1.3",
+    "branding": "ps4debug-NG by OSR v1.3.3",
+    "capability": "1.1",
+    "originalSelfSha256": "0a58f50dbd12ba4629537aa3914b248f1c914cdbb0583046039396ed70e816be",
+    "normalizedElfSha256": "88ef9deb170fee58de3b539492f24a0ed9cb77123a14afb056218fc7441addcf",
+    "ftpExecutableSha256": "88ef9deb170fee58de3b539492f24a0ed9cb77123a14afb056218fc7441addcf",
+    "ftpExecutableSha256Variants": [
+      "3107503488b1f2e15c592c0c5bd6c60aab67464a4415c29b17bd3edb9bfc6035"
+    ],
+    "ftpExecutableForm": "normalized ELF; the live FTP server decrypts the installed SELF on retrieval"
+  },
+  "loader": {
+    "runtimeImageBias": "0x400000",
+    "versionAddress": "0xdf6430",
+    "versionBytes": "488b07488d0de6cf4b038b49048908c3",
+    "hookAddress": "0xeab000",
+    "continuation": "0xeab010",
+    "patchLength": 14,
+    "stolenLength": 16,
+    "hookBytes": "554889e553504889fb488d05f8d67c02",
+    "leaOffset": 9,
+    "playerGlobalAnchor": "0x3678708",
+    "playerPedOffset": "0x8",
+    "gameTimer": "0x42b3420",
+    "frameCount": "0x42b3424",
+    "textTransactionFlags": "0x3318298",
+    "padReadStateGot": "0x351b1c8",
+    "padImportModule": "libScePad.sprx",
+    "gatewayHint": "0x4400000",
+    "gatewaySize": "0x1000"
+  },
+  "mappings": {
+    "text": {
+      "start": "0x400000",
+      "end": "0x32cc000",
+      "prot": "0x5"
+    },
+    "data": {
+      "start": "0x32cc000",
+      "end": "0x434c000",
+      "prot": "0x3"
+    },
+    "dataSegments": [
+      {
+        "start": "0x32cc000",
+        "end": "0x34cc000",
+        "prot": "0x3"
+      },
+      {
+        "start": "0x34cc000",
+        "end": "0x434c000",
+        "prot": "0x3"
+      }
+    ]
+  },
+  "enabledNatives": [
+    {
+      "name": "DRAW_RECT",
+      "address": "0xdccac0",
+      "sha256": "2670cc220b668efd914fa653801eee633e0a98b104740e46439dcfa773ae7b3a"
+    },
+    {
+      "name": "BEGIN_TEXT_COMMAND_DISPLAY_TEXT",
+      "address": "0xde0690",
+      "sha256": "5eee21076e8b6b69fbf6c2818a5d0358540250334c7f72bbffdf9e33e77c120d"
+    },
+    {
+      "name": "ADD_TEXT_COMPONENT_SUBSTRING_PLAYER_NAME",
+      "address": "0xde08f0",
+      "sha256": "110238e9380c15704017d45d1e1655c328f4761c05cc927c060c47df06a7d189"
+    },
+    {
+      "name": "END_TEXT_COMMAND_DISPLAY_TEXT",
+      "address": "0xde06c0",
+      "sha256": "0688dfa10398b933db1f791d3359485377f127efb9e8c2aa683060707b3fc930"
+    },
+    {
+      "name": "SET_TEXT_SCALE",
+      "address": "0xde18d0",
+      "sha256": "9350058b13e03d382fc06b4d035a685c2eb8883d2b463932ada076f2ba212679"
+    },
+    {
+      "name": "SET_TEXT_COLOUR",
+      "address": "0xde18f0",
+      "sha256": "5a2faef5879e90f8c7a4f6d16b285740cd1eb6d2b713e41c2da404c94727d445"
+    },
+    {
+      "name": "SET_TEXT_FONT",
+      "address": "0xde19f0",
+      "sha256": "fb944779c8d4115b6ec754bb156977c8716ae8c1861e6ad12a6d718590403570"
+    },
+    {
+      "name": "SET_TEXT_CENTRE",
+      "address": "0xde1930",
+      "sha256": "e8a246029a5e81bfd102e2253557f0875caeda17edce759ab81a1752a5fd5a97"
+    },
+    {
+      "name": "SET_TEXT_WRAP",
+      "address": "0xde19a0",
+      "sha256": "e134c1ca82bf8d00e413f7c0898690c081a78d48e0fe5b2ea04bbfae4f8d1b9e"
+    },
+    {
+      "name": "SET_TEXT_JUSTIFICATION",
+      "address": "0xde1970",
+      "sha256": "6aa15635595221bcdffca4fe09dc39cda757ad4da131b424c50de898db222d09"
+    },
+    {
+      "name": "SET_TEXT_DROP_SHADOW",
+      "address": "0xde1a10",
+      "sha256": "e99e54f6c5dcc21048a7c0982b3b61a50aeb0a1b64645643b2114494c619f584"
+    },
+    {
+      "name": "SET_TEXT_OUTLINE",
+      "address": "0xde1a40",
+      "sha256": "82b8baf3fc7110ff834ecdefbe17e287f1ebecc0ffad6b2ca6d7a8aa92a62ea3"
+    },
+    {
+      "name": "IS_CONTROL_PRESSED",
+      "address": "0xe6a450",
+      "sha256": "371e153fd90606c0f45554ce15baf1ce1d382b4ddda0f5bed7df86d070eec4ba"
+    },
+    {
+      "name": "IS_DISABLED_CONTROL_PRESSED",
+      "address": "0xe6a880",
+      "sha256": "cde274ec65b12444d80834afec4f449cfeb37dc305127f6ac293e7f28dbfd37e"
+    },
+    {
+      "name": "DISABLE_CONTROL_ACTION",
+      "address": "0xe6b220",
+      "sha256": "3f7f85956d498a8b739cb7e1a375eaabcdee8c47a39abbb3b61c8a95d0720f60"
+    },
+    {
+      "name": "GET_FRAME_COUNT",
+      "address": "0xdf6430",
+      "sha256": "7c64e3050cbe1cb288b7f82f884e12b32d62381e36c6cee26bb105e83749d3f1"
+    },
+    {
+      "name": "GET_GAME_TIMER",
+      "address": "0xdf63e0",
+      "sha256": "aac708e382fec455ac4805c4fffaa864f55e68069ff62c1435203b67b2d4ac89"
+    },
+    {
+      "name": "DOES_ENTITY_EXIST",
+      "address": "0xdb2290",
+      "sha256": "4cd8b9bc56e3248a23167278a775f7060c91651167aade459334db9c461719da"
+    },
+    {
+      "name": "GET_PED_MAX_HEALTH",
+      "address": "0xe94900",
+      "sha256": "22971f8f829626575f8569e445504280a7e62a2c30761c14e5234223f78c7ad8"
+    },
+    {
+      "name": "SET_ENTITY_HEALTH",
+      "address": "0xdb5d00",
+      "sha256": "14bba5e1cb11fadf039b1c0717854201918f2db3c2d9a080b281ab7c5f5a4543"
+    }
+  ],
+  "build": {
+    "channel": "development",
+    "toolchain": {
+      "compiler": "clang",
+      "llvmMajor": 20
+    },
+    "nativeAddresses": {
+      "json": "data/native_targets/production-native-addresses-cusa00411-01.57.json",
+      "header": "gtavmenu/native_addresses_cusa00411-01.57_generated.h",
+      "sha256": "f90b19022afa2c42e1cd8c77ec8cacdb0780f1d514e6b28375b51ed795279b3f"
+    },
+    "capabilities": {
+      "json": "data/capabilities/cusa00411-01.57.json",
+      "header": "gtavmenu/capabilities_cusa00411-01.57_generated.h",
+      "sha256": "7eb962e47998015addc8314acf6ca3e54e0c08aa0d58c69537416db5ed4cf239"
+    },
+    "scriptGlobals": {
+      "json": "data/script_globals/anchors-cusa00411-01.57.json",
+      "header": "gtavmenu/script_globals_addresses_cusa00411-01.57_generated.h",
+      "sha256": "2c4b8f9d1cedb70d488f439e26cc3ed31a28f573fc447346906d65c059035079"
+    },
+    "bootPools": {
+      "json": "data/boot_pools/cusa00411-01.57.json",
+      "header": "gtavmenu/boot_pool_data_cusa00411-01.57_generated.h",
+      "sha256": "fc4636413a03eca49c7b4e3a782f3131b866ead474e23c751ca94fc02ca5a67c"
+    },
+    "customLane": {
+      "json": "data/custom_lane/cusa00411-01.57.json",
+      "header": "gtavmenu/custom_lane_addresses_cusa00411-01.57_generated.h",
+      "sha256": "97bbe81dc2d0d58da70c1cb23b7466fbae95071495ce74cb29df6adb2db54000"
+    },
+    "targetHeader": "gtavmenu/ps4_target_cusa00411-01.57_generated.h",
+    "injection": {
+      "lane": "ps4debug-oneshot",
+      "ptrace": false,
+      "targetElevation": false,
+      "rpcWorker": false
+    },
+    "features": {
+      "nativeFeatures": true,
+      "mainThreadActions": true,
+      "coldModelStreaming": true,
+      "toasts": true,
+      "workerTextOverlay": true,
+      "hud": true,
+      "effects": true,
+      "vehicleClasses": true,
+      "localization": true,
+      "storage": true,
+      "scriptGlobals": true,
+      "vehiclePreview": true,
+      "buttonGlyphs": false,
+      "instructionalScaleform": true,
+      "touchpad": true,
+      "customPacks": true,
+      "bootPools": true
+    }
+  }
+}

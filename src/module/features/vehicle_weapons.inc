@@ -212,7 +212,7 @@ static uint32_t give_weapon_single(uint32_t hash) {
   invoke_void(g_n.give_weapon_to_ped, ped, hash, ammo, 0, 1);
   if (g_n.set_current_ped_weapon) invoke_void(g_n.set_current_ped_weapon, ped, hash, 1);
   const char* given = "weapon given";
-#if GTAV_MENU_ENABLE_CUSTOM_PACKS
+#if GTAV_MENU_ENABLE_CUSTOM_PACKS && GTAV_MENU_CUSTOM_PACK_ENGINE  // pack weapons need the engine
   if (!stock && g_n.get_current_ped_weapon) {
     // Pack weapon: klog what the ped now holds (its model is in the pack's load-time
     // "pack data N weapon ... model=" klog line), then its wheel slot (weapon_components.inc).

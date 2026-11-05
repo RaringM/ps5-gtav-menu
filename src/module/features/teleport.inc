@@ -271,6 +271,18 @@ static uint32_t disable_all_features() {
   // g_wind_index is already 0), mirroring the had_weapon_damage discipline above.
   if (was_windy && g_n.set_wind_speed) invoke_void(g_n.set_wind_speed, 0.0f);
 
+  // Screen effects. Night vision and thermal are re-asserted by the game-thread tick, which issues
+  // the OFF once it sees the flag drop. A staged timecycle or post-FX is cleared here, only when one
+  // was selected, so init (import_profile) never calls these natives.
+  g_night_vision_enabled = 0;
+  g_seethrough_enabled = 0;
+  const int had_timecycle = (g_timecycle_index != 0u);
+  const int had_animpostfx = (g_animpostfx_index != 0u);
+  g_timecycle_index = 0u;
+  g_animpostfx_index = 0u;
+  if (had_timecycle && g_n.clear_timecycle_modifier) invoke_void(g_n.clear_timecycle_modifier);
+  if (had_animpostfx && g_n.animpostfx_stop_all) invoke_void(g_n.animpostfx_stop_all);
+
   return ok(action, "all features disabled");
 }
 

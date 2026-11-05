@@ -106,6 +106,10 @@ static uint32_t spawn_ped_model_hash(uint32_t model, int allow_block) {
     gtav_ped_spawn_stage = 0;
     return unavailable(action, "missing ped spawn natives");
   }
+  if (spawned_ped_room() <= 0) {
+    gtav_ped_spawn_stage = 0;
+    return failed(action, kSpawnedPedsFull);
+  }
   if (g_n.is_model_valid && !invoke_return<int>(g_n.is_model_valid, model)) {
     gtav_ped_spawn_stage = 0;
     return failed(action, "model not valid");
@@ -189,6 +193,10 @@ static uint32_t spawn_object_model_hash(uint32_t model, int allow_block) {
       !g_n.get_entity_coords) {
     gtav_object_spawn_stage = 0;
     return unavailable(action, "missing object spawn natives");
+  }
+  if (spawned_object_room() <= 0) {
+    gtav_object_spawn_stage = 0;
+    return failed(action, kSpawnedObjectsFull);
   }
   if (g_n.is_model_valid && !invoke_return<int>(g_n.is_model_valid, model)) {
     gtav_object_spawn_stage = 0;

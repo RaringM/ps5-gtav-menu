@@ -13,12 +13,10 @@ static const struct {
   uintptr_t vtable;
   uintptr_t load;
   uint8_t pin[32];
-} kItypMounter = {0x53fb200,
-                  0x3fa7e90,
-                  0x1a46fa0,
-                  {0x55, 0x48, 0x89, 0xe5, 0x41, 0x56, 0x53, 0x48, 0x81, 0xec, 0x10,
-                   0x01, 0x00, 0x00, 0x4c, 0x8b, 0x35, 0xab, 0x8a, 0x66, 0x02, 0xc5,
-                   0xf8, 0x57, 0xc0, 0xb9, 0x6f, 0x72, 0x79, 0x3a, 0x48, 0x89}};
+} kItypMounter = {GTAV_LANE_kItypMounterIface,
+                  GTAV_LANE_kItypMounterVtable,
+                  GTAV_LANE_kItypMounterLoad,
+                  GTAV_LANE_kItypMounterLoadBytes};
 static const uint32_t kItypRequestType = 174;
 // Per typ row (bit = row). uint64_t: GTAV_CUSTOM_PACK_TYP_CAP rows.
 static uint64_t g_pack_typs_loaded;
@@ -32,12 +30,10 @@ static const uint32_t kRetailTypHeadroom = 1024;
 // A hardware run crashed a Subrender thread right after the one-press load reloaded a
 // map initialised while its archetypes were only requested: a map row now waits for every typ row
 // to be resident (status 1).
-static const uintptr_t kTypStore = 0x6210a10;
-static const uintptr_t kTypStoreVtable = 0x4093b08;
-static const uintptr_t kTypFindSlot = 0x353bdd0;
-static const uint8_t kTypFindSlotBytes[32] = {
-    0x55, 0x48, 0x89, 0xe5, 0x41, 0x57, 0x41, 0x56, 0x53, 0x50, 0x48, 0x89, 0xfb, 0x48, 0x89, 0xf7,
-    0x49, 0x89, 0xf7, 0xff, 0x15, 0x7f, 0x42, 0x74, 0x02, 0xbf, 0x01, 0x00, 0x00, 0x00, 0x89, 0xc6};
+static const uintptr_t kTypStore = GTAV_LANE_kTypStore;
+static const uintptr_t kTypStoreVtable = GTAV_LANE_kTypStoreVtable;
+static const uintptr_t kTypFindSlot = GTAV_LANE_kTypFindSlot;
+static const uint8_t kTypFindSlotBytes[] = GTAV_LANE_kTypFindSlotBytes;
 
 // Typ store slot and def of the typ named `file` (<name>.ptyp; find-slot hashes the name: main
 // thread only). Fills the base name, slot, def, streaming status and (optional) the streaming
@@ -247,18 +243,14 @@ static uint32_t load_pack_typ(uint32_t param) {
 // post-load routine 0x3118980 creates entities only for an initialised slot (on hardware, a slot
 // initialised after its only load had no entities) -- and (b) confirms the new contents' entity
 // count, clearing the IPL-disabled bit like REQUEST_IPL when it is set.
-static const uintptr_t kMapStore = 0x61a9aa0;
-static const uintptr_t kMapStoreVtable = 0x4093970;
-static const uintptr_t kMapFindSlot = 0x353b9e0;  // store vt+0x48 (store, name) -> slot or -1
-static const uintptr_t kMapEnableIpl = 0x3515530;  // (slot, name hash, 0), REQUEST_IPL's call
-static const uintptr_t kRemoveObject = 0x35502c0;  // (global index) -> bool
-static const uint8_t kRemoveObjectBytes[20] = {0x55, 0x48, 0x89, 0xe5, 0x41, 0x57, 0x41,
-                                               0x56, 0x41, 0x55, 0x41, 0x54, 0x53, 0x48,
-                                               0x81, 0xec, 0x48, 0x0c, 0x00, 0x00};
-static const uint8_t kMapFindSlotBytes[16] = {0x55, 0x48, 0x89, 0xe5, 0x41, 0x57, 0x41, 0x56,
-                                              0x53, 0x50, 0x48, 0x89, 0xfb, 0x48, 0x89, 0xf7};
-static const uint8_t kMapEnableIplBytes[16] = {0x55, 0x48, 0x89, 0xe5, 0x41, 0x57, 0x41, 0x56,
-                                               0x53, 0x50, 0x83, 0xff, 0xff, 0x0f, 0x84, 0xd6};
+static const uintptr_t kMapStore = GTAV_LANE_kMapStore;
+static const uintptr_t kMapStoreVtable = GTAV_LANE_kMapStoreVtable;
+static const uintptr_t kMapFindSlot = GTAV_LANE_kMapFindSlot;  // store vt+0x48 (store, name) -> slot or -1
+static const uintptr_t kMapEnableIpl = GTAV_LANE_kMapEnableIpl;  // (slot, name hash, 0), REQUEST_IPL's call
+static const uintptr_t kRemoveObject = GTAV_LANE_kRemoveObject;  // (global index) -> bool
+static const uint8_t kRemoveObjectBytes[] = GTAV_LANE_kRemoveObjectBytes;
+static const uint8_t kMapFindSlotBytes[] = GTAV_LANE_kMapFindSlotBytes;
+static const uint8_t kMapEnableIplBytes[] = GTAV_LANE_kMapEnableIplBytes;
 // 1 when typ row `row` is resident, 0 while pending, -1 when its slot cannot be found or read.
 // Main thread only (the find-slot hashes the name and reads the store's map).
 static int pack_typ_resident(uint32_t row) {
@@ -330,12 +322,10 @@ static void pack_map_basename(uint32_t row, char* name, size_t size) {
 // set-contents (0x3521980 live) stores the bound, computes the slot box from a composite root's
 // children and inserts one physics instance per child. Only a composite root (type 10) collides
 // (make_static_pbn.py writes one); the first call requests, later calls confirm.
-static const uintptr_t kBoundsStore = 0x61a9740;
-static const uintptr_t kBoundsStoreVtable = 0x4093ff0;
-static const uintptr_t kBoundsFindSlot = 0x353d320;  // vt+0x48 (store, name) -> slot or -1
-static const uint8_t kBoundsFindSlotBytes[32] = {
-    0x55, 0x48, 0x89, 0xe5, 0x53, 0x50, 0x48, 0x89, 0xfb, 0x48, 0x89, 0xf7, 0xff, 0x15, 0x06, 0x2d,
-    0x74, 0x02, 0x48, 0x8b, 0xb3, 0x80, 0x00, 0x00, 0x00, 0x89, 0xc1, 0x31, 0xd2, 0xf7, 0xb3, 0x88};
+static const uintptr_t kBoundsStore = GTAV_LANE_kBoundsStore;
+static const uintptr_t kBoundsStoreVtable = GTAV_LANE_kBoundsStoreVtable;
+static const uintptr_t kBoundsFindSlot = GTAV_LANE_kBoundsFindSlot;  // vt+0x48 (store, name) -> slot or -1
+static const uint8_t kBoundsFindSlotBytes[] = GTAV_LANE_kBoundsFindSlotBytes;
 static uint32_t g_pack_bounds_requested;  // per bounds row (bit = row): GTAV_CUSTOM_PACK_BOUNDS_CAP
 static_assert(GTAV_CUSTOM_PACK_BOUNDS_CAP <= 32, "bounds row masks are uint32_t");
 static uint32_t g_pack_bounds_finished;  // loaded and validated
@@ -440,29 +430,23 @@ static uint32_t load_pack_bounds(uint32_t param) {
 // bounds-only load: map def +0x18 = typ slot (u32, inline for a count of 1), +0x26 = 1, typ def
 // +0x10 |= 8. The bounds-only load then creates an interior proxy per CMloInstanceDef (contentFlags
 // 8), and the interior bounds binder (0x1999500 live) attaches the MLO's .pbn to it.
-static const uintptr_t kInteriorProxyPool = 0x5753cb0;  // pool*: +8 data, +0x10 flags, +0x18 size
-static const uintptr_t kInteriorBoundsBinder = 0x1999500;  // (changeset group, 0 = all)
-static const uint8_t kInteriorBoundsBinderBytes[32] = {
-    0x55, 0x48, 0x89, 0xe5, 0x41, 0x57, 0x41, 0x56, 0x41, 0x55, 0x41, 0x54, 0x53, 0x48, 0x81, 0xec,
-    0xd8, 0x00, 0x00, 0x00, 0x48, 0x8b, 0x1d, 0x45, 0x65, 0x71, 0x02, 0x48, 0x8b, 0x03, 0x48, 0x89};
+static const uintptr_t kInteriorProxyPool = GTAV_LANE_kInteriorProxyPool;  // pool*: +8 data, +0x10 flags, +0x18 size
+static const uintptr_t kInteriorBoundsBinder = GTAV_LANE_kInteriorBoundsBinder;  // (changeset group, 0 = all)
+static const uint8_t kInteriorBoundsBinderBytes[] = GTAV_LANE_kInteriorBoundsBinderBytes;
 static uint8_t g_pack_map_bound[GTAV_CUSTOM_PACK_MAP_CAP];  // interior binder ran for this row
 // After the binder the game rebuilds two box-streamer trees (changeset executor 0x1597961..,
 // startup 0x15c4fb5.., normalized): the map store's (vt+0x38), then the bounds store's (vt+0x18),
 // which re-indexes every bounds slot with a box. REQUEST_COLLISION_AT_COORD and proximity loading
 // search that tree, so without the rebuild the binder's new alias slot is never streamed in
 // (seen on hardware: doors only, no floor).
-static const uintptr_t kMapBoxStreamer = 0x61a9b50;
-static const uintptr_t kMapBoxStreamerVtable = 0x4094938;
-static const uintptr_t kMapBoxRebuild = 0x3511aa0;  // vt+0x38
-static const uint8_t kMapBoxRebuildBytes[32] = {
-    0x55, 0x48, 0x89, 0xe5, 0x41, 0x57, 0x41, 0x56, 0x41, 0x55, 0x41, 0x54, 0x53, 0x48, 0x83, 0xec,
-    0x18, 0x48, 0x8b, 0x05, 0xa8, 0xdf, 0xb9, 0x00, 0x48, 0x89, 0xfb, 0x48, 0x8b, 0x00, 0x48, 0x89};
-static const uintptr_t kBoundsBoxStreamer = 0x61a97f0;
-static const uintptr_t kBoundsBoxStreamerVtable = 0x40948f8;
-static const uintptr_t kBoundsBoxRebuild = 0x3510660;  // vt+0x18
-static const uint8_t kBoundsBoxRebuildBytes[32] = {
-    0x55, 0x48, 0x89, 0xe5, 0x41, 0x57, 0x41, 0x56, 0x41, 0x55, 0x41, 0x54, 0x53, 0x48, 0x83, 0xec,
-    0x18, 0x4c, 0x8b, 0x25, 0xe8, 0xf3, 0xb9, 0x00, 0x48, 0x89, 0xfb, 0x49, 0x8b, 0x04, 0x24, 0x48};
+static const uintptr_t kMapBoxStreamer = GTAV_LANE_kMapBoxStreamer;
+static const uintptr_t kMapBoxStreamerVtable = GTAV_LANE_kMapBoxStreamerVtable;
+static const uintptr_t kMapBoxRebuild = GTAV_LANE_kMapBoxRebuild;  // vt+0x38
+static const uint8_t kMapBoxRebuildBytes[] = GTAV_LANE_kMapBoxRebuildBytes;
+static const uintptr_t kBoundsBoxStreamer = GTAV_LANE_kBoundsBoxStreamer;
+static const uintptr_t kBoundsBoxStreamerVtable = GTAV_LANE_kBoundsBoxStreamerVtable;
+static const uintptr_t kBoundsBoxRebuild = GTAV_LANE_kBoundsBoxRebuild;  // vt+0x18
+static const uint8_t kBoundsBoxRebuildBytes[] = GTAV_LANE_kBoundsBoxRebuildBytes;
 // The last bound interior, for the proximity diagnostics (pack_interior_diag_tick).
 static volatile int32_t g_pack_interior_proxy = -1;
 static volatile int32_t g_pack_interior_alias = -1;

@@ -1,0 +1,282 @@
+{
+  "target": "cusa00411-01.57",
+  "commitOrder": ["dwd", "txd", "frag", "metadata", "typ", "ptfx", "ped", "vehicle"],
+  "commitOrderMethod": "the order the game reads them: InitStoresA 0x22F1E40 calls the Dwd (0x22F1E51), Txd (0x22F1E91), Fragment (0x22F1EAB), MetaData (0x22F1EDF) and MapTypes (0x22F1EF6) store Inits, InitStoresB calls the PtFx one (0x403C33), and the model caps are read at the first session; the earliest-read node is written first, a rollback runs in reverse",
+  "consts": [
+    {
+      "name": "kConfigManager",
+      "value": "0x42b3220",
+      "method": "g_ConfigManager*: published at 0xfbfab8 (mov [r12], rbx; r12 = lea 0x42b3220) immediately before the parse call"
+    },
+    {
+      "name": "kConfigMgrBuckets",
+      "value": "0x8",
+      "method": "manager +8 node** buckets (GetSizeOfPool 0x22e4de0)"
+    },
+    {
+      "name": "kConfigMgrSlots",
+      "value": "0x10",
+      "method": "manager +0x10 u16 bucket count (GetSizeOfPool 0x22e4de0)"
+    },
+    {
+      "name": "kConfigMgrCfg",
+      "value": "0x18",
+      "method": "manager +0x18 parsed config struct (created by the loader 0x22f14b0)"
+    },
+    {
+      "name": "kConfigNodeValue",
+      "value": "0x4",
+      "method": "node {u32 hash, i32 value @+4, next* @+8} (GetSizeOfPool 0x22e4de0)"
+    },
+    {
+      "name": "kConfigNodeNext",
+      "value": "0x8",
+      "method": "node next pointer (GetSizeOfPool 0x22e4de0)"
+    },
+    {
+      "name": "kLoadGameConfigCallSite",
+      "value": "0xfbfabf",
+      "method": "call 0x22f14b0 in the FSM state-0 handler sub_fbf8e0"
+    },
+    {
+      "name": "kLoadGameConfigTarget",
+      "value": "0x22f14b0",
+      "method": "gameconfig loader (creates cfg, merges blocks, PoolSizes nodes)"
+    },
+    {
+      "name": "kLoadGameConfigContinuation",
+      "value": "0xfbfac4",
+      "method": "next instruction: call 0x22b6b50 (no live caller-saved register; r12 reused at 0xfbfad4 and preserved by the stub)"
+    },
+    {
+      "name": "kFsmState",
+      "value": "0x351bda0",
+      "method": "u16 application FSM current state (0 parse, 1 streaming init, 2 running); FSM 0x351bd90 +0x10"
+    },
+    {
+      "name": "kFirstStoreSized",
+      "value": "0x424b470",
+      "method": "u8 DwdStore+0x90 initialized byte, the first store InitStoresA sizes"
+    },
+    {
+      "name": "kCfgPedCap",
+      "value": "0x318",
+      "method": "cfg +0x318 ped model-info capacity (CModelInfo::Init 0x962860 mode 8, factory 0x3629f88)"
+    },
+    {
+      "name": "kCfgVehicleCap",
+      "value": "0x31c",
+      "method": "cfg +0x31c vehicle capacity (factory 0x3629f70)"
+    },
+    {
+      "name": "kCfgWeaponCap",
+      "value": "0x320",
+      "method": "cfg +0x320 weapon capacity (factory 0x3629f58)"
+    },
+    {
+      "name": "kStoreSizeOffset",
+      "value": "0x48",
+      "method": "fwAssetStore +0x48 u32 pool size on 01.57 (PS5 +0x50)"
+    },
+    {
+      "name": "kStoreInitializedOffset",
+      "value": "0x90",
+      "method": "fwAssetStore +0x90 u8: each store Init (Dwd 0x29E2B20, Txd 0x29E27C0, Fragment 0x29E2610, MetaData 0x29E22B0, MapTypes 0x29D9BA0, PtFx 0x25FDC90) sets it to 1 after writing the pool size at +0x48; kFirstStoreSized is DwdStore+0x90"
+    },
+    {
+      "name": "kCaveHint",
+      "value": "0x4410000",
+      "method": "hinted allocation for the stub: within rel32 of the call site and of kConfigManager, clear of the menu gateway hint 0x4400000"
+    },
+    {
+      "name": "kCaveCapacity",
+      "value": "0x1000",
+      "method": "one page"
+    },
+    {
+      "name": "kMetaDataStoreHash",
+      "value": "0x983a6ef3",
+      "method": "joaat('MetaDataStore'), the PoolSizes key the store's Init looks up"
+    },
+    {
+      "name": "kMetaDataStoreObj",
+      "value": "0x42b3230",
+      "method": "MetaDataStore object; pool size at +0x48 after InitStores"
+    },
+    {
+      "name": "kStockMetaDataStore",
+      "value": "3200",
+      "method": "stock PoolSizes value: store +0x10 = +0x48 in the Story Mode capture runtime-rw.bin; confirmed by a read-only boot probe on hardware"
+    },
+    {
+      "name": "kFragmentStoreHash",
+      "value": "0x3066500c",
+      "method": "joaat('FragmentStore'), the PoolSizes key the store's Init looks up"
+    },
+    {
+      "name": "kFragmentStoreObj",
+      "value": "0x424b348",
+      "method": "FragmentStore object; pool size at +0x48 after InitStores"
+    },
+    {
+      "name": "kStockFragmentStore",
+      "value": "42000",
+      "method": "stock PoolSizes value: store +0x10 = +0x48 in the Story Mode capture runtime-rw.bin; confirmed by a read-only boot probe on hardware"
+    },
+    {
+      "name": "kTxdStoreHash",
+      "value": "0x528acb56",
+      "method": "joaat('TxdStore'), the PoolSizes key the store's Init looks up"
+    },
+    {
+      "name": "kTxdStoreObj",
+      "value": "0x424b218",
+      "method": "TxdStore object; pool size at +0x48 after InitStores"
+    },
+    {
+      "name": "kStockTxdStore",
+      "value": "80200",
+      "method": "stock PoolSizes value: store +0x10 = +0x48 in the Story Mode capture runtime-rw.bin; confirmed by a read-only boot probe on hardware"
+    },
+    {
+      "name": "kPtFxAssetStoreHash",
+      "value": "0x999869f1",
+      "method": "joaat('PtFxAssetStore'), the PoolSizes key the store's Init looks up"
+    },
+    {
+      "name": "kPtFxAssetStoreObj",
+      "value": "0x43222c0",
+      "method": "PtFxAssetStore object; pool size at +0x48 after InitStores"
+    },
+    {
+      "name": "kStockPtFxAssetStore",
+      "value": "400",
+      "method": "stock PoolSizes value: store +0x10 = +0x48 in the Story Mode capture runtime-rw.bin; confirmed by a read-only boot probe on hardware"
+    },
+    {
+      "name": "kMapTypesStoreHash",
+      "value": "0xb4419501",
+      "method": "joaat('MapTypesStore'), the PoolSizes key the store's Init looks up"
+    },
+    {
+      "name": "kMapTypesStoreObj",
+      "value": "0x424b670",
+      "method": "MapTypesStore object; pool size at +0x48 after InitStores"
+    },
+    {
+      "name": "kStockMapTypesStore",
+      "value": "1700",
+      "method": "stock PoolSizes value: store +0x10 = +0x48 in the Story Mode capture runtime-rw.bin; confirmed by a read-only boot probe on hardware"
+    },
+    {
+      "name": "kDwdStoreHash",
+      "value": "0x68065b7a",
+      "method": "joaat('DwdStore'), the PoolSizes key the store's Init looks up"
+    },
+    {
+      "name": "kDwdStoreObj",
+      "value": "0x424b3e0",
+      "method": "DwdStore object; pool size at +0x48 after InitStores"
+    },
+    {
+      "name": "kStockDwdStore",
+      "value": "20500",
+      "method": "stock PoolSizes value: store +0x10 = +0x48 in the Story Mode capture runtime-rw.bin; confirmed by a read-only boot probe on hardware"
+    },
+    {
+      "name": "kDrawableStoreHash",
+      "value": "0x941f03c9",
+      "method": "joaat('DrawableStore'), the PoolSizes key the store's Init looks up"
+    },
+    {
+      "name": "kDrawableStoreObj",
+      "value": "0x424b2b0",
+      "method": "DrawableStore object; pool size at +0x48 after InitStores"
+    },
+    {
+      "name": "kStockCfgPedCap",
+      "value": "440",
+      "method": "0xF000 storage-block capacity of the model-info factory, live read on PID 5281 (attempt 030); the boot probe reads cfg directly",
+      "confidence": "medium"
+    },
+    {
+      "name": "kStockCfgVehicleCap",
+      "value": "640",
+      "method": "0xF000 storage-block capacity of the model-info factory, live read on PID 5281 (attempt 030); the boot probe reads cfg directly",
+      "confidence": "medium"
+    },
+    {
+      "name": "kStockCfgWeaponCap",
+      "value": "610",
+      "method": "0xF000 storage-block capacity of the model-info factory, live read on PID 5281 (attempt 030); the boot probe reads cfg directly",
+      "confidence": "medium"
+    },
+    {
+      "name": "kStoreInitObject",
+      "value": "0x42b3228",
+      "method": "u64 store-init object, registered at 0x403251 immediately before InitStoresA"
+    },
+    {
+      "name": "kPedModelFactory",
+      "value": "0x3629f88",
+      "method": "ped model-info factory: [[0x4342AB8]+0x30]->vfunc[+0x28](0xF000, cfg[+0x318])"
+    },
+    {
+      "name": "kVehicleModelFactory",
+      "value": "0x3629f70",
+      "method": "vehicle model-info factory: [[0x4342AB8]+0x28]->vfunc[+0x28](0xF000, cfg[+0x31C])"
+    },
+    {
+      "name": "kWeaponModelFactory",
+      "value": "0x3629f58",
+      "method": "weapon model-info factory: [[0x4342AB8]+0x20]->vfunc[+0x28](0xF000, cfg[+0x320])"
+    },
+    {
+      "name": "kModelFactoryBuckets",
+      "value": "0x8",
+      "method": "factory block map: node** buckets at factory+8 (the same map layout as the config manager)"
+    },
+    {
+      "name": "kModelFactorySlots",
+      "value": "0x10",
+      "method": "factory block map: u16 bucket count at factory+0x10"
+    },
+    {
+      "name": "kModelFactoryBlockKey",
+      "value": "0xf000",
+      "method": "storage-block key the factories are created with (vfunc[+0x28](0xF000, cap))"
+    },
+    {
+      "name": "kModelFactoryBlockValue",
+      "value": "0x8",
+      "method": "factory block node: storage-block pointer at node+8 ({u32 key, block* @+8, next @+0x10})"
+    },
+    {
+      "name": "kModelFactoryNodeNext",
+      "value": "0x10",
+      "method": "factory block node: next node at node+0x10"
+    },
+    {
+      "name": "kModelBlockCount",
+      "value": "0x8",
+      "method": "storage block: u16 used count at block+8"
+    },
+    {
+      "name": "kModelBlockCapacity",
+      "value": "0xa",
+      "method": "storage block: u16 capacity at block+0xA (attempts 033/034 read 637/840 vehicle)"
+    }
+  ],
+  "arrays": [
+    {
+      "name": "kLoadGameConfigCallBytes",
+      "hex": "e8ec193301",
+      "method": "call 0x22f14b0 at 0xfbfabf (eboot 88ef9deb...)"
+    },
+    {
+      "name": "kLoadGameConfigCallContext",
+      "hex": "49891c244889dfe8ec193301e887702f",
+      "method": "16 bytes from 0xfbfab8: mov [r12], rbx; mov rdi, rbx; call 0x22f14b0; call 0x22b6b50 (first byte)"
+    }
+  ]
+}

@@ -1,0 +1,1374 @@
+{
+  "schemaVersion": 1,
+  "target": "cusa00411-01.57",
+  "status": "registration-derived handlers with matched live fingerprints; arguments reviewed per action family",
+  "normalizedElfSha256": "88ef9deb170fee58de3b539492f24a0ed9cb77123a14afb056218fc7441addcf",
+  "addressConvention": "live = normalized ELF vaddr + 0x400000",
+  "addresses": [
+    {
+      "name": "DRAW_RECT",
+      "role": "draw",
+      "address": "0xdccac0"
+    },
+    {
+      "name": "DRAW_SPRITE",
+      "role": "draw",
+      "address": "0xdcccd0"
+    },
+    {
+      "name": "REQUEST_STREAMED_TEXTURE_DICT",
+      "role": "draw",
+      "address": "0xdcc970"
+    },
+    {
+      "name": "HAS_STREAMED_TEXTURE_DICT_LOADED",
+      "role": "draw",
+      "address": "0xdcca00"
+    },
+    {
+      "name": "SET_STREAMED_TEXTURE_DICT_AS_NO_LONGER_NEEDED",
+      "role": "draw",
+      "address": "0xdcca60"
+    },
+    {
+      "name": "GET_TEXTURE_RESOLUTION",
+      "role": "draw",
+      "address": "0xdcddb0"
+    },
+    {
+      "name": "REQUEST_SCALEFORM_MOVIE",
+      "role": "scaleform",
+      "address": "0xdd0cc0"
+    },
+    {
+      "name": "HAS_SCALEFORM_MOVIE_LOADED",
+      "role": "scaleform",
+      "address": "0xdd0d80"
+    },
+    {
+      "name": "BEGIN_SCALEFORM_MOVIE_METHOD",
+      "role": "scaleform",
+      "address": "0xdd16d0"
+    },
+    {
+      "name": "END_SCALEFORM_MOVIE_METHOD",
+      "role": "scaleform",
+      "address": "0xdd1870"
+    },
+    {
+      "name": "SCALEFORM_MOVIE_METHOD_ADD_PARAM_INT",
+      "role": "scaleform",
+      "address": "0xdd1990"
+    },
+    {
+      "name": "SCALEFORM_MOVIE_METHOD_ADD_PARAM_PLAYER_NAME_STRING",
+      "role": "scaleform",
+      "address": "0xdd1a50"
+    },
+    {
+      "name": "BEGIN_TEXT_COMMAND_SCALEFORM_STRING",
+      "role": "scaleform",
+      "address": "0xdd19e0"
+    },
+    {
+      "name": "END_TEXT_COMMAND_SCALEFORM_STRING",
+      "role": "scaleform",
+      "address": "0xdd19f0"
+    },
+    {
+      "name": "DRAW_SCALEFORM_MOVIE_FULLSCREEN",
+      "role": "scaleform",
+      "address": "0xdd11f0"
+    },
+    {
+      "name": "SET_SCALEFORM_MOVIE_AS_NO_LONGER_NEEDED",
+      "role": "scaleform",
+      "address": "0xdd1020"
+    },
+    {
+      "name": "GET_CONTROL_INSTRUCTIONAL_BUTTONS_STRING",
+      "role": "scaleform",
+      "address": "0xe6ad80"
+    },
+    {
+      "name": "BEGIN_TEXT_COMMAND_DISPLAY_TEXT",
+      "role": "text",
+      "address": "0xde0690"
+    },
+    {
+      "name": "ADD_TEXT_COMPONENT_SUBSTRING_PLAYER_NAME",
+      "role": "text",
+      "address": "0xde08f0"
+    },
+    {
+      "name": "END_TEXT_COMMAND_DISPLAY_TEXT",
+      "role": "text",
+      "address": "0xde06c0"
+    },
+    {
+      "name": "SET_TEXT_SCALE",
+      "role": "text",
+      "address": "0xde18d0"
+    },
+    {
+      "name": "SET_TEXT_COLOUR",
+      "role": "text",
+      "address": "0xde18f0"
+    },
+    {
+      "name": "SET_TEXT_FONT",
+      "role": "text",
+      "address": "0xde19f0"
+    },
+    {
+      "name": "SET_TEXT_CENTRE",
+      "role": "text",
+      "address": "0xde1930"
+    },
+    {
+      "name": "SET_TEXT_WRAP",
+      "role": "text",
+      "address": "0xde19a0"
+    },
+    {
+      "name": "SET_TEXT_JUSTIFICATION",
+      "role": "text",
+      "address": "0xde1970"
+    },
+    {
+      "name": "SET_TEXT_DROP_SHADOW",
+      "role": "text",
+      "address": "0xde1a10"
+    },
+    {
+      "name": "SET_TEXT_OUTLINE",
+      "role": "text",
+      "address": "0xde1a40"
+    },
+    {
+      "name": "GET_FILENAME_FOR_AUDIO_CONVERSATION",
+      "role": "text",
+      "address": "0xde0a80"
+    },
+    {
+      "name": "IS_CONTROL_PRESSED",
+      "role": "input",
+      "address": "0xe6a450"
+    },
+    {
+      "name": "IS_CONTROL_JUST_PRESSED",
+      "role": "input",
+      "address": "0xe6a530"
+    },
+    {
+      "name": "GET_CONTROL_NORMAL",
+      "role": "input",
+      "address": "0xe6a720"
+    },
+    {
+      "name": "IS_DISABLED_CONTROL_PRESSED",
+      "role": "input",
+      "address": "0xe6a880"
+    },
+    {
+      "name": "IS_DISABLED_CONTROL_JUST_PRESSED",
+      "role": "input",
+      "address": "0xe6a9c0"
+    },
+    {
+      "name": "IS_DISABLED_CONTROL_JUST_RELEASED",
+      "role": "input",
+      "address": "0xe6aa60"
+    },
+    {
+      "name": "GET_DISABLED_CONTROL_NORMAL",
+      "role": "input",
+      "address": "0xe6ab00"
+    },
+    {
+      "name": "DISABLE_CONTROL_ACTION",
+      "role": "input",
+      "address": "0xe6b220"
+    },
+    {
+      "name": "SET_INPUT_EXCLUSIVE",
+      "role": "input",
+      "address": "0xe6b1d0"
+    },
+    {
+      "name": "GET_FRAME_COUNT",
+      "role": "getter",
+      "address": "0xdf6430"
+    },
+    {
+      "name": "GET_GAME_TIMER",
+      "role": "getter",
+      "address": "0xdf63e0"
+    },
+    {
+      "name": "PLAYER_ID",
+      "role": "getter",
+      "address": "0xeaafc0"
+    },
+    {
+      "name": "PLAYER_PED_ID",
+      "role": "getter",
+      "address": "0xeab000"
+    },
+    {
+      "name": "STAT_SET_INT",
+      "role": "stats",
+      "address": "0xecf4b0"
+    },
+    {
+      "name": "STAT_GET_INT",
+      "role": "stats",
+      "address": "0xecf710"
+    },
+    {
+      "name": "SET_PROFILE_SETTING_PROLOGUE_COMPLETE",
+      "role": "session",
+      "address": "0xed1bd0"
+    },
+    {
+      "name": "SHUTDOWN_AND_LAUNCH_SINGLE_PLAYER_GAME",
+      "role": "session",
+      "address": "0xe51fd0"
+    },
+    {
+      "name": "TERMINATE_ALL_SCRIPTS_WITH_THIS_NAME",
+      "role": "session",
+      "address": "0xdf7810"
+    },
+    {
+      "name": "SET_ENTITY_HEALTH",
+      "role": "gameplay",
+      "address": "0xdb5d00"
+    },
+    {
+      "name": "SET_PED_ARMOUR",
+      "role": "gameplay",
+      "address": "0xe90930"
+    },
+    {
+      "name": "SET_PLAYER_INVINCIBLE",
+      "role": "gameplay",
+      "address": "0xeab320"
+    },
+    {
+      "name": "SET_ENTITY_INVINCIBLE",
+      "role": "gameplay",
+      "address": "0xdb5d20"
+    },
+    {
+      "name": "SET_PLAYER_WANTED_LEVEL",
+      "role": "gameplay",
+      "address": "0xea97a0"
+    },
+    {
+      "name": "SET_PLAYER_WANTED_LEVEL_NOW",
+      "role": "gameplay",
+      "address": "0xea9880"
+    },
+    {
+      "name": "GET_PED_MAX_HEALTH",
+      "role": "gameplay",
+      "address": "0xe94900"
+    },
+    {
+      "name": "SET_PED_MAX_HEALTH",
+      "role": "gameplay",
+      "address": "0xe94890"
+    },
+    {
+      "name": "CLEAR_PED_BLOOD_DAMAGE",
+      "role": "gameplay",
+      "address": "0xe990e0"
+    },
+    {
+      "name": "CLEAR_PED_WETNESS",
+      "role": "gameplay",
+      "address": "0xe993c0"
+    },
+    {
+      "name": "SET_POLICE_IGNORE_PLAYER",
+      "role": "gameplay",
+      "address": "0xea9d10"
+    },
+    {
+      "name": "SET_EVERYONE_IGNORE_PLAYER",
+      "role": "gameplay",
+      "address": "0xea9dc0"
+    },
+    {
+      "name": "SET_PLAYER_CAN_BE_HASSLED_BY_GANGS",
+      "role": "gameplay",
+      "address": "0xeaa840"
+    },
+    {
+      "name": "SET_PED_AMMO",
+      "role": "gameplay",
+      "address": "0xf38ea0"
+    },
+    {
+      "name": "GET_MAX_AMMO",
+      "role": "gameplay",
+      "address": "0xf397e0"
+    },
+    {
+      "name": "GET_HASH_KEY",
+      "role": "model",
+      "address": "0xdf6de0"
+    },
+    {
+      "name": "IS_MODEL_VALID",
+      "role": "model",
+      "address": "0xed94f0"
+    },
+    {
+      "name": "IS_MODEL_IN_CDIMAGE",
+      "role": "model",
+      "address": "0xed9480"
+    },
+    {
+      "name": "IS_MODEL_A_VEHICLE",
+      "role": "model",
+      "address": "0xed95d0"
+    },
+    {
+      "name": "REQUEST_MODEL",
+      "role": "model",
+      "address": "0xed9290"
+    },
+    {
+      "name": "REQUEST_MENU_PED_MODEL",
+      "role": "model",
+      "address": "0xed92a0"
+    },
+    {
+      "name": "HAS_MODEL_LOADED",
+      "role": "model",
+      "address": "0xed92c0"
+    },
+    {
+      "name": "LOAD_ALL_OBJECTS_NOW",
+      "role": "model",
+      "address": "0xed9170"
+    },
+    {
+      "name": "SET_MODEL_AS_NO_LONGER_NEEDED",
+      "role": "model",
+      "address": "0xed9400"
+    },
+    {
+      "name": "SET_PLAYER_MODEL",
+      "role": "skin",
+      "address": "0xea93a0"
+    },
+    {
+      "name": "SET_PED_DEFAULT_COMPONENT_VARIATION",
+      "role": "skin",
+      "address": "0xe962b0"
+    },
+    {
+      "name": "SET_PED_COMPONENT_VARIATION",
+      "role": "skin",
+      "address": "0xe960a0"
+    },
+    {
+      "name": "GET_NUMBER_OF_PED_DRAWABLE_VARIATIONS",
+      "role": "skin",
+      "address": "0xe95e20"
+    },
+    {
+      "name": "GET_NUMBER_OF_PED_TEXTURE_VARIATIONS",
+      "role": "skin",
+      "address": "0xe95ec0"
+    },
+    {
+      "name": "SET_PED_PROP_INDEX",
+      "role": "skin",
+      "address": "0xe97450"
+    },
+    {
+      "name": "GET_NUMBER_OF_PED_PROP_DRAWABLE_VARIATIONS",
+      "role": "skin",
+      "address": "0xe95ef0"
+    },
+    {
+      "name": "GET_NUMBER_OF_PED_PROP_TEXTURE_VARIATIONS",
+      "role": "skin",
+      "address": "0xe95f20"
+    },
+    {
+      "name": "CLEAR_PED_PROP",
+      "role": "skin",
+      "address": "0xe97520"
+    },
+    {
+      "name": "GET_VEHICLE_PED_IS_IN",
+      "role": "entity",
+      "address": "0xe90e80"
+    },
+    {
+      "name": "GET_ENTITY_MODEL",
+      "role": "entity",
+      "address": "0xdb3330"
+    },
+    {
+      "name": "GET_ENTITY_COORDS",
+      "role": "entity",
+      "address": "0xdb2bc0"
+    },
+    {
+      "name": "GET_ENTITY_HEADING",
+      "role": "entity",
+      "address": "0xdb2df0"
+    },
+    {
+      "name": "SET_ENTITY_COORDS",
+      "role": "entity",
+      "address": "0xdb5ba0"
+    },
+    {
+      "name": "SET_ENTITY_HEADING",
+      "role": "entity",
+      "address": "0xdb5cf0"
+    },
+    {
+      "name": "GET_ENTITY_ROTATION",
+      "role": "entity",
+      "address": "0xdb36d0"
+    },
+    {
+      "name": "SET_ENTITY_ROTATION",
+      "role": "entity",
+      "address": "0xdb66a0"
+    },
+    {
+      "name": "SET_ENTITY_AS_MISSION_ENTITY",
+      "role": "entity",
+      "address": "0xdb5600"
+    },
+    {
+      "name": "IS_ENTITY_DEAD",
+      "role": "entity",
+      "address": "0xdb4380"
+    },
+    {
+      "name": "DOES_ENTITY_EXIST",
+      "role": "entity",
+      "address": "0xdb2290"
+    },
+    {
+      "name": "CREATE_VEHICLE",
+      "role": "vehicle",
+      "address": "0xf1afb0"
+    },
+    {
+      "name": "GET_VEHICLE_CLASS_FROM_NAME",
+      "role": "vehicle",
+      "address": "0xf2a590"
+    },
+    {
+      "name": "SET_PED_INTO_VEHICLE",
+      "role": "vehicle",
+      "address": "0xe90a10"
+    },
+    {
+      "name": "SET_VEHICLE_ON_GROUND_PROPERLY",
+      "role": "vehicle",
+      "address": "0xf1b7e0"
+    },
+    {
+      "name": "SET_VEHICLE_ENGINE_ON",
+      "role": "vehicle",
+      "address": "0xf213b0"
+    },
+    {
+      "name": "SET_VEHICLE_DOOR_OPEN",
+      "role": "vehicle",
+      "address": "0xf1e560"
+    },
+    {
+      "name": "SET_VEHICLE_DOOR_SHUT",
+      "role": "vehicle",
+      "address": "0xf21670"
+    },
+    {
+      "name": "ROLL_DOWN_WINDOW",
+      "role": "vehicle",
+      "address": "0xf1e6e0"
+    },
+    {
+      "name": "ROLL_UP_WINDOW",
+      "role": "vehicle",
+      "address": "0xf1e750"
+    },
+    {
+      "name": "SET_VEHICLE_LIGHTS",
+      "role": "vehicle",
+      "address": "0xf1e950"
+    },
+    {
+      "name": "SET_VEHICLE_DOORS_LOCKED",
+      "role": "vehicle",
+      "address": "0xf1bf10"
+    },
+    {
+      "name": "RAISE_CONVERTIBLE_ROOF",
+      "role": "vehicle",
+      "address": "0xf22df0"
+    },
+    {
+      "name": "LOWER_CONVERTIBLE_ROOF",
+      "role": "vehicle",
+      "address": "0xf22da0"
+    },
+    {
+      "name": "IS_VEHICLE_A_CONVERTIBLE",
+      "role": "vehicle",
+      "address": "0xf22ea0"
+    },
+    {
+      "name": "SET_VEHICLE_FIXED",
+      "role": "vehicle",
+      "address": "0xf22410"
+    },
+    {
+      "name": "SET_VEHICLE_DIRT_LEVEL",
+      "role": "vehicle",
+      "address": "0xf21250"
+    },
+    {
+      "name": "DELETE_ENTITY",
+      "role": "vehicle",
+      "address": "0xdb5160"
+    },
+    {
+      "name": "SET_VEHICLE_MOD_KIT",
+      "role": "vehicle",
+      "address": "0xf26830"
+    },
+    {
+      "name": "SET_VEHICLE_ENGINE_HEALTH",
+      "role": "vehicle",
+      "address": "0xf231a0"
+    },
+    {
+      "name": "SET_VEHICLE_BODY_HEALTH",
+      "role": "vehicle",
+      "address": "0xf2b670"
+    },
+    {
+      "name": "SET_VEHICLE_PETROL_TANK_HEALTH",
+      "role": "vehicle",
+      "address": "0xf233a0"
+    },
+    {
+      "name": "GET_DOES_VEHICLE_HAVE_DAMAGE_DECALS",
+      "role": "vehicle",
+      "address": "0xf212c0"
+    },
+    {
+      "name": "SET_VEHICLE_UNDRIVEABLE",
+      "role": "vehicle",
+      "address": "0xf213e0"
+    },
+    {
+      "name": "SET_VEHICLE_REDUCE_GRIP",
+      "role": "vehicle",
+      "address": "0xf25240"
+    },
+    {
+      "name": "SET_VEHICLE_MOD",
+      "role": "vehicle",
+      "address": "0xf26f80"
+    },
+    {
+      "name": "GET_NUM_VEHICLE_MODS",
+      "role": "vehicle",
+      "address": "0xf27210"
+    },
+    {
+      "name": "GET_VEHICLE_MOD",
+      "role": "vehicle",
+      "address": "0xf27060"
+    },
+    {
+      "name": "GET_MOD_TEXT_LABEL",
+      "role": "vehicle",
+      "address": "0xf27490"
+    },
+    {
+      "name": "TOGGLE_VEHICLE_MOD",
+      "role": "vehicle",
+      "address": "0xf27380"
+    },
+    {
+      "name": "SET_VEHICLE_COLOURS",
+      "role": "vehicle",
+      "address": "0xf1c8b0"
+    },
+    {
+      "name": "SET_VEHICLE_WINDOW_TINT",
+      "role": "vehicle",
+      "address": "0xf278e0"
+    },
+    {
+      "name": "SET_VEHICLE_NEON_ENABLED",
+      "role": "vehicle",
+      "address": "0xf2b360"
+    },
+    {
+      "name": "SET_VEHICLE_NEON_COLOUR",
+      "role": "vehicle",
+      "address": "0xf2b190"
+    },
+    {
+      "name": "SET_VEHICLE_TYRE_SMOKE_COLOR",
+      "role": "vehicle",
+      "address": "0xf27810"
+    },
+    {
+      "name": "SET_VEHICLE_TYRES_CAN_BURST",
+      "role": "vehicle",
+      "address": "0xf1e400"
+    },
+    {
+      "name": "SET_VEHICLE_TYRE_BURST",
+      "role": "vehicle",
+      "address": "0xf1e3c0"
+    },
+    {
+      "name": "SET_VEHICLE_TYRE_FIXED",
+      "role": "vehicle",
+      "address": "0xf1f1a0"
+    },
+    {
+      "name": "SET_VEHICLE_WHEEL_TYPE",
+      "role": "vehicle",
+      "address": "0xf269d0"
+    },
+    {
+      "name": "SET_VEHICLE_LIVERY",
+      "role": "vehicle",
+      "address": "0xf23b80"
+    },
+    {
+      "name": "GET_VEHICLE_LIVERY_COUNT",
+      "role": "vehicle",
+      "address": "0xf23c40"
+    },
+    {
+      "name": "SET_VEHICLE_NUMBER_PLATE_TEXT_INDEX",
+      "role": "vehicle",
+      "address": "0xf1f300"
+    },
+    {
+      "name": "SET_VEHICLE_NUMBER_PLATE_TEXT",
+      "role": "vehicle",
+      "address": "0xf1f230"
+    },
+    {
+      "name": "SET_VEHICLE_EXTRA_COLOURS",
+      "role": "vehicle",
+      "address": "0xf22180"
+    },
+    {
+      "name": "SET_VEHICLE_CUSTOM_PRIMARY_COLOUR",
+      "role": "vehicle",
+      "address": "0xf1caa0"
+    },
+    {
+      "name": "SET_VEHICLE_CUSTOM_SECONDARY_COLOUR",
+      "role": "vehicle",
+      "address": "0xf1cca0"
+    },
+    {
+      "name": "GET_ENTITY_SPEED",
+      "role": "boost",
+      "address": "0xdb3980"
+    },
+    {
+      "name": "SET_VEHICLE_FORWARD_SPEED",
+      "role": "boost",
+      "address": "0xf1dc20"
+    },
+    {
+      "name": "TASK_VEHICLE_DRIVE_TO_COORD_LONGRANGE",
+      "role": "autopilot",
+      "address": "0xef2620"
+    },
+    {
+      "name": "TASK_VEHICLE_DRIVE_WANDER",
+      "role": "autopilot",
+      "address": "0xef2640"
+    },
+    {
+      "name": "SET_DRIVE_TASK_DRIVING_STYLE",
+      "role": "autopilot",
+      "address": "0xef5260"
+    },
+    {
+      "name": "SET_DRIVE_TASK_CRUISE_SPEED",
+      "role": "autopilot",
+      "address": "0xef5230"
+    },
+    {
+      "name": "CLEAR_PED_TASKS",
+      "role": "autopilot",
+      "address": "0xef3c20"
+    },
+    {
+      "name": "GET_PED_IN_VEHICLE_SEAT",
+      "role": "autopilot",
+      "address": "0xf1da00"
+    },
+    {
+      "name": "GIVE_WEAPON_TO_PED",
+      "role": "weapon",
+      "address": "0xf38fd0"
+    },
+    {
+      "name": "GIVE_DELAYED_WEAPON_TO_PED",
+      "role": "weapon",
+      "address": "0xf39000"
+    },
+    {
+      "name": "SET_CURRENT_PED_WEAPON",
+      "role": "weapon",
+      "address": "0xf38980"
+    },
+    {
+      "name": "GET_CURRENT_PED_WEAPON",
+      "role": "weapon",
+      "address": "0xf389a0"
+    },
+    {
+      "name": "SET_PED_WEAPON_TINT_INDEX",
+      "role": "weapon",
+      "address": "0xf3a5e0"
+    },
+    {
+      "name": "SET_PED_INFINITE_AMMO_CLIP",
+      "role": "weapon",
+      "address": "0xf38ee0"
+    },
+    {
+      "name": "REMOVE_ALL_PED_WEAPONS",
+      "role": "weapon",
+      "address": "0xf39020"
+    },
+    {
+      "name": "SET_PLAYER_WEAPON_DAMAGE_MODIFIER",
+      "role": "weapon",
+      "address": "0xeac7f0"
+    },
+    {
+      "name": "GET_PED_LAST_WEAPON_IMPACT_COORD",
+      "role": "weapon_fx",
+      "address": "0xf39c00"
+    },
+    {
+      "name": "ADD_OWNED_EXPLOSION",
+      "role": "weapon_fx",
+      "address": "0xdbb420"
+    },
+    {
+      "name": "START_SCRIPT_FIRE",
+      "role": "weapon_fx",
+      "address": "0xdbaff0"
+    },
+    {
+      "name": "SET_RUN_SPRINT_MULTIPLIER_FOR_PLAYER",
+      "role": "movement",
+      "address": "0xeab800"
+    },
+    {
+      "name": "SET_SWIM_MULTIPLIER_FOR_PLAYER",
+      "role": "movement",
+      "address": "0xeab7a0"
+    },
+    {
+      "name": "SET_PED_MOVE_RATE_OVERRIDE",
+      "role": "movement",
+      "address": "0xe9d0c0"
+    },
+    {
+      "name": "SET_SUPER_JUMP_THIS_FRAME",
+      "role": "movement",
+      "address": "0xdfab20"
+    },
+    {
+      "name": "SET_PED_CAN_RAGDOLL",
+      "role": "ped_state",
+      "address": "0xe980f0"
+    },
+    {
+      "name": "SET_PED_CAN_BE_KNOCKED_OFF_VEHICLE",
+      "role": "ped_state",
+      "address": "0xe94b00"
+    },
+    {
+      "name": "SET_PED_CONFIG_FLAG",
+      "role": "ped_state",
+      "address": "0xe9a7f0"
+    },
+    {
+      "name": "SET_PED_SUFFERS_CRITICAL_HITS",
+      "role": "ped_state",
+      "address": "0xe91310"
+    },
+    {
+      "name": "SET_ENTITY_PROOFS",
+      "role": "ped_state",
+      "address": "0xdb6210"
+    },
+    {
+      "name": "SET_PED_TO_RAGDOLL",
+      "role": "ped_state",
+      "address": "0xe97e30"
+    },
+    {
+      "name": "CLEAR_PED_TASKS_IMMEDIATELY",
+      "role": "ped_state",
+      "address": "0xef49d0"
+    },
+    {
+      "name": "TASK_START_SCENARIO_IN_PLACE",
+      "role": "ped_state",
+      "address": "0xef54d0"
+    },
+    {
+      "name": "REQUEST_ANIM_DICT",
+      "role": "ped_state",
+      "address": "0xed97d0"
+    },
+    {
+      "name": "HAS_ANIM_DICT_LOADED",
+      "role": "ped_state",
+      "address": "0xed97e0"
+    },
+    {
+      "name": "TASK_PLAY_ANIM",
+      "role": "ped_state",
+      "address": "0xef3000"
+    },
+    {
+      "name": "TASK_COMBAT_PED",
+      "role": "ped_state",
+      "address": "0xef4eb0"
+    },
+    {
+      "name": "GET_PED_NEARBY_PEDS",
+      "role": "ped_state",
+      "address": "0xe9d250"
+    },
+    {
+      "name": "SET_PED_KEEP_TASK",
+      "role": "ped_state",
+      "address": "0xe94db0"
+    },
+    {
+      "name": "SET_PED_FLEE_ATTRIBUTES",
+      "role": "ped_state",
+      "address": "0xe9bbd0"
+    },
+    {
+      "name": "TASK_SMART_FLEE_PED",
+      "role": "ped_state",
+      "address": "0xef2880"
+    },
+    {
+      "name": "SET_BLOCKING_OF_NON_TEMPORARY_EVENTS",
+      "role": "ped_state",
+      "address": "0xe97810"
+    },
+    {
+      "name": "IS_PED_A_PLAYER",
+      "role": "ped_state",
+      "address": "0xe902c0"
+    },
+    {
+      "name": "ADD_RELATIONSHIP_GROUP",
+      "role": "ped_state",
+      "address": "0xe93950"
+    },
+    {
+      "name": "SET_RELATIONSHIP_BETWEEN_GROUPS",
+      "role": "ped_state",
+      "address": "0xe93890"
+    },
+    {
+      "name": "SET_PED_RELATIONSHIP_GROUP_HASH",
+      "role": "ped_state",
+      "address": "0xe93880"
+    },
+    {
+      "name": "SET_PED_COMBAT_ATTRIBUTES",
+      "role": "ped_state",
+      "address": "0xe9b780"
+    },
+    {
+      "name": "GET_PLAYER_GROUP",
+      "role": "ped_state",
+      "address": "0xeaabb0"
+    },
+    {
+      "name": "SET_PED_AS_GROUP_MEMBER",
+      "role": "ped_state",
+      "address": "0xe92e50"
+    },
+    {
+      "name": "SET_PED_NEVER_LEAVES_GROUP",
+      "role": "ped_state",
+      "address": "0xe94710"
+    },
+    {
+      "name": "SET_GROUP_FORMATION",
+      "role": "ped_state",
+      "address": "0xe94160"
+    },
+    {
+      "name": "SET_GROUP_SEPARATION_RANGE",
+      "role": "ped_state",
+      "address": "0xe92f70"
+    },
+    {
+      "name": "SET_PED_COMBAT_ABILITY",
+      "role": "ped_state",
+      "address": "0xe9b680"
+    },
+    {
+      "name": "SET_PED_COMBAT_MOVEMENT",
+      "role": "ped_state",
+      "address": "0xe9b5d0"
+    },
+    {
+      "name": "SET_PED_ACCURACY",
+      "role": "ped_state",
+      "address": "0xe90640"
+    },
+    {
+      "name": "TASK_SHOOT_AT_ENTITY",
+      "role": "ped_state",
+      "address": "0xef47f0"
+    },
+    {
+      "name": "IS_ENTITY_A_VEHICLE",
+      "role": "ped_state",
+      "address": "0xdb3fb0"
+    },
+    {
+      "name": "ADD_BLIP_FOR_ENTITY",
+      "role": "blip",
+      "address": "0xde2290"
+    },
+    {
+      "name": "SET_BLIP_SPRITE",
+      "role": "blip",
+      "address": "0xde2560"
+    },
+    {
+      "name": "SET_BLIP_COLOUR",
+      "role": "blip",
+      "address": "0xde2820"
+    },
+    {
+      "name": "SET_BLIP_AS_FRIENDLY",
+      "role": "blip",
+      "address": "0xde2ec0"
+    },
+    {
+      "name": "REMOVE_BLIP",
+      "role": "blip",
+      "address": "0xde2e50"
+    },
+    {
+      "name": "CREATE_PED",
+      "role": "spawn_entity",
+      "address": "0xe8fbf0"
+    },
+    {
+      "name": "CREATE_OBJECT",
+      "role": "spawn_entity",
+      "address": "0xe639e0"
+    },
+    {
+      "name": "PLACE_OBJECT_ON_GROUND_PROPERLY",
+      "role": "spawn_entity",
+      "address": "0xe63b30"
+    },
+    {
+      "name": "DELETE_PED",
+      "role": "spawn_entity",
+      "address": "0xe8fc40"
+    },
+    {
+      "name": "TASK_WANDER_STANDARD",
+      "role": "spawn_entity",
+      "address": "0xef29e0"
+    },
+    {
+      "name": "SET_NIGHTVISION",
+      "role": "effects",
+      "address": "0xdcdc30"
+    },
+    {
+      "name": "SET_SEETHROUGH",
+      "role": "effects",
+      "address": "0xdce690"
+    },
+    {
+      "name": "SET_TIMECYCLE_MODIFIER",
+      "role": "effects",
+      "address": "0xdd07b0"
+    },
+    {
+      "name": "SET_TIMECYCLE_MODIFIER_STRENGTH",
+      "role": "effects",
+      "address": "0xdd0830"
+    },
+    {
+      "name": "CLEAR_TIMECYCLE_MODIFIER",
+      "role": "effects",
+      "address": "0xdd08d0"
+    },
+    {
+      "name": "ANIMPOSTFX_PLAY",
+      "role": "effects",
+      "address": "0xdd21f0"
+    },
+    {
+      "name": "ANIMPOSTFX_STOP_ALL",
+      "role": "effects",
+      "address": "0xdd23c0"
+    },
+    {
+      "name": "GET_GAMEPLAY_CAM_ROT",
+      "role": "noclip",
+      "address": "0xd94110"
+    },
+    {
+      "name": "GET_GAMEPLAY_CAM_COORD",
+      "role": "noclip",
+      "address": "0xd940d0"
+    },
+    {
+      "name": "SET_ENTITY_COLLISION",
+      "role": "noclip",
+      "address": "0xdb5ae0"
+    },
+    {
+      "name": "SET_ENTITY_COORDS_NO_OFFSET",
+      "role": "noclip",
+      "address": "0xdb5c40"
+    },
+    {
+      "name": "SET_ENTITY_HAS_GRAVITY",
+      "role": "noclip",
+      "address": "0xdb68e0"
+    },
+    {
+      "name": "SET_ENTITY_VELOCITY",
+      "role": "noclip",
+      "address": "0xdb67c0"
+    },
+    {
+      "name": "START_EXPENSIVE_SYNCHRONOUS_SHAPE_TEST_LOS_PROBE",
+      "role": "shape_test",
+      "address": "0xeb32c0"
+    },
+    {
+      "name": "GET_SHAPE_TEST_RESULT",
+      "role": "shape_test",
+      "address": "0xeb34b0"
+    },
+    {
+      "name": "RESET_PLAYER_STAMINA",
+      "role": "player_state",
+      "address": "0xeaa990"
+    },
+    {
+      "name": "SPECIAL_ABILITY_FILL_METER",
+      "role": "player_state",
+      "address": "0xeac060"
+    },
+    {
+      "name": "FREEZE_ENTITY_POSITION",
+      "role": "teleport_stream",
+      "address": "0xdb5190"
+    },
+    {
+      "name": "REQUEST_COLLISION_AT_COORD",
+      "role": "teleport_stream",
+      "address": "0xed9640"
+    },
+    {
+      "name": "HAS_COLLISION_LOADED_AROUND_ENTITY",
+      "role": "teleport_stream",
+      "address": "0xdb5fe0"
+    },
+    {
+      "name": "GET_GROUND_Z_FOR_3D_COORD",
+      "role": "teleport_stream",
+      "address": "0xdf65a0"
+    },
+    {
+      "name": "IS_PED_IN_ANY_VEHICLE",
+      "role": "teleport_stream",
+      "address": "0xe8ff40"
+    },
+    {
+      "name": "SET_WEATHER_TYPE_NOW_PERSIST",
+      "role": "world",
+      "address": "0xdf5cb0"
+    },
+    {
+      "name": "SET_WEATHER_TYPE_NOW",
+      "role": "world",
+      "address": "0xdf5d00"
+    },
+    {
+      "name": "NETWORK_OVERRIDE_CLOCK_TIME",
+      "role": "world",
+      "address": "0xe55a20"
+    },
+    {
+      "name": "SET_CLOCK_TIME",
+      "role": "world",
+      "address": "0xd969b0"
+    },
+    {
+      "name": "SET_GRAVITY_LEVEL",
+      "role": "world",
+      "address": "0xdf9830"
+    },
+    {
+      "name": "SET_TIME_SCALE",
+      "role": "world",
+      "address": "0xdf57c0"
+    },
+    {
+      "name": "SET_ARTIFICIAL_LIGHTS_STATE",
+      "role": "world",
+      "address": "0xdcdeb0"
+    },
+    {
+      "name": "SET_PED_POPULATION_BUDGET",
+      "role": "world",
+      "address": "0xed9db0"
+    },
+    {
+      "name": "SET_VEHICLE_POPULATION_BUDGET",
+      "role": "world",
+      "address": "0xed9d90"
+    },
+    {
+      "name": "MODIFY_WATER",
+      "role": "water",
+      "address": "0xf2fd00"
+    },
+    {
+      "name": "GET_WATER_HEIGHT",
+      "role": "water",
+      "address": "0xf2f950"
+    },
+    {
+      "name": "GET_FIRST_BLIP_INFO_ID",
+      "role": "teleport",
+      "address": "0xde1f80"
+    },
+    {
+      "name": "GET_BLIP_INFO_ID_TYPE",
+      "role": "teleport",
+      "address": "0xde20c0"
+    },
+    {
+      "name": "GET_BLIP_COORDS",
+      "role": "teleport",
+      "address": "0xde24b0"
+    },
+    {
+      "name": "SET_ENTITY_VISIBLE",
+      "role": "teleport",
+      "address": "0xdb66c0"
+    },
+    {
+      "name": "DOES_CAM_EXIST",
+      "role": "hook",
+      "address": "0xd91400"
+    },
+    {
+      "name": "GET_FOLLOW_PED_CAM_VIEW_MODE",
+      "role": "hook",
+      "address": "0xd94e30"
+    },
+    {
+      "name": "GET_FOLLOW_VEHICLE_CAM_VIEW_MODE",
+      "role": "hook",
+      "address": "0xd94fa0"
+    },
+    {
+      "name": "GET_GAMEPLAY_CAM_RELATIVE_HEADING",
+      "role": "hook",
+      "address": "0xd94270"
+    },
+    {
+      "name": "IS_HUD_HIDDEN",
+      "role": "hook",
+      "address": "0xde1170"
+    },
+    {
+      "name": "IS_CINEMATIC_CAM_RENDERING",
+      "role": "hook",
+      "address": "0xd95ea0"
+    },
+    {
+      "name": "IS_CINEMATIC_CAM_SHAKING",
+      "role": "hook",
+      "address": "0xd95f10"
+    },
+    {
+      "name": "SET_WIND_SPEED",
+      "role": "spectacle",
+      "address": "0xdf6170"
+    },
+    {
+      "name": "SET_WIND_DIRECTION",
+      "role": "spectacle",
+      "address": "0xdf61c0"
+    },
+    {
+      "name": "SHAKE_GAMEPLAY_CAM",
+      "role": "spectacle",
+      "address": "0xd94580"
+    },
+    {
+      "name": "REQUEST_NAMED_PTFX_ASSET",
+      "role": "spectacle",
+      "address": "0xed9d40"
+    },
+    {
+      "name": "HAS_NAMED_PTFX_ASSET_LOADED",
+      "role": "spectacle",
+      "address": "0xed9d50"
+    },
+    {
+      "name": "USE_PARTICLE_FX_ASSET",
+      "role": "spectacle",
+      "address": "0xdcfb80"
+    },
+    {
+      "name": "SET_PARTICLE_FX_NON_LOOPED_COLOUR",
+      "role": "spectacle",
+      "address": "0xdcf0a0"
+    },
+    {
+      "name": "START_PARTICLE_FX_NON_LOOPED_AT_COORD",
+      "role": "spectacle",
+      "address": "0xdcec10"
+    },
+    {
+      "name": "CREATE_CAM_WITH_PARAMS",
+      "role": "free_cam",
+      "address": "0xd91000"
+    },
+    {
+      "name": "SET_CAM_ACTIVE",
+      "role": "free_cam",
+      "address": "0xd91450"
+    },
+    {
+      "name": "RENDER_SCRIPT_CAMS",
+      "role": "free_cam",
+      "address": "0xd90e50"
+    },
+    {
+      "name": "DESTROY_CAM",
+      "role": "free_cam",
+      "address": "0xd91360"
+    },
+    {
+      "name": "SET_CAM_COORD",
+      "role": "free_cam",
+      "address": "0xd91aa0"
+    },
+    {
+      "name": "SET_CAM_ROT",
+      "role": "free_cam",
+      "address": "0xd91b50"
+    },
+    {
+      "name": "SET_FOCUS_POS_AND_VEL",
+      "role": "free_cam",
+      "address": "0xed9de0"
+    },
+    {
+      "name": "CLEAR_FOCUS",
+      "role": "free_cam",
+      "address": "0xed9dd0"
+    },
+    {
+      "name": "APPLY_FORCE_TO_ENTITY",
+      "role": "fun_entity",
+      "address": "0xdb4c40"
+    },
+    {
+      "name": "GET_LAST_DRIVEN_VEHICLE",
+      "role": "fun_entity",
+      "address": "0xf287f0"
+    },
+    {
+      "name": "CLONE_PED",
+      "role": "fun_entity",
+      "address": "0xe8fc50"
+    },
+    {
+      "name": "SET_ENTITY_ALPHA",
+      "role": "fun_entity",
+      "address": "0xdb6ab0"
+    },
+    {
+      "name": "RESET_ENTITY_ALPHA",
+      "role": "fun_entity",
+      "address": "0xdb6b70"
+    },
+    {
+      "name": "ATTACH_ENTITY_TO_ENTITY",
+      "role": "fun_entity",
+      "address": "0xdb4cc0"
+    },
+    {
+      "name": "DETACH_ENTITY",
+      "role": "fun_entity",
+      "address": "0xdb5170"
+    },
+    {
+      "name": "GIVE_WEAPON_COMPONENT_TO_PED",
+      "role": "weapon_components",
+      "address": "0xf39f30"
+    },
+    {
+      "name": "REMOVE_WEAPON_COMPONENT_FROM_PED",
+      "role": "weapon_components",
+      "address": "0xf39fa0"
+    },
+    {
+      "name": "HAS_PED_GOT_WEAPON_COMPONENT",
+      "role": "weapon_components",
+      "address": "0xf3a010"
+    },
+    {
+      "name": "CREATE_MODEL_HIDE",
+      "role": "map_hide",
+      "address": "0xdb6f90"
+    },
+    {
+      "name": "REMOVE_MODEL_HIDE",
+      "role": "map_hide",
+      "address": "0xdb7130"
+    }
+  ]
+}

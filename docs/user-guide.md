@@ -4,13 +4,18 @@ This guide is for players: how to install the menu, how to put custom packs on t
 to load them in game. To make packs, read the [pack author guide](pack-author-guide.md). The
 [pack reference](pack-reference.md) covers the full `pack.cfg` format, commands and refusal messages.
 
-Custom packs are **experimental**. They work only on the 01.010.002 game builds (PPSA04263 and
-PPSA04264). The supported 01.005.000 build runs the ordinary menu with custom packs disabled.
+Custom packs are **experimental**. They work on the 01.010.002 game builds (PPSA04263 and
+PPSA04264) and on PPSA04264 01.011.001. The supported 01.005.000 build runs the ordinary menu with
+custom packs disabled.
+
+On a PS4, GTA V Legacy CUSA00411 01.57 runs the menu as a plugin for GoldHEN 2.3+ or nexHEN PS4
+v1.00 (`gtav_menu.prx`), and custom packs load there too (experimental). Install it as described in
+the [PS4 plugin guide](ps4-plugin.md); the rest of this guide covers the PS5 deliveries.
 
 ## 1. What you need
 
-- A jailbroken PS5 with a payload launcher, and GTA V (PPSA04263 or PPSA04264) at content version
-  01.010.002.
+- A jailbroken PS5 with a payload launcher, and GTA V at content version 01.010.002 (PPSA04263 or
+  PPSA04264) or 01.011.001 (PPSA04264).
 - ShadowMountPlus or a HEN setup that shares the console's `/data` folder with GTA. This is required
   for custom assets, whether the game is installed from an exFAT image or a native `.pkg`.
 - A PC (Linux is the tested host) with Python 3.11 or newer, `curl` and this repository, on the same
@@ -31,7 +36,7 @@ To deploy from a source checkout, follow the README's
 2. Start GTA V and load Story Mode, then inject from the PC:
 
    ```sh
-   export GTAV_TARGET=ppsa04264-01.010.002  # use ppsa04263-01.010.002 for EU
+   export GTAV_TARGET=ppsa04264-01.010.002  # ppsa04263-01.010.002 for EU, ppsa04264-01.011.001
    export PS5_HOST=<console-ip>
    ./menu-ctl.sh cave-inject
    ./menu-ctl.sh doctor
@@ -45,11 +50,22 @@ To deploy from a source checkout, follow the README's
 
 Use a fresh GTA process after a failed or interrupted injection.
 
+On 01.011.001 the loader also enlarges the game's vehicle, ped and asset tables (boot-time pool
+growth) as GTA starts, which leaves room for many more add-on vehicles and peds (section 8). It can
+do that only when it runs before GTA starts: send a universal package's loader, run `watch` or
+`watch --persist`, or turn the OnionHEN or etaHEN plugin's **Running** on before you launch the
+game. `cave-inject` into a running game, or a loader started after GTA, keeps the stock tables.
+`./menu-ctl.sh watch --no-boot-pools` skips the growth. If the loader cannot undo its startup patch
+cleanly, it does not inject the menu into that GTA process; restart GTA. The 01.010.002 and
+01.005.000 builds keep their stock tables.
+
 ### Delivery compatibility and updates
 
 Standalone and OnionHEN have passed US/EU 01.010.002 selection and shutdown checks. Standalone
-also works without a HEN when a compatible payload launcher is available. Automatic selection of
-PPSA04264 01.005.000 is implemented but has not been tested on hardware.
+also works without a HEN when a compatible payload launcher is available. On 01.011.001 the
+exact-target standalone loader has passed one-shot, persistent (relaunch), pool growth and shutdown
+checks. Automatic selection of PPSA04264 01.005.000 and 01.011.001, and the OnionHEN and etaHEN
+deliveries on 01.011.001, are implemented but have not been tested on hardware.
 
 The etaHEN package targets the 2.5B plugin interface. Console checks used Beta2.6A with a custom
 lifecycle implementation; compatibility with stock 2.5B has not been verified on hardware.
@@ -62,9 +78,9 @@ notification identifies the running menu by its release tag or source commit.
 
 ## 3. Shared game storage
 
-Packs live at `/data/gtavmenu/custom/packs/<id>/` on the console. GTA must see that same `/data`
+Packs live at `/data/GTAVMenu/custom/packs/<id>/` on the console. GTA must see that same `/data`
 folder through ShadowMountPlus or the HEN setup. The loader does not mount or copy pack files into
-the game. This direct route has passed asset testing on both 01.010.002 titles.
+the game. This direct route has passed asset testing on both 01.010.002 titles and on 01.011.001.
 
 If GTA cannot access shared `/data`, the regular menu still starts. **Custom Packs** reports that
 custom assets are unavailable; loading packs and exporting templates are refused. Saved maps and
@@ -106,13 +122,15 @@ The full list is in the reference's [menu-ctl.sh pack commands](pack-reference.m
 ## 5. Select and load packs in game
 
 1. Load Story Mode, inject the menu, and stay in free roam.
-2. Open **Custom Packs > Manage Packs**. **Installed packs** lists up to 64 packs, 12 per page.
-   Press Left/Right on that row to turn the page. Press Cross on a pack to select or deselect it.
-   The line below the list describes the highlighted pack: its description, version and author,
-   what it adds (for example `Adds 2 vehicles, 1 map, 4 labels`), and whether it clashes with the
-   packs already selected.
-3. Go back and press the first row of **Custom Packs**, **Load N selected packs**. All selected
-   packs load together. A toast reports `Custom packs ready: ...` when they have loaded.
+2. Open **Custom Packs > Manage Packs**. Its first rows are the controls (**Load N selected
+   packs**, **Uninstall**, and **Revert overrides** once overrides are loaded); below them
+   **Installed packs** lists every installed pack, up to 128. Press Cross on a pack to select or
+   deselect it. The line below the list describes the highlighted pack: its description, version
+   and author, what it adds (for example `Adds 2 vehicles, 1 map, 4 labels`), and whether it clashes
+   with the packs already selected.
+3. Press **Load N selected packs** (the first row of Manage Packs, or of **Custom Packs**). All
+   selected packs load together. A toast reports `Custom packs ready: ...` when they have loaded.
+   Before a load, the line below the Load row shows the game's free slots for packs.
 4. The loaded content then appears in folders on **Custom Packs**: **Vehicles**, **Weapons**,
    **Peds**, **Objects**, **Effects** (screen effects and particles) and **Locations** (teleports to
    the packs' maps). Each folder groups its rows by pack. The same rows appear in the **Custom**
@@ -120,14 +138,20 @@ The full list is in the reference's [menu-ctl.sh pack commands](pack-reference.m
 
 Things to know:
 
-- **Loading cannot be undone.** Each pack loads once per GTA process. After a load the list row
-  reads **Installed, next launch**: a selection you change then applies to the next GTA launch.
-  To change the loaded set, change the selection, restart GTA and load again.
+- **Loading cannot be undone.** Each pack loads once per GTA process and stays until GTA closes.
+- **You can add packs later.** After a load, select more packs and press **Add N selected packs**
+  (the same row): only the new packs load, and the loaded ones stay usable meanwhile. This works for
+  vehicle, ped, weapon and effect packs. Packs with maps, archetypes (typ), collision, stock
+  overrides or hides load only with the first Load of a game: once one of those is loaded, or to
+  add one, the list row reads **Installed, next launch** and the selection applies to the next GTA
+  launch.
 - **Stock replacements** (a pack that replaces a game car, texture or piece of clothing) must load
   before the game loads the original. If one is already in use, the load says
   `<member> in use; restart GTA`. **Manage Packs > Revert overrides (N)** puts the stock content back
-  once nothing is using it. If it is in use, the menu asks you to move away for about 2 minutes and
-  try again.
+  once nothing is using it: the menu unloads the replaced files the game only keeps cached, so it
+  finishes within seconds once the car is deleted (**Spawn > Spawned Entities > Clear Vehicles**),
+  the weapon put away or the clothing changed. While something still uses them it waits and tries
+  again every 2 seconds for up to 3 minutes.
 - **Clothing for a story character or ped** must load before that ped is spawned.
 - **Uninstall in game:** the last row of **Manage Packs**, **Uninstall: <pack>**. Pick the pack with
   Left/Right, then press Cross twice. The files stay on the console, and `pack-install` restores
@@ -168,13 +192,16 @@ When one pack caused it, the text starts with that pack's id. The most common on
 | `Custom packs unavailable` / shared `/data` required | Enable shared game access to the console `/data` in your HEN or mount setup, then restart GTA. The regular menu remains usable. |
 | `Load packs (none selected)` | Select a pack in **Manage Packs** first. |
 | `Deselect <pack>: same <kind> <name>`, `Load blocked: packs clash` | Two packs use the same name. Select only one of them. |
-| `Limit reached: too many <rows>; deselect a pack`, `8 packs selected; deselect one first` | The selection is over a limit. Deselect a pack. |
-| `<pack>: ped model slots full (430); deselect a ped pack` | The game has room for about 4 add-on peds per process. Deselect a ped pack, or restart GTA if peds already loaded. |
+| `Limit reached: too many <rows>; deselect a pack`, `16 packs selected; deselect one first` | The selection is over a limit. Deselect a pack. |
+| `Load blocked: Vehicle slots full`, `Ped model slots full (<n> free, need <m>): deselect <packs>` | The game has room for a limited number of add-on vehicles and peds per process (01.010.002: about 7 vehicles and 4 peds; 01.011.001: up to about 203 and 105 when the loader started before GTA, else 3 and 5; see section 8). Deselect the named packs, or restart GTA if packs already loaded. |
+| `Load blocked: Ped metadata slots full`, `<Store> slots full (<n> free, need <m>): deselect <packs>` | The selected packs add more of that kind (archive files, texture or drawable slots, models, weapon components or weapon files) than the game has free. Deselect the named packs; **Manage Packs** marks each of them with `Load blocked`, starts each pack's line with what it needs (`Needs 12 frag, 31 txd, 1 vehicle.`) and shows the game's free slots below the **Load** row. |
+| `Load failed: <Store> slots full`, `<Store> slots full (<n> free, need <m>); restart GTA` | The game used up slots between the check and the load, or a data file declared more models than expected. Restart GTA and load again; `./menu-ctl.sh pack-notes` shows each store's need and free slots (`pack store need ...`). |
 | `<id>: pack.cfg invalid; reinstall it`, `Pack files damaged; reinstall it`, `Pack file missing; reinstall it` | Reinstall the pack with `pack-install`. |
-| `Packs already loaded; restart GTA`, `Load failed; restart GTA to load again` | Packs load once per game process. Restart GTA. |
+| `Packs already loaded; restart GTA`, `Load failed; restart GTA to load again` | Packs load once per game process. Restart GTA. A Load refused before anything loaded (for example `Model name already used`, or slots full) needs no restart: deselect the named pack and press Load again. |
+| `Selected packs are loaded`, `Loaded packs have maps or overrides; restart GTA to load more`, `<pack> has maps or overrides; restart GTA to load it` | **Add N selected packs** adds only new vehicle, ped, weapon and effect packs to a finished load. Select a pack that is not loaded yet, or restart GTA to load a pack with maps, typs, collision, overrides or hides. |
 | `Load in Story mode, then retry`, `Game busy; retry in free roam` | Load in free roam in Story Mode. |
 | `Too many custom vehicles loaded`, `Out of memory; load fewer packs` | The game's table or memory is full. Load fewer packs. |
-| `Wrong game version (...)` | The game build is not 01.010.002. The menu refuses rather than guess. |
+| `Wrong game version (...)` | The game build is not one custom packs support (01.010.002 or 01.011.001). The menu refuses rather than guess. |
 | `... see notes`, `... see pack-notes` | Run `./menu-ctl.sh pack-notes` on the PC for the details. |
 | `Load pack <id> first` (from **Load Map**) | The saved map uses props of that pack. Load the pack from **Custom Packs** first. |
 
@@ -233,13 +260,18 @@ mod remains an input-coverage gap; supported stock slots are listed in
 
 ## 8. Known limits
 
-- **8 active packs, 64 installed.** At most 8 packs can be selected at once, and the menu lists up
-  to 64 installed packs. Together, the active packs also share limits on archives, maps, collision
+- **16 active packs, 128 installed.** At most 16 packs can be selected at once, and the menu lists
+  up to 128 installed packs. Together, the active packs also share limits on archives, maps, collision
   files, labels and spawn rows. The pack reference's [pack.cfg rows](pack-reference.md#packcfg-rows) table lists
   them.
-- **About 4 add-on peds per GTA process.** The game's table of ped models is nearly full. Load
-  refuses a selection with more add-on peds than fit (`ped model slots full`) before anything
-  loads. Clothing packs do not count.
+- **Add-on vehicles and peds per GTA process.** The game's model tables are nearly full: about 7
+  vehicles and 4 peds fit on 01.010.002. On 01.011.001, with the loader started before GTA
+  (section 2), the model tables have room for about 203 vehicles and 105 peds; the active-pack limit and
+  store slots still apply. A 01.011.001 game the loader joined after it started
+  keeps its stock tables: 3 vehicles and 5 peds, and ped metadata (needed by ped and clothing packs)
+  has 1 free slot, so ped and clothing packs do not load. Weapon tables do not grow on any build:
+  about 63 weapon models, 5 weapon components and 6 weapon files fit. Load refuses a selection that
+  does not fit (`Load blocked: Vehicle slots full`) before anything loads.
 - **No unload.** Restart GTA to change the loaded packs.
 - **Custom wheels only in the menu's LS Customs.** The real LS Customs shop lists a fixed set of
   designs per wheel type and never shows pack wheels.
@@ -252,9 +284,10 @@ mod remains an input-coverage gap; supported stock slots are listed in
 - **Mods for GTA V Enhanced (PC):** their texture files convert, but their models do not yet. Use the
   mod's "Legacy" build, which most of them ship as well.
 - **Not supported:** streaming large city-scale content from disk instead of
-  memory, more than 8 active or 64 installed packs, new vehicle sound recordings, brand-new particle
+  memory, more than 16 active or 128 installed packs, new vehicle sound recordings, brand-new particle
   effects, new weapon wheel artwork, whole replacement maps (a full city, level or water swap),
-  other game versions, and peds with non-standard skeletons (animals, extra bones).
+  game versions other than those in section 1, and peds with non-standard skeletons (animals, extra
+  bones).
 
 ## 9. Known issues
 

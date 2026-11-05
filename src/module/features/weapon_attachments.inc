@@ -138,7 +138,9 @@ static uint32_t wattach_refuse(uint32_t action, uint32_t weapon) {
                                                            uint32_t component, int* had) {
   int state[2] = {0, 0};
   // One HAS call site (the invoke wrappers are large): HAS, then GIVE or REMOVE, then HAS.
+#if defined(__clang__)
 #pragma clang loop unroll(disable)
+#endif
   for (int pass = 0; pass < 2; ++pass) {
     state[pass] = invoke_return<int>(g_n.has_ped_got_weapon_component, ped, weapon, component) != 0;
     if (!pass) weapon_component_set(ped, weapon, component, !state[0]);

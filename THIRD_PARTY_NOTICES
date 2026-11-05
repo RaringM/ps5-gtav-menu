@@ -39,3 +39,12 @@ DurtyFree GTA V data dumps
 
 The checked-in generated headers are published so the documented build is reproducible.
 Their inclusion is not a claim of ownership over Rockstar Games data or third-party work.
+
+ampr_emu PRX build tools (GNU General Public License v3.0)
+  https://github.com/drakmor/ampr_emu
+  Reference commit: cfa85df379f6eeeb165d7badf9b648e266fe77b7
+  tools/nexhen/generate_exports.py, prepare_prx_link_script.py, prx_hash_fix.py,
+  stamp_prx.py, and validate_plugin.py adapt the native PRX export, link,
+  stamping, hash, and verification approach. These build-only tools are marked
+  GPL-3.0-only; the license text is in LICENSES/GPL-3.0.txt. The build invokes
+  the PS5 payload SDK's make_fself.py without copying it into this repository.

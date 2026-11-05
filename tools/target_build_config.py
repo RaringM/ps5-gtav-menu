@@ -15,6 +15,8 @@ def make_tokens(profile: dict[str, object]) -> list[str]:
     injection = profile["injection"]
     native = profile["nativeAddresses"]
     globals_input = profile["scriptGlobals"]
+    custom_lane = profile.get("customLane")
+    boot_pools = profile.get("bootPools")
     assert isinstance(features, dict)
     assert isinstance(injection, dict)
     assert isinstance(native, dict)
@@ -42,6 +44,9 @@ def make_tokens(profile: dict[str, object]) -> list[str]:
         "phase_intercept": features["phaseIntercept"],
         "phase_draw_list": features["phaseDrawList"],
         "custom_packs": features["customPacks"],
+        "custom_lane_header": custom_lane["header"] if custom_lane else "",
+        "boot_pools": features["bootPools"],
+        "boot_pools_header": boot_pools["header"] if boot_pools else "",
         "injection_lane": injection["lane"],
         "probe_nostop": injection["probeNoStop"],
         "nostop_io": injection["noStopIo"],
@@ -65,6 +70,13 @@ def main() -> int:
         _, profile = load_manifest(args.target_manifest)
     except (OSError, TargetProfileError) as exc:
         print(f"target_build_config: {exc}", file=sys.stderr)
+        return 1
+    if profile["platform"] != "ps5":
+        print(
+            f"target_build_config: {profile['stem']} is a {profile['platform']} target; this build makes PS5 workers"
+            " only",
+            file=sys.stderr,
+        )
         return 1
     if args.make:
         print(" ".join(make_tokens(profile)))

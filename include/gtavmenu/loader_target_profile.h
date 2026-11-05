@@ -5,6 +5,8 @@
 
 #include <string.h>
 
+struct GtavBootPoolProfile;  // gtavmenu/boot_pool.h
+
 // One reviewed target and its separately built worker. The loader binds this whole
 // contract to an exact process instance; individual addresses are never mixed.
 typedef struct GtavLoaderTargetProfile {
@@ -13,6 +15,7 @@ typedef struct GtavLoaderTargetProfile {
   uintptr_t cave_address;
   uint32_t cave_allocation;
   int custom_packs;
+  const struct GtavBootPoolProfile* boot_pools;  // NULL: the target keeps stock pools
   GtavRenderPhaseProfile render;
   uintptr_t cycle_addresses[8];
   const uint8_t* worker_start;

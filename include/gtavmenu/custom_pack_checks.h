@@ -36,6 +36,45 @@ uint32_t gtav_custom_pack_xml_list_bound(const char* text, size_t size, const ch
 // the same comment/CDATA/ambiguity rules and the same refusals.
 uint32_t gtav_custom_pack_xml_grandchild_bound(const char* text, size_t size, const char* list);
 
+// The same bounds over a file read in pieces (the worker reads data files larger than its buffer
+// in chunks): init with the list name (not copied; it must outlive the stream) and generation 1
+// (gtav_custom_pack_xml_list_bound) or 2 (..._grandchild_bound), feed every byte of the file in
+// order in pieces of any size, then finish. The result equals the one-buffer function's for the
+// same bytes (tests/test_custom_pack_xml_stream.py checks it over arbitrary splits). Both refuse an
+// element name longer than GTAV_CUSTOM_PACK_XML_NAME_KEEP bytes, so the stream's end-tag match
+// compares whole names.
+#define GTAV_CUSTOM_PACK_XML_DEPTH_MAX 64u
+#define GTAV_CUSTOM_PACK_XML_NAME_KEEP 48u
+typedef struct {
+  uint64_t hash;
+  uint32_t length;
+  uint8_t list;
+  char head[GTAV_CUSTOM_PACK_XML_NAME_KEEP];
+} GtavCustomPackXmlName;
+typedef struct {
+  const char* list;
+  uint32_t list_length;
+  uint32_t generation;
+  int refused, state, prolog, ambiguous, self_closing, prev_lt, prev_question, double_dash;
+  int region_ambiguous;
+  char quote;
+  uint32_t run;       // dashes (comment) or brackets (CDATA) just seen
+  uint32_t bang;      // "<!" prefix characters matched
+  uint32_t ref_mask;  // candidate references still matching after an '&' (0: none pending)
+  uint32_t ref_at;    // characters of the reference matched
+  uint32_t item_at;   // characters of "<item" matched
+  uint64_t count, flat, markup;
+  GtavCustomPackXmlName name;                 // the tag name being read
+  char tail[GTAV_CUSTOM_PACK_XML_NAME_KEEP];  // its last characters (the list-name match)
+  uint32_t depth;
+  GtavCustomPackXmlName open[GTAV_CUSTOM_PACK_XML_DEPTH_MAX];
+} GtavCustomPackXmlStream;
+void gtav_custom_pack_xml_stream_init(GtavCustomPackXmlStream* stream, const char* list,
+                                      uint32_t generation);
+void gtav_custom_pack_xml_stream_feed(GtavCustomPackXmlStream* stream, const char* text,
+                                      size_t size);
+uint32_t gtav_custom_pack_xml_stream_finish(GtavCustomPackXmlStream* stream);
+
 // Audio game-data chunk (AUDIO_GAMEDATA row, a .rel file) as the PS5 game-data loader reads it: u32
 // type 151, data length, data, name table {length, count, offsets, NUL-terminated strings}, index
 // {count, {hash, offset, length}}, hash table {count, file offsets}, pack table {count, file
@@ -66,7 +105,80 @@ const char* gtav_custom_pack_audio_rel_check(const uint8_t* rel, size_t size,
 // Short menu text (at most GTAV_CUSTOM_PACK_REASON_MAX characters) for the technical refusal a
 // pack-lane step returned, or `technical` itself when it is already plain (or unknown). The
 // technical text stays in the klog / pack-notes line. Idempotent: a returned text maps to itself.
+// A store-headroom refusal gets its store's text (gtav_custom_pack_store_reason).
 const char* gtav_custom_pack_user_reason(const char* technical);
+
+// Store-headroom gates (custom_rpf.inc kPackStoreGates): LoadImage adds one slot per archive member
+// to its asset store, and a full slot pool traps the game, so a load first requires free slots.
+// The scope says which selected packs need the store.
+#define GTAV_CUSTOM_PACK_STORE_ANY 0      // every load (archive members of any pack)
+#define GTAV_CUSTOM_PACK_STORE_PED 1      // packs with PED_METADATA_FILE / apparel rows
+#define GTAV_CUSTOM_PACK_STORE_PTFX 2     // packs with ptfx spawn rows
+#define GTAV_CUSTOM_PACK_STORE_VEHICLE 3  // packs with VEHICLE_METADATA_FILE rows (vehicle models)
+#define GTAV_CUSTOM_PACK_STORE_WEAPON 4   // packs with weapon model, component or weapon-info rows
+
+// Archive members by the asset store LoadImage's RegisterFile finds or adds their slot in (by base
+// name, so a member whose name already has a slot adds none: the count is an upper bound), in the
+// order of custom_rpf.inc kPackStoreGates. Other extensions (pld, pcd, ...) are not gated.
+enum {
+  GTAV_CUSTOM_PACK_MEMBER_FRAG = 0,  // .pft  FragmentStore
+  GTAV_CUSTOM_PACK_MEMBER_DRAWABLE,  // .pdr  DrawableStore
+  GTAV_CUSTOM_PACK_MEMBER_TXD,       // .ptd  TxdStore
+  GTAV_CUSTOM_PACK_MEMBER_TYP,       // .ptyp map types store
+  GTAV_CUSTOM_PACK_MEMBER_MAPDATA,   // .pmap map data store
+  GTAV_CUSTOM_PACK_MEMBER_BOUNDS,    // .pbn  static bounds store
+  GTAV_CUSTOM_PACK_MEMBER_METADATA,  // .pmt  MetaDataStore
+  GTAV_CUSTOM_PACK_MEMBER_DWD,       // .pdd  DwdStore
+  GTAV_CUSTOM_PACK_MEMBER_PTFX,      // .ppt  PtFxAssetStore
+  GTAV_CUSTOM_PACK_MEMBER_KINDS
+};
+
+// The store of the archive member named `name` (`length` bytes, its extension compared
+// case-insensitively), or -1 for an extension no gate counts.
+int gtav_custom_pack_member_store(const char* name, size_t length);
+
+typedef struct {
+  uint32_t members[GTAV_CUSTOM_PACK_MEMBER_KINDS];  // file entries per store
+  uint32_t files;                                   // every file entry
+  uint32_t other;                                   // file entries of no gated store
+} GtavCustomPackTocCounts;
+
+// Count the file entries of a plaintext RPF7 table: `entries` 16-byte entries ({u64 q, u32, u32};
+// a directory has q >> 32 == 0x7FFFFF00 and lists its children as {u32 first, u32 count}, the name
+// is at name-pool offset q & 0xFFFF) followed by the name pool, `bytes` in all (entries * 16 + the
+// header's name-pool size). Returns 0 (out filled) or -1 when the table cannot be the one LoadImage
+// reads: fewer than 2 entries, entries past `bytes`, an empty name pool, entry 0 not a directory, a
+// name offset outside the pool or unterminated in it, or a directory whose children are not after
+// it, run past the table or overlap an earlier directory's (every RPF7 writer lays the tree out
+// breadth-first, so the children ranges ascend in directory order and each entry is listed at most
+// once: the count is an upper bound however LoadImage walks the tree).
+int gtav_custom_pack_toc_counts(const uint8_t* table, size_t bytes, uint32_t entries,
+                                GtavCustomPackTocCounts* out);
+
+// Free slots a load needs in member store `kind` for `adds` slots (archive members plus by-name
+// adds): adds plus the store's margin for what the game itself adds meanwhile (frag, drawable, txd,
+// dwd 16; typ, mapdata, bounds 8; ptfx 2; metadata 1), or 0 when the load adds nothing there.
+// Saturates at UINT32_MAX.
+uint32_t gtav_custom_pack_store_need(int kind, uint32_t adds);
+// Longest store-headroom refusal (technical) and detail (player) text, every store and count.
+#define GTAV_CUSTOM_PACK_STORE_REFUSAL_MAX 73u
+#define GTAV_CUSTOM_PACK_STORE_DETAIL_MAX 59u
+
+// The technical refusal of store `store` (frag, drawable, txd, typ, mapdata, bounds, metadata, dwd,
+// ptfx, or the model / file tables vehicle, pedmodel, wmodel, wcomp, winfo):
+// "pack <store> store headroom gate refused free=<n> need=<m>", at most
+// GTAV_CUSTOM_PACK_STORE_REFUSAL_MAX characters (it fits a feature message). It goes to the klog /
+// pack-notes as it is; gtav_custom_pack_store_reason turns it into the menu text.
+void gtav_custom_pack_store_refusal(char* out, size_t size, const char* store, uint32_t free_slots,
+                                    uint32_t need);
+
+// Menu text for a store-headroom refusal (exactly the gtav_custom_pack_store_refusal shape):
+// returns the short text ("Ped metadata slots full", at most GTAV_CUSTOM_PACK_REASON_MAX), writes
+// "<Store> slots full (<n> free, need <m>)" to `detail` (when non-NULL; at most
+// GTAV_CUSTOM_PACK_STORE_DETAIL_MAX characters) and the store's GTAV_CUSTOM_PACK_STORE_* scope to
+// `*scope` (when non-NULL). NULL (nothing written) for any other text or an unknown store.
+const char* gtav_custom_pack_store_reason(const char* technical, char* detail, size_t size,
+                                          int* scope);
 
 // One-press load, carcols gate wait (custom_pack_autoload.inc pack_al_gate_wait): while tuned cars
 // draw from the kit or wheel arrays a data row would grow, the row is asked again every RETRY_MS

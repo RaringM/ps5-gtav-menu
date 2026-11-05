@@ -1,5 +1,5 @@
 // Source fragment of features.cpp, textually included by custom_rpf.inc inside the
-// CUSTOM_PACKS && PS5 branch of the runtime pack lane.
+// CUSTOM_PACKS branch of the runtime pack lane: the engine lane or the engine-less shell.
 //
 // Pack `hide` rows: hide the stock map entities of one model inside a sphere for the session
 // (CREATE_MODEL_HIDE, bSurviveMapReload set), e.g. where a pack map places a building over a stock
@@ -50,8 +50,14 @@ static uint32_t remove_pack_hides() {
 static uint32_t apply_pack_hide(uint32_t param) {
   const uint32_t action = GTAV_NATIVE_SHELL_ACTION_PACK_HIDE;
   if (param == GTAV_PACK_HIDE_REMOVE_ALL) return remove_pack_hides();
+#if GTAV_MENU_CUSTOM_PACK_ENGINE
   if (!__atomic_load_n(&g_pack_parsed, __ATOMIC_ACQUIRE) || g_rpf_index < 0)
     return unavailable(action, "pack is not registered");
+#else
+  // Engine-less: a hide row needs only the loaded descriptors, no registered archive.
+  if (!__atomic_load_n(&g_pack_parsed, __ATOMIC_ACQUIRE))
+    return unavailable(action, "packs are not loaded");
+#endif
   if (param >= (uint32_t)g_pack.hide_count)
     return unavailable(action, "pack hide row out of range");
   if (g_pack_hides_applied & (1ull << param))

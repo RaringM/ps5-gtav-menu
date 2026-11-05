@@ -14,6 +14,9 @@ __pycache__/
 *.egg-info/
 .ruff_cache/
 /.venv/
+# IDA databases stay untracked unless deliberately added through LFS (git add -f).
+*.i64
+/scratchpad/
 /logs/
 *.log
 # clangd: compilation database has machine-specific SDK paths (regenerate with

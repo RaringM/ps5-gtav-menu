@@ -451,7 +451,7 @@ def select_vehicle_metadata(
     vehicle = vehicle_match[2]
     txd_name = item_value(vehicle, "txdName")
     handling_name = item_value(vehicle, "handlingId")
-    audio_name = item_value(vehicle, "audioNameHash")
+    audio_name = asset_metadata.scalar(vehicle, "audioNameHash", required=False)
     layout_name = item_value(vehicle, "layout")
     variation_match = unique_item(
         roots,

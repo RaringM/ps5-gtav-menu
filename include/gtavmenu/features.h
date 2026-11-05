@@ -45,8 +45,16 @@ void gtav_features_init(const GtavNativeAddressTable* table);
  * builds this does what gtav_features_init used to do at its tail. No-op (still safe to
  * call) when the build has no frame hook or skips hook setup. */
 void gtav_features_init_frame_hook(void);
+void gtav_features_run_job(uint32_t action, uint32_t param, void* ctx);
+void gtav_features_game_thread_tick(void);
 /* Disable active feature state and clear queued game-thread work during runtime shutdown. */
 void gtav_features_shutdown(void);
+/* Stepwise shutdown for a platform that must keep ticking the game thread meanwhile: begin turns
+   every feature off (calls natives: run it on the game thread there), busy reports pending
+   game-thread cleanup (crowd release), finish drops queued jobs. */
+void gtav_features_shutdown_begin(void);
+int gtav_features_shutdown_busy(void);
+void gtav_features_shutdown_finish(void);
 /* action with no parameter (param defaults to 0). */
 uint32_t gtav_features_activate(uint32_t action);
 /* action carrying a row parameter. For SPAWN_VEHICLE this is a model joaat hash
@@ -149,12 +157,12 @@ void gtav_features_worker_tick(int menu_visible);
  * per loaded pack a header row (action NONE, label = the pack id), then its spawn rows
  * (SPAWN_VEHICLE / SPAWN_OBJECT / SPAWN_PED / GIVE_WEAPON with the model hash, timecycle and ptfx
  * rows) and map teleports, ready once loaded; then the installed-list row (TOGGLE_PACK_ACTIVE with
- * param GTAV_PACK_MENU_PAGE_ROW; the menu shows it as the page selector), one TOGGLE_PACK_ACTIVE
+ * param GTAV_PACK_MENU_LIST_ROW; the menu shows it as the list's heading), one TOGGLE_PACK_ACTIVE
  * row per installed pack (param = installed index, label = the pack id, `toggle` = selected) and
  * the uninstall row, then (packs with stock overrides loaded) the REVERT_PACK_OVERRIDES row. The
  * menu sorts them into the Custom Packs folders. `reason` (static text or NULL) says why a row is
  * not ready. Returns the row count. */
-#define GTAV_PACK_MENU_PAGE_ROW 0xffffffffu
+#define GTAV_PACK_MENU_LIST_ROW 0xffffffffu
 typedef struct GtavPackMenuRow {
   uint32_t action;
   uint32_t param;

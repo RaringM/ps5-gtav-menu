@@ -35,6 +35,7 @@ from gtavmenu_tools.assets import Budget, read_file  # noqa: E402
 from gtavmenu_tools.hashes import joaat  # noqa: E402
 from gtavmenu_tools.host_paths import assets_dir, build_dir  # noqa: E402
 from gtavmenu_tools.runtime_pack import NAME_MAX, valid_id  # noqa: E402
+from gtavmenu_tools.target_profile import TargetProfileError, target_platform  # noqa: E402
 from gtavmenu_tools.vehicle_repair_inputs import FixtureError, resource_path, validate_fixture  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -64,6 +65,10 @@ RETAIL_LAYOUTS = "retail-metas/vehiclelayouts.meta"
 SHADER_DATABASE = "razor-shader-database-source-a"
 FETCH_HINT = "./menu-ctl.sh fetch-templates --cache {cache} (GTA V running on the console), or python3 tools/fetch_retail_templates.py --source file:///path/to/app0 --cache {cache}"
 TARGET = "data/targets/ppsa04264-01.010.002.json"
+# PS4 output's texture donors: the stock 1.57 vehicles.rpf members, in --ps4-templates.
+PS4_RESOURCE_TEMPLATES = ("adder.otd", "asea.otd", "vehshare.otd")
+PS4_TEMPLATES_ENV = "GTAV_PS4_TEMPLATES"
+CODEWALKER_ENV = "CODEWALKER_DLL"
 DATA_ORDER = (
     ("HANDLING_FILE", "handling"),
     ("CARCOLS_FILE", "carcols"),
@@ -353,8 +358,30 @@ def staged_templates(args) -> Path:
     return assets_dir(ROOT) / f"convert-{args.id}" / "templates"
 
 
+def ps4_output(args) -> bool:
+    """PS4 Legacy resources: the --target manifest's platform."""
+    return target_platform(args.target) == "ps4"
+
+
 def template_problems(args) -> list[str]:
     """--templates: every retail template present and matching the template manifest."""
+    if ps4_output(args):
+        if args.templates is None:
+            problems = [
+                f"PS4 output needs --ps4-templates DIR (or {PS4_TEMPLATES_ENV}): the directory holding "
+                f"the stock 1.57 vehicles.rpf {' and '.join(PS4_RESOURCE_TEMPLATES)}"
+            ]
+        else:
+            problems = [
+                f"missing PS4 template {name} in {rel(args.templates)}"
+                for name in PS4_RESOURCE_TEMPLATES
+                if not (args.templates / name).is_file()
+            ]
+        if args.codewalker is None:
+            problems.append(f"PS4 output needs --codewalker PATH (or {CODEWALKER_ENV}): CodeWalker.Core.dll")
+        elif not args.codewalker.is_file():
+            problems.append(f"missing CodeWalker assembly {rel(args.codewalker)}")
+        return problems
     if getattr(args, "templates", None) is None:
         return []
     hint = FETCH_HINT.format(cache=shlex.quote(str(args.templates)))
@@ -434,6 +461,29 @@ def retail_models() -> set[str]:
         return set()
     lines = RETAIL_VEHICLES.read_text(encoding="utf-8").splitlines()
     return {line.split("\t")[0].strip().lower() for line in lines if line.strip() and (not line.startswith("#"))}
+
+
+def own_handling_name(handling: str, vehicles: str, model: str) -> tuple[str, str, str | None]:
+    """(handling.meta, vehicles.meta, a note) with a handling name the pack owns.
+
+    The game adds a handling entry only for a new name: a mod whose handling.meta reuses a retail vehicle's
+    handling name (the Vice City PD Cheetah's CHEETAH2) adds no entry, and the pack load stops at that file
+    (PS4 attempt 053). Such a name becomes the model's own, upper case (GM + it when that is a retail name too),
+    in its <handlingName> and in the <handlingId> that points at it. A retail handlingId that handling.meta does
+    not define stays: the car then uses the retail handling, which loads nothing."""
+    found = re.search(r"<handlingId>\s*([^<\s]*)\s*</handlingId>", vehicles)
+    old = found.group(1) if found else ""
+    retail = retail_models()
+    if not old or old.lower() not in retail:
+        return (handling, vehicles, None)
+    new = model.upper() if model.lower() not in retail else f"{OWN_LABEL_PREFIX}{model.upper()}"
+    named = re.compile(rf"(<handlingName>\s*){re.escape(old)}(\s*</handlingName>)", re.IGNORECASE)
+    handling, count = named.subn(rf"\g<1>{new}\g<2>", handling)
+    if not count:
+        return (handling, vehicles, None)
+    pointer = re.compile(rf"(<handlingId>\s*){re.escape(old)}(\s*</handlingId>)", re.IGNORECASE)
+    vehicles = pointer.sub(rf"\g<1>{new}\g<2>", vehicles, count=1)
+    return (handling, vehicles, f"handling {old} is a retail vehicle's name; renamed {new}")
 
 
 def own_game_name(text: str, model: str) -> tuple[str, str, str | None]:
@@ -782,7 +832,7 @@ def fixture_members(fixture: Path, model: str, dry_run: bool) -> dict[str, list[
     manifest_path = fixture / "manifest.json"
     if dry_run and (not manifest_path.exists()):
         base = "x64/vehicles.rpf!/"
-        parts = [f"x64/vehiclemods/{model}_mods.rpf!/{model}_<part>.yft"]
+        parts = [f"x64/vehiclemods/{model}_mods.rpf!/{model}_part.yft"]
         return {
             "base": [f"{base}{model}.yft", f"{base}{model}_hi.yft"],
             "texture": [f"{base}{model}.ytd"],
@@ -1001,8 +1051,26 @@ def octants(plan: Plan, pairs: list[tuple[Path, Path]]) -> None:
     plan.run("collision octants", command)
 
 
+def ps4_fragment(plan: Plan, args, source: Path, output: Path) -> None:
+    plan.run(
+        "PS4 fragment (CodeWalker)",
+        [
+            "pwsh",
+            "-NoProfile",
+            "-File",
+            str(TOOLS / "ps4_fragment_convert.ps1"),
+            "-Source",
+            str(source),
+            "-Output",
+            str(output),
+            *(["-CodeWalker", str(args.codewalker)] if args.codewalker else []),
+        ],
+    )
+
+
 def build(args) -> int:
     model, plan = (args.model, Plan(args.dry_run))
+    ps4 = ps4_output(args)
     try:
         preflight(args)
     except ConvertError as error:
@@ -1033,6 +1101,13 @@ def build(args) -> int:
         fixture = work / "fixtures" / f"{model}-import"
         command = py("tools/import_pc_assets.py", "vehicle", args.source, "--model", model, "--output-dir", fixture)
         plan.run("import PC add-on", [*command, *(["--mod-kit"] if args.mod_kit else [])])
+    if ps4 and "auto" in args.repair:
+        output = work / "fixtures" / f"{model}-ps4-prepared"
+        plan.run(
+            "PS4 source repairs",
+            py("repair_pc_auto.py", "--target", args.target, "--fixture", fixture, "--output", output),
+        )
+        fixture = output
     members = fixture_members(fixture, model, args.dry_run)
     texture = members["texture"][0]
     if (fixture / "metadata").exists():
@@ -1041,7 +1116,7 @@ def build(args) -> int:
         if "carcols" in found and single:
             check_wheels(args, read_meta(found["carcols"]), report=False)
     plan.auto = {"--repair": "auto" in args.repair, "--parts-repair": "auto" in args.parts_repair}
-    if embedded_members(fixture, args.dry_run):
+    if not ps4 and embedded_members(fixture, args.dry_run):
         output = work / "fixtures" / f"{model}-embedded-textures"
         command = py("repair_pc_embedded_textures.py", "--fixture", fixture, "--output", output, "--model", model)
         command += ["--shared-dictionary", reference(args, VEHSHARE)]
@@ -1050,7 +1125,10 @@ def build(args) -> int:
         if not args.dry_run:
             for line in embedded_lines(fixture):
                 print(f"     {line}", flush=True)
-    fixture = repair_chain(plan, args, fixture, args.repair, members["base"], texture, work, "base")
+    if ps4 and any(spec != "auto" for spec in [*args.repair, *args.parts_repair]):
+        raise ConvertError("explicit repair chains are not implemented for PS4; repair the PC fixture first")
+    if not ps4:
+        fixture = repair_chain(plan, args, fixture, args.repair, members["base"], texture, work, "base")
     parts_fixture = args.parts_fixture or fixture
     parts = fixture_members(parts_fixture, model, args.dry_run)["parts"] if args.mod_kit or args.parts_fixture else []
     if (args.mod_kit or args.parts_fixture) and (not parts) and (not args.dry_run):
@@ -1064,7 +1142,7 @@ def build(args) -> int:
         print(f"     parts: {len(rigid)} left out (rigid, unskinned models; not converted yet): {names}", flush=True)
         if not parts:
             raise ConvertError("every mod-kit part has rigid (unskinned) models; convert without --mod-kit")
-    if parts:
+    if parts and not ps4:
         plan.repair_flag = "--parts-repair"
         parts_fixture = repair_chain(plan, args, parts_fixture, args.parts_repair, parts, texture, work, "parts")
         plan.repair_flag = "--repair"
@@ -1073,12 +1151,18 @@ def build(args) -> int:
         (work / "lods").mkdir(parents=True, exist_ok=True)
     members_out: list[tuple[str, Path]] = []
     report = base_report = work / "base-materials.json"
-    material_report(plan, args, fixture, members["base"], texture, report)
-    convert(plan, args, fixture, report, work / "base-references", not args.single_page)
+    if not ps4:
+        material_report(plan, args, fixture, members["base"], texture, report)
+        convert(plan, args, fixture, report, work / "base-references", not args.single_page)
     pairs = []
     for member in members["base"]:
         source = Path(member.split("!/")[-1]).stem
         stem = source.lower()
+        if ps4:
+            out = stage / f"{stem}.oft"
+            ps4_fragment(plan, args, fixture_member(fixture, member), out)
+            members_out.append((f"{stem}.oft", out))
+            continue
         out = stage / f"{stem}.pft"
         lods = work / "lods" / f"{stem}.pft"
         partial = model_split(
@@ -1087,9 +1171,10 @@ def build(args) -> int:
         lod_fill(plan, partial, lods, deep_copy=not stem.endswith("_hi"), lower=args.lower_lods)
         pairs.append((lods, out))
         members_out.append((f"{stem}.pft", out))
-    octants(plan, pairs)
+    if not ps4:
+        octants(plan, pairs)
     part_names = []
-    if parts:
+    if parts and not ps4:
         plan.repair_flag = "--parts-repair"
         report = work / "parts-materials.json"
         material_report(plan, args, parts_fixture, parts, texture, report)
@@ -1127,8 +1212,23 @@ def build(args) -> int:
             part_names.append(stem)
         octants(plan, pairs)
         plan.repair_flag = "--repair"
+    if parts and ps4:
+        for member in parts:
+            stem = Path(member.split("!/")[-1]).stem.lower()
+            out = stage / f"{stem}.oft"
+            ps4_fragment(plan, args, fixture_member(parts_fixture, member), out)
+            part_names.append(stem)
+            members_out.append((f"{stem}.oft", out))
     ytd = fixture_member(fixture, texture)
-    command = py("convert_pc_ytd_writer.py", "--ytd", ytd, "--output", stage / f"{model}.ptd")
+    command = py(
+        "convert_pc_ytd_writer.py",
+        "--ytd",
+        ytd,
+        "--output",
+        stage / f"{model}.{'otd' if ps4 else 'ptd'}",
+        "--target",
+        args.target,
+    )
     command += ["--max-size", str(args.max_texture_size)] if args.max_texture_size else []
     kept = {m.split("!/")[-1].lower() for m in [*members["base"], *parts]}
     embedded = [p for p in embedded_sources(parts_fixture if parts else fixture) if p.name.lower() in kept]
@@ -1137,18 +1237,28 @@ def build(args) -> int:
     if embedded and args.part_texture_size:
         command += ["--embedded-max-size", str(args.part_texture_size)]
     plan.run("textures", command + (["--templates", staged_templates(args)] if args.templates is not None else []))
-    members_out.append((f"{model}.ptd", stage / f"{model}.ptd"))
+    texture_extension = "otd" if ps4 else "ptd"
+    members_out.append((f"{model}.{texture_extension}", stage / f"{model}.{texture_extension}"))
     stems = [Path(parent.split("!/")[-1]).stem.lower() for parent in members.get("parents", [])]
     owned = owned_parents(model, stems)
     for parent in members.get("parents", []):
         name = Path(parent.split("!/")[-1]).stem.lower()
         name = owned.get(name, name)
-        ptd = stage / f"{name}.ptd"
-        command = py("convert_pc_ytd_writer.py", "--ytd", fixture_member(fixture, parent), "--output", ptd)
+        ptd = stage / f"{name}.{texture_extension}"
+        command = py(
+            "convert_pc_ytd_writer.py",
+            "--ytd",
+            fixture_member(fixture, parent),
+            "--output",
+            ptd,
+            "--target",
+            args.target,
+        )
         command += ["--max-size", str(args.max_texture_size)] if args.max_texture_size else []
         plan.run(f"textures ({name})", command + (["--templates", staged_templates(args)] if args.templates else []))
-        members_out.append((f"{name}.ptd", ptd))
-    members_out += [(f"{p}.pft", stage / f"{p}.pft") for p in part_names]
+        members_out.append((f"{name}.{texture_extension}", ptd))
+    if not ps4:
+        members_out += [(f"{p}.pft", stage / f"{p}.pft") for p in part_names]
     spec = load_siren_spec(args)
     if spec is not None and args.siren_lamps is None:
         base = next(m for m in members["base"] if m.lower().endswith(f"!/{model}.yft"))
@@ -1167,7 +1277,7 @@ def build(args) -> int:
             if set(args.siren_lamps) == {"-"}:
                 raise ConvertError("the car has no siren1..siren20 bones: a siren pattern would light nothing")
     data, labels = metas(plan, args, fixture, stage, part_names)
-    if not args.dry_run:
+    if not ps4 and not args.dry_run:
         carcols = dict(data).get("CARCOLS_FILE")
         for line in livery_lines(base_report, stage / f"{model}.ptd", carcols, labels):
             print(f"     liveries: {line}", flush=True)
@@ -1176,7 +1286,8 @@ def build(args) -> int:
         command += ["--member", f"{name}={path}"]
     if part_names:
         archive = args.parts_archive or f"gm{model}parts.rpf"
-        command += ["--extra-archive", f"{archive}=" + ",".join(f"{p}.pft" for p in part_names)]
+        extension = "oft" if ps4 else "pft"
+        command += ["--extra-archive", f"{archive}=" + ",".join(f"{p}.{extension}" for p in part_names)]
     for type_name, path in data:
         command += ["--data", f"{type_name}={path}"]
     for label in labels:
@@ -1184,6 +1295,9 @@ def build(args) -> int:
     command += ["--spawn", f"vehicle:{model}={args.name}", "--output-root", args.output_root]
     command += ["--plain-toc"]
     plan.run("pack", command)
+    plan.run(
+        "validate target pack", py("validate_runtime_pack.py", args.output_root / args.id, "--target", args.target)
+    )
     print(f"{('planned' if args.dry_run else 'done')}: {len(plan.steps)} steps; pack {rel(args.output_root / args.id)}")
     return 0
 
@@ -1249,8 +1363,7 @@ def metas(plan: Plan, args, fixture: Path, stage: Path, parts: list[str]) -> tup
         raise ConvertError(f"{rel(fixture / 'metadata')}: vehicles and carvariations metas are required")
     game_name, audio_row = model, None
     if not args.dry_run:
-        if have["handling"]:
-            plan.write("handling.meta", out["handling"], read_meta(source["handling"]))
+        handling = read_meta(source["handling"]) if have["handling"] else None
         vehicles = read_meta(source["vehicles"])
         defined = set()
         for path in (args.retail_layouts, source.get("layouts")):
@@ -1269,6 +1382,10 @@ def metas(plan: Plan, args, fixture: Path, stage: Path, parts: list[str]) -> tup
         vehicles, notes = remap_vehicles(vehicles, choice.name, defined, driveby, make_key(args))
         vehicles, game_name, note = own_game_name(vehicles, model)
         notes += [note] if note else []
+        if handling is not None:
+            handling, vehicles, note = own_handling_name(handling, vehicles, model)
+            notes += [note] if note else []
+            plan.write("handling.meta", out["handling"], handling)
         shipped = [Path(n.split("!/")[-1]).stem.lower() for n in fixture_members(fixture, model, False)["parents"]]
         owned = owned_parents(model, shipped)
         vehicles, more = own_parent_txds(vehicles, owned)
@@ -1302,6 +1419,8 @@ def metas(plan: Plan, args, fixture: Path, stage: Path, parts: list[str]) -> tup
             "--out-vehicles",
             out["vehicles"],
         )
+        if ps4_output(args):
+            command.append("--prune-unused")
         plan.run("vehicle layouts", command)
     labels = [f"{game_name}={args.name}"]
     labels_file = stage / f"{model}_shop_labels.txt"
@@ -1646,16 +1765,43 @@ def main(argv=None) -> int:
     parser.add_argument("--driveby", action="append", help="stock first-person drive-by names (default LOW_BUCCANEER)")
     parser.add_argument("--retail-layouts", type=Path, help="decrypted retail data/ai/vehiclelayouts.meta")
     parser.add_argument(
+        "--target",
+        choices=("ppsa04264-01.010.002", "cusa00411-01.57"),
+        default="ppsa04264-01.010.002",
+        help="resource platform (default: PS5)",
+    )
+    parser.add_argument(
+        "--codewalker",
+        type=Path,
+        default=os.environ.get(CODEWALKER_ENV) or None,
+        help=f"PS4 output: CodeWalker.Core.dll for fragment serialization (default: ${CODEWALKER_ENV})",
+    )
+    parser.add_argument(
         "--templates",
         type=Path,
         default=build_dir(ROOT) / "retail-templates",
-        help="Verified retail template cache from fetch-templates or export-templates",
+        help="PS5 output: verified retail template cache from fetch-templates or export-templates",
+    )
+    parser.add_argument(
+        "--ps4-templates",
+        type=Path,
+        default=os.environ.get(PS4_TEMPLATES_ENV) or None,
+        help="PS4 output: directory holding the stock 1.57 vehicles.rpf adder.otd, asea.otd and vehshare.otd"
+        f" (default: ${PS4_TEMPLATES_ENV})",
     )
     parser.add_argument("--archive", help="main archive name (default gm<model>.rpf)")
     parser.add_argument("--parts-archive", help="parts archive name (default gm<model>parts.rpf)")
     parser.add_argument("--output-root", type=Path, default=build_dir(ROOT) / "custom-assets")
     parser.add_argument("--dry-run", action="store_true", help="print the steps, write nothing")
     args = parser.parse_args(argv)
+    try:
+        ps4 = ps4_output(args)
+    except TargetProfileError as error:
+        parser.error(f"--target {args.target}: {error}")
+    if ps4:
+        if args.templates != build_dir(ROOT) / "retail-templates":
+            parser.error("--templates is the PS5 retail cache; PS4 output takes --ps4-templates")
+        args.templates = args.ps4_templates
     if not valid_id(args.id):
         parser.error("--id must be a valid pack identifier")
     if not re.fullmatch(r"[a-z0-9_]+", args.model):
@@ -1684,6 +1830,9 @@ def main(argv=None) -> int:
     for name in ("source", "fixture", "parts_fixture", "retail_layouts", "output_root", "siren_spec"):
         if getattr(args, name) is not None:
             setattr(args, name, getattr(args, name).resolve())
+    args.codewalker = args.codewalker.resolve() if args.codewalker is not None else None
+    if args.audio_engine and ps4:
+        parser.error("--audio-engine needs the unimplemented PS4 audio lane; use stock audioNameHash reuse")
     args.census = [path.resolve() for path in args.census]
     args.ids_from = [path.resolve() for path in args.ids_from]
     args.templates = args.templates.resolve() if args.templates is not None else None
@@ -1724,7 +1873,7 @@ def reference(args, name: str) -> Path:
 def stage_templates(args) -> None:
     """Stage regular verified template files without any private report manifests."""
     target = staged_templates(args)
-    for name in RETAIL_TEMPLATES:
+    for name in PS4_RESOURCE_TEMPLATES if ps4_output(args) else RETAIL_TEMPLATES:
         out = target / name
         out.parent.mkdir(parents=True, exist_ok=True)
         try:
@@ -1774,12 +1923,13 @@ def preflight(args) -> None:
         *(p for p in (args.source, args.fixture, args.parts_fixture, args.retail_layouts, *args.census) if p),
     ]
     problems += [f"missing input {rel(path)}" for path in dict.fromkeys(inputs) if not path.exists()]
-    try:
-        contracts = vehicle_contracts.load()
-        vehicle_contracts.check_target(json.loads((ROOT / TARGET).read_bytes()), contracts)
-        drawable_contracts.load()
-    except (AssetError, OSError, ValueError) as error:
-        problems.append(str(error))
+    if not ps4_output(args):
+        try:
+            contracts = vehicle_contracts.load()
+            vehicle_contracts.check_target(json.loads((ROOT / TARGET).read_bytes()), contracts)
+            drawable_contracts.load()
+        except (AssetError, OSError, ValueError) as error:
+            problems.append(str(error))
     if (args.parts_repair or args.parts_multi_page) and not (args.mod_kit or args.parts_fixture):
         problems.append("--parts-repair/--parts-multi-page need --mod-kit (or --parts-fixture)")
     pack = args.output_root / args.id

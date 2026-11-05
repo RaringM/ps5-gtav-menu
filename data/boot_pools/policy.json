@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "entries": [
+    {"name": "metadata", "kind": "node", "key": "kMetaDataStoreHash", "stock": "kStockMetaDataStore", "delta": 1000, "max": 2147483647},
+    {"name": "frag", "kind": "node", "key": "kFragmentStoreHash", "stock": "kStockFragmentStore", "delta": 2000, "max": 2147483647},
+    {"name": "txd", "kind": "node", "key": "kTxdStoreHash", "stock": "kStockTxdStore", "delta": 2000, "max": 2147483647},
+    {"name": "ptfx", "kind": "node", "key": "kPtFxAssetStoreHash", "stock": "kStockPtFxAssetStore", "delta": 100, "max": 32767},
+    {"name": "typ", "kind": "node", "key": "kMapTypesStoreHash", "stock": "kStockMapTypesStore", "delta": 300, "max": 4095},
+    {"name": "dwd", "kind": "node", "key": "kDwdStoreHash", "stock": "kStockDwdStore", "delta": 1000, "max": 2147483647},
+    {"name": "ped", "kind": "cfg", "key": "kCfgPedCap", "stock": "kStockCfgPedCap", "delta": 100, "max": 65535},
+    {"name": "vehicle", "kind": "cfg", "key": "kCfgVehicleCap", "stock": "kStockCfgVehicleCap", "delta": 200, "max": 65535}
+  ]
+}
