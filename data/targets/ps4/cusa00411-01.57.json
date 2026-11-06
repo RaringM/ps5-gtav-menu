@@ -188,7 +188,7 @@
     "scriptGlobals": {
       "json": "data/script_globals/anchors-cusa00411-01.57.json",
       "header": "gtavmenu/script_globals_addresses_cusa00411-01.57_generated.h",
-      "sha256": "2c4b8f9d1cedb70d488f439e26cc3ed31a28f573fc447346906d65c059035079"
+      "sha256": "45c1f7cfc8cde5a69ad1324ec7bb89231d01bf0e6d1be7fe2c89604b2f845579"
     },
     "bootPools": {
       "json": "data/boot_pools/cusa00411-01.57.json",

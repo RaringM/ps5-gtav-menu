@@ -1,4 +1,7 @@
-"""Bounded vehicle format reading and graph construction; no native code or reference source execution."""
+"""Inspect a PC fragment's physics children and their drawables.
+
+Bounded parsing; no native code or reference source runs.
+"""
 
 from __future__ import annotations
 

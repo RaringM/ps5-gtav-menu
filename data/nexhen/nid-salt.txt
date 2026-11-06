@@ -1,2 +1,0 @@
-# Public PS4/PS5 symbol NID salt used by the SDK name-to-NID algorithm.
-518D64A635DED8C1E6B039B1C3E55230

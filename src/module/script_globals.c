@@ -1,5 +1,4 @@
-// Script-globals subsystem implementation. See include/gtavmenu/script_globals.h
-// and docs/script-globals-design.md.
+// Script-globals subsystem implementation. See include/gtavmenu/script_globals.h.
 //
 // The pure core (joaat / pattern scan / index extract / decompose) is always
 // compiled and host-tested. The runtime state machine that walks the RAGE script
@@ -7,7 +6,7 @@
 
 #include "gtavmenu/script_globals.h"
 
-// Enhanced-build despawn-global signature (ref/PC-MenyooSP, g_isEnhanced branch).
+// Enhanced-build despawn-global signature (MenyooSP, g_isEnhanced branch).
 // The trailing 0x62 opcode's 24-bit operand (at +OPERAND_OFFSET) is the global id.
 const uint8_t gtav_despawn_global_pattern[GTAV_DESPAWN_GLOBAL_PATTERN_LEN] = {
     0x2D, 0x00, 0x00, 0x00, 0x00, 0x2C, 0x00, 0x00, 0x00,
@@ -90,7 +89,7 @@ GtavGlobalAddr gtav_global_decompose(uint32_t id) {
 #if defined(GTAV_MENU_ENABLE_SCRIPT_GLOBALS) && GTAV_MENU_ENABLE_SCRIPT_GLOBALS
 
 // The despawn-control flag value: 1 disables the SP sweep that ejects + despawns
-// MP/DLC vehicles (see docs/script-globals-design.md).
+// MP/DLC vehicles.
 #define GTAV_DESPAWN_GLOBAL_VALUE 1
 
 // The capability is built/default-on, but the write is demand-armed. The menu

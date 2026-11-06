@@ -35,7 +35,7 @@ static int inject_instance_matches(int pid, uint64_t expected_app_id) {
 
 // Read a write back before believing it. Both transfer paths can report success without having
 // changed anything: the debug-memory service does exactly that for memory with no backing, which
-// cost a wrong conclusion once (docs/ptrace-free-injection.md). Verifying doubles the traffic, so
+// cost a wrong conclusion once. Verifying doubles the traffic, so
 // it is a build gate rather than the default -- the cave lane, which writes a whole image into
 // pages the game has never touched, turns it on. Compares in bounded chunks so the stack cost is
 // fixed regardless of how large a segment write is.
@@ -471,7 +471,7 @@ static int map_segments(int pid, uint64_t expected_app_id, const uint8_t* elf, s
   if (preallocated != 0) {
     // The caller already owns memory in the target -- on this firmware that comes from the
     // ptrace-free cave bootstrap, because gtav_proc_alloc_exec must PT_ATTACH and that permanently
-    // breaks the game's streaming I/O (docs/ptrace-free-injection.md). Nothing here allocates, so
+    // breaks the game's streaming I/O. Nothing here allocates, so
     // there is no ambiguous allocation to quarantine either.
     // Bound-check BEFORE the first byte goes out. Checking afterwards reports a failure for writes
     // that have already landed past the end of the region.

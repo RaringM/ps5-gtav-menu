@@ -268,7 +268,7 @@ COMMON_SRCS := \
 # uses the SDK-native process-control backend (proc_backend_sdk.c) to reach GTA.
 # Read the build-pin signature via the debug-memory path (mdbg) instead of ptrace+protect.
 # 1 = no PT_ATTACH and no .text protection change during build detection. See GTAV_LOADER_PROBE_NOSTOP
-# in src/payload_loader/main.c and docs/ptrace-free-injection.md.
+# in src/payload_loader/main.c.
 PAYLOAD_LOADER_PROBE_NOSTOP ?= 0
 # Route ALL plain target reads/writes through the debug-memory path (mdbg) instead of ptrace, so an
 # inject stops the game only where it must (remote mmap, remote thread start) instead of ~840 times.

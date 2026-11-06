@@ -1,6 +1,6 @@
 #pragma once
 
-// Ptrace-free bootstrap probe (docs/ptrace-free-injection.md).
+// Ptrace-free bootstrap probe.
 //
 // PT_ATTACH permanently breaks GTA's streaming I/O, so the loader cannot obtain memory in the
 // target the way it does today. This installs the `cave_stub.h` bootstrap into the executable

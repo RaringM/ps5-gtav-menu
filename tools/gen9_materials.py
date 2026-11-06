@@ -1,7 +1,6 @@
 """Gen9 (PS5) shader groups and material parameter blocks, written and read back.
 
-The build/read half of native_materials.py, split from the derivation of its contract: the field
-encodings and the Legacy -> Gen9 parameter mappings arrive as data (`contract`: the `shader` entry of
+The field encodings and the Legacy -> Gen9 parameter mappings arrive as data (`contract`: the `shader` entry of
 the drawable contracts, frozen in data/drawable_contracts and loaded by gtavmenu_tools.drawable_contracts).
 Native schemas come from the retail template drawables (schema_bank). Nothing here reads a reference
 source, a game executable or a third-party package.

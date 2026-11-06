@@ -3,7 +3,7 @@
 # The live menu is one lane: an SDK-native payload loader injects the feature-menu
 # worker ELF into GTA and writes the PLAYER_PED_ID frame-hook via kernel R/W, so
 # queued game-thread actions (vehicle spawn, weapons, skin) drain on the game thread.
-# Launch it with ./menu-ctl.sh cave-inject. See docs/ARCHITECTURE.md.
+# Launch it with ./menu-ctl.sh cave-inject.
 
 .DEFAULT_GOAL := all
 
@@ -58,8 +58,6 @@ help:
 	@echo "  make package-onionhen          Stage the OnionHEN plugin for installation"
 	@echo "  make etahen                    Build the Toolbox-managed etaHEN plugin"
 	@echo "  make package-etahen            Stage the etaHEN plugin for installation"
-	@echo "  make nexhen                    Build the native corrected-nexHEN module"
-	@echo "  make package-nexhen            Stage the hardware-unqualified nexHEN test module"
 	@echo "  make payload-loader-build      Build the SDK payload loader (the injector)"
 	@echo "  make feature-menu-frame-hook-playerped-build  Build the injected menu worker ELF"
 	@echo "  make deploy-payload-loader     Deploy the loader to PS5 (prospero-deploy)"

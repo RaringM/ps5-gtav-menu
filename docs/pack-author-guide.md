@@ -35,7 +35,7 @@ mod as downloaded --convert-*--> build/custom-assets/<id>/ --pack-validate--> --
   `convert-map`, `convert-bounds` and `convert-mlo` without `--models` need no extra package.
 - Stock conversion uses a reviewed catalog for PPSA04264 01.010.002: Combat Pistol, Police3,
   Franklin Torso 14 / Legs 6, and new MP Male Legs styles. Other names and slots refuse;
-  see [stock input coverage](stock-conversion.md). Pass `--game DIR` for your read-only game copy,
+  see [stock input coverage](#9-reviewed-stock-inputs). Pass `--game DIR` for your read-only game copy,
   or `--stock-cache DIR` for an already verified cache. `--target TARGET` selects the catalog
   (currently only `ppsa04264-01.010.002`; 01.011.001 has none); `--stock-manifest FILE` accepts a
   relocated copy of that exact reviewed metadata. `GTAV_HOST_BUILD_DIR` relocates work, outputs and
@@ -201,11 +201,30 @@ cache and generated packs (relative values are resolved against the checkout).
 
 Liveries: texture liveries and the mod kit's livery parts (`VMT_LIVERY_MOD`) both convert, and the
 menu lists them under **LS Customs > Plates & Livery > Livery** (texture liveries first, then the kit
-liveries by name). Each kit livery part carries its own livery texture only in packs converted from
-2026-10-08 on; convert an older pack again if its kit liveries draw nothing. The car's engine sound
+liveries by name). Each kit livery part carries its own livery texture only in packs converted with
+v0.2.0 or later tools; convert an older pack again if its kit liveries draw nothing. The car's engine sound
 is a stock sound (the run prints one `audio:` line with the choice; `--audio NAME` picks one, and
 `--audio-engine NAME` gives the car its own sound with the engine of base-game car `NAME`); the mod's
 own sound recordings are not converted.
+
+### PS4 packs (GTA V Legacy CUSA00411 01.57)
+
+The PS4 plugin loads vehicle packs (models, textures and the five vehicle data files) and stock
+replacements; maps, typs, collision, ped and clothing data, weapon components, custom wheels and mod
+kits are refused on the PS4. Convert a car for
+the PS4 with `tools/convert_vehicle.py ... --target cusa00411-01.57 --drop-wheels`. This needs:
+
+- PowerShell 7 (`pwsh`) and CodeWalker's `CodeWalker.Core.dll` (`--codewalker`, or
+  `$CODEWALKER_DLL`), which re-saves the models in the PS4 form (`tools/ps4_fragment_convert.ps1`);
+- the stock 1.57 `vehicles.rpf` members `adder.otd`, `asea.otd` and `vehshare.otd` from your own
+  game, in one folder (`--ps4-templates`, or `$GTAV_PS4_TEMPLATES`). This repository has no tool
+  that reads the PS4 game's archives; extract them with your own.
+
+The pack checks (`pack-validate`) also check PS4 resources: the skinned vertex layout of `.oft`
+models and the tiling of `.otd` textures, which a broken conversion gets wrong. A stock replacement
+for the PS4 names the `.o*` members (`adder.oft`, `adder_hi.oft`, `adder.otd`) and is built with
+`tools/build_runtime_pack.py --override-archive ... --plain-toc`. Install PS4 packs as the
+[PS4 plugin guide](ps4-plugin.md#custom-packs) describes.
 
 ### convert-replace: a car shipped under a stock name
 
@@ -216,7 +235,7 @@ own sound recordings are not converted.
 
 An override pack: the mod's body and textures replace the stock car's members, and every car of
 that name has the new body after Load. Only one pack per replaced car can be active. The handling,
-carcols and sirens stay stock. Only [reviewed stock names](stock-conversion.md) are enabled.
+carcols and sirens stay stock. Only [reviewed stock names](#9-reviewed-stock-inputs) are enabled.
 
 ### convert-wheels: the rims a car mod ships
 
@@ -292,7 +311,7 @@ Attachments > Component** fits.
 The mod is a folder, `dlc.rpf` or `.oiv` with `<comp>_<nnn>_<u|r>.ydd` drawables and their
 `<comp>_diff_<nnn>_<x>_<race>.ytd` textures. `--slot` takes the Wardrobe names (face, mask, hair,
 torso, legs, hands, shoes, neck, undershirt, armor, decals, tops). This release enables only the
-reviewed Franklin and MP Male slots [listed above](stock-conversion.md). Stock clothing, skeletons
+reviewed Franklin and MP Male slots [listed below](#9-reviewed-stock-inputs). Stock clothing, skeletons
 and variation files come from your `--game` copy or verified `--stock-cache`.
 
 - **Story characters** (`player_zero`, `player_one`, `player_two`: Michael, Franklin, Trevor): the
@@ -307,12 +326,12 @@ and variation files come from your `--game` copy or verified `--stock-cache`.
 
 `--dry-run` prints what would be built without writing a pack.
 Freemode console checks used full-body suit inputs; typical downloaded freemode clothing remains
-an input-coverage gap. Check the mod's rig and the [reviewed slots](stock-conversion.md) before converting.
+an input-coverage gap. Check the mod's rig and the [reviewed slots](#9-reviewed-stock-inputs) before converting.
 
 ### Stock replacements other than cars
 
 `convert-override` turns a supported PC "replace" mod into an override pack. It looks up each
-file in the [reviewed stock catalog](stock-conversion.md), refuses unreviewed names, converts each file and writes one `override` row per member:
+file in the [reviewed stock catalog](#9-reviewed-stock-inputs), refuses unreviewed names, converts each file and writes one `override` row per member:
 
 ```sh
 ./menu-ctl.sh convert-override "$HOME/Downloads/Glock17Gen5/Combat Pistol replace" --id ovr-glock-v1 --game /path/to/game
@@ -367,7 +386,7 @@ characters. `--templates DIR` selects the verified cache for all three commands.
 
 ## 5. Ids and names
 
-A pack is loaded next to up to seven others, and everything in it lives in the game's own tables.
+A pack is loaded next to up to 15 others, and everything in it lives in the game's own tables.
 `pack-validate --against` and the menu's clash check catch a repeat, but choose names that cannot
 clash in the first place:
 
@@ -480,3 +499,46 @@ Timecycle and particle commands accept `--text TEXT` and an optional XML/PPT inp
 The default inputs come from `fetch-templates` / `export-templates`. The particle effect name is
 caller-declared; its presence and playback must be checked in game. This command clones an existing
 PS5 dictionary and does not convert PC YPTs.
+
+## 9. Reviewed stock inputs
+
+`convert-override`, `convert-replace`, and `convert-clothing` use reviewed stock ownership metadata and resources from your own matching game copy. They do not read an executable, decrypt archive tables, or require game keys. NumPy and the ordinary retail template cache are needed for texture conversion.
+
+The initial metadata covers PPSA04264 01.010.002:
+
+| Route | Reviewed stock inputs |
+| --- | --- |
+| Weapon override | Combat Pistol models, magazine and textures, including the HD texture dictionary |
+| Vehicle replacement | Police3 low/high fragments and base/HD texture dictionaries |
+| Story clothing | Franklin (`player_one`), Torso drawable 14 and Legs drawable 6; matching textures and the reviewed alternate legs rig |
+| Freemode apparel | MP Male (`mp_m_freemode_01`), new Legs drawables |
+
+Other stock names and ped/slot combinations refuse. The converters can process different mods within these stock slots when their formats and rigs are supported. This is a scoped stock input catalog, not a scan of arbitrary game assets. The ordinary vehicle converter remains the route for a new vehicle name.
+
+Pass `--game /path/to/app0` and `--templates build/retail-templates` to the conversion command. Stock resources are fetched on demand by pinned archive offset and length, rewrapped as RSC7, and checked against their size and SHA256. The source is opened read-only. Existing game files, archives and mod inputs are never rewritten.
+
+`GTAV_HOST_BUILD_DIR` relocates generated work, default output packs, and default caches together.
+
+Fetched resources are cached under `build/stock-members/ppsa04264-01.010.002`. `--stock-cache DIR` selects another cache. A later run can omit `--game` when every required resource is already cached; cached bytes must match the same reviewed pins. `--stock-manifest FILE` permits a relocated copy of the reviewed metadata only: changing owner paths, coverage or resource pins fails its identity check. Catalog expansion requires a reviewed metadata and identity update.
+
+For example, using the tools directly:
+
+```sh
+python3 -I tools/convert_override.py --source /path/to/combat-pistol-mod \
+  --id my-pistol --game /path/to/app0 --templates build/retail-templates
+python3 -I tools/convert_pc_clothing.py --source /path/to/clothing-mod \
+  --ped player_one --slot legs --drawable 6 --id my-legs \
+  --game /path/to/app0 --templates build/retail-templates
+python3 -I tools/convert_vehicle_replace.py --source /path/to/police3-mod \
+  --id my-police --game /path/to/app0 --templates build/retail-templates \
+  --repair texture-stride --repair duplicate-bones --repair fragment-quirks
+```
+
+The source can be a loose folder, an OPEN PC RPF, or an OIV/ZIP package. Encrypted PC mod archives need their files exported first. Resource collection is bounded and refuses symbolic links and conflicting duplicate names. No archive installer instructions are executed.
+
+Ownership metadata preserves stock folders and every reviewed base/patch copy. Optional HD companions outside that catalog are reported as unknown and are not inferred; an unknown member explicitly supplied by the mod refuses. Shared vehicle dictionaries remain refused. The running menu still checks actual ownership and residency before loading: load before seeing the replaced vehicle, drawing the weapon, or wearing the replaced clothing. Stock vehicle handling values remain unchanged by a replacement pack.
+
+Story clothing replaces the selected stock slot. It tests the reviewed target and alternate skeletons, and refuses a rig that fits neither. Freemode clothing adds new styles after the retail styles. Always inspect the printed residency and wardrobe instructions before testing the pack.
+
+Freemode clothing was tested with full-body suit inputs in the MP Male Legs slot; typical downloaded
+freemode clothing mods may use slots not covered yet.

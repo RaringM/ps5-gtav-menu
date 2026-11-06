@@ -38,7 +38,7 @@ int _sceApplicationGetAppId(int pid, int* app_id);
 
 // Route plain reads/writes through the debug-memory path instead of ptrace. Every PT_ATTACH stops
 // and resumes every thread in the target, and on 01.010.002 a handful of those cycles permanently
-// jams GTA's streaming I/O (docs/ptrace-free-injection.md). With this on, the only remaining
+// jams GTA's streaming I/O. With this on, the only remaining
 // stops in an inject are the two that genuinely need one: alloc_exec's remote mmap and
 // start_thread's injected call. 0 = classic ptrace-only behaviour.
 #ifndef GTAV_PROC_NOSTOP_IO
@@ -361,7 +361,7 @@ static int bt_ptrace(int req, pid_t pid, caddr_t addr, int data) {
 // Streaming-quiescence gate for PT_ATTACH. Stopping the target destroys the file reads that are
 // IN FLIGHT at that instant: their completions never arrive, the streamer's ring consumer parks on
 // the first incomplete slot, and every read queued behind it is stranded for the life of the
-// process (docs/ptrace-free-injection.md). Reads already completed and reads not yet submitted
+// process. Reads already completed and reads not yet submitted
 // are unaffected -- so attaching while nothing is in flight should be harmless. The counter is
 // build-specific, so it arrives as an address define; 0 disables the gate entirely.
 #ifndef GTAV_LOADER_QUIESCE_ADDR
@@ -757,7 +757,7 @@ int gtav_proc_read(int pid, uintptr_t addr, void* buf, size_t n) {
 // kernel_proc_copyin/copyout try the debug-memory service first and fall back to walking the
 // target's page tables and copying through the kernel direct map. That fallback is not optional on
 // firmware >= 8.40, where the debug-memory WRITE service returns EPERM outright -- the reason the
-// bootstrap probe failed with `mdbg_copyin failed ... errno=1` (docs/ptrace-free-injection.md).
+// bootstrap probe failed with `mdbg_copyin failed ... errno=1`.
 // Older SDKs expose only the mdbg half; GTAV_SDK_HAS_PROC_COPYIO says which is available, so the
 // loader still builds against either. Note the DMAP fallback reaches RESIDENT pages only.
 #ifndef GTAV_SDK_HAS_PROC_COPYIO

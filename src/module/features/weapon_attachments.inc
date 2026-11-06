@@ -84,7 +84,7 @@ static int pack_weapon_spawn(uint32_t weapon);  // custom_pack_data.inc (or the 
 
 // Why the Quick Slots rows cannot serve `weapon`, or nullptr when they can (a retail weapon of
 // kWAttach) or no weapon is in hand. A pack weapon is never in the table: its parts are the
-// Component row's (2026-10-08 session 3: Suppressor On on a pack weapon staged silently).
+// Component row's (Suppressor On on a pack weapon used to stage silently).
 static const char* wattach_refusal(uint32_t weapon) {
   if (!weapon || wattach_row_for(weapon)) return nullptr;
   return pack_weapon_spawn(weapon) >= 0 ? "pack weapon: use Component"

@@ -1,4 +1,7 @@
-"""Bounded vehicle format reading and graph construction; no native code or reference source execution."""
+"""Compare which native resource owns each collision bound with a reference.
+
+Bounded parsing; no native code or reference source runs.
+"""
 
 from __future__ import annotations
 

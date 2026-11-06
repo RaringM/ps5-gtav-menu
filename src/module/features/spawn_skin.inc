@@ -641,7 +641,7 @@ static ModelStreamStatus model_stream_step(uint32_t action, uint32_t model, Mode
   //
   // Whether OUR request CAUSES that jam is NOT established -- a process whose injection failed and
   // rolled back (no worker, no hook, no spawn) reached the same saturated ring state. Either way
-  // this guard is the conservative choice. See docs/ptrace-free-injection.md.
+  // this guard is the conservative choice.
   if (!invoke_return_ctx<int>(0, g_n.has_model_loaded, model)) {
     job->attempts = 0;
     job->pending = 0;

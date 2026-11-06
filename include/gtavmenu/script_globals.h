@@ -1,9 +1,9 @@
 // Script-globals subsystem: port of the version-robust "enable MP/DLC vehicles
-// in SP" technique (drp4lyf / Chiheb-Bacha lineage, ref/PC-MenyooSP) to the PS5.
+// in SP" technique (drp4lyf / Chiheb-Bacha lineage, MenyooSP) to the PS5.
 //
 // The fix sets a single RAGE script global -- the despawn-control flag that the
 // SP background sweep reads -- to 1, which stops the sweep that both ejects the
-// player from and deletes MP/DLC vehicles. See docs/script-globals-design.md.
+// player from and deletes MP/DLC vehicles.
 //
 // This header splits into two layers:
 //
@@ -40,7 +40,7 @@ extern "C" {
 
 // Enhanced-build (Gen9 / PS5) bytecode signature for the instruction sequence
 // that touches the despawn-control global, plus where the 24-bit global index
-// operand sits relative to the match. Sourced from ref/PC-MenyooSP
+// operand sits relative to the match. Sourced from MenyooSP
 // (GeneralGlobalHax::EnableBlockedMpVehiclesInSp, g_isEnhanced branch). The PS5
 // runs the Enhanced edition, so this pattern + offset apply unchanged.
 #define GTAV_DESPAWN_GLOBAL_PATTERN_LEN 17u
@@ -147,7 +147,7 @@ GtavGlobalAddr gtav_global_decompose(uint32_t id);
 #define GTAV_PROLOGUE_GLOBAL_CANDIDATE_COUNT 0u
 #endif
 
-// RAGE script-VM structs. Offsets mirror ref/PC-MenyooSP (GTAmemory.h, Enhanced
+// RAGE script-VM structs. Offsets mirror MenyooSP (GTAmemory.h, Enhanced
 // layout); each is a hardware-verification point on PS5. Code is paged at 0x4000.
 typedef struct GtavScriptHeader {
   char pad0[0x10];

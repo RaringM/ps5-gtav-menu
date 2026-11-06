@@ -1,4 +1,7 @@
-"""Bounded vehicle format reading and graph construction; no native code or reference source execution."""
+"""Native physics group hierarchy: canonical node order and semantics.
+
+Bounded parsing; no native code or reference source runs.
+"""
 
 from __future__ import annotations
 

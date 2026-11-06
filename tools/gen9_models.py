@@ -1,7 +1,6 @@
 """Gen9 (PS5) drawable models: geometry pointer arrays, shader mappings and bounds, written and read back.
 
-The build/read half of native_models.py, split from the derivation of its contract: the model layout
-arrives as data (`contract`: the `model` entry of the drawable contracts, frozen in data/drawable_contracts
+The model layout arrives as data (`contract`: the `model` entry of the drawable contracts, frozen in data/drawable_contracts
 and loaded by gtavmenu_tools.drawable_contracts). Nothing here reads a reference source, a game
 executable or a third-party package.
 """

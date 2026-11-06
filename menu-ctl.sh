@@ -1062,14 +1062,11 @@ convert_abs() {
 # convert_lower TEXT
 convert_lower() { printf '%s' "$1" | tr '[:upper:]' '[:lower:]'; }
 
-# convert_tool NAME COMMAND: CV_TOOL = NAME.py from tools/, else from the developer converters.
+# convert_tool NAME COMMAND: CV_TOOL = tools/NAME.py.
 convert_tool() {
   CV_TOOL="$ROOT/tools/$1.py"
   [ -f "$CV_TOOL" ] && return 0
-  CV_TOOL="$ROOT/research/tools/$1.py"
-  [ -f "$CV_TOOL" ] && return 0
-  echo "[menu-ctl] $2 needs the developer converter $1.py, which this checkout does not have" \
-    "(development checkouts only, not in this release); nothing was written" >&2
+  echo "[menu-ctl] $2 needs the converter tools/$1.py, which this checkout does not have; nothing was written" >&2
   return 2
 }
 

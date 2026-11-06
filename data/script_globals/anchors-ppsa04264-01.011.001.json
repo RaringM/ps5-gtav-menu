@@ -8,7 +8,7 @@
     "Set each anchor's \"addr\" to the absolute live virtual address (the eboot maps",
     "at its fixed link base with no ASLR slide, so the disassembler vaddr is the",
     "live VA). Leave it null until RE'd; a null anchor emits 0 and the runtime",
-    "latches FAILED rather than dereferencing null. See docs/script-globals-design.md."
+    "latches FAILED rather than dereferencing null."
   ],
   "gameBuild": "GTA V Enhanced (PS5) PPSA04264 / 01.011.001",
   "targetId": "ppsa04264-01.011.001",

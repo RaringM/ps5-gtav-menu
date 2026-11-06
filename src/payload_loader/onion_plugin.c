@@ -16,7 +16,7 @@
 #include <unistd.h>
 
 #ifndef GTAV_ONION_PLUGIN_VERSION
-#define GTAV_ONION_PLUGIN_VERSION "1.01"
+#define GTAV_ONION_PLUGIN_VERSION "1.03"
 #endif
 
 #ifndef GTAV_ONION_ELFLDR_PORT

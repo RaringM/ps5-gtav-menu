@@ -8,14 +8,12 @@
     "Set each anchor's \"addr\" to the absolute live virtual address (the eboot maps",
     "at its fixed link base with no ASLR slide, so the disassembler vaddr is the",
     "live VA). Leave it null until RE'd; a null anchor emits 0 and the runtime",
-    "latches FAILED rather than dereferencing null. See docs/script-globals-design.md."
+    "latches FAILED rather than dereferencing null."
   ],
   "gameBuild": "GTA V Enhanced (PS5) PPSA04264 / 01.010.002",
   "targetId": "ppsa04264-01.010.002",
   "_targetIdComment": [
-    "Production anchors for the only active build. The 01.005.000 source and analysis inputs are",
-    "preserved on private dev; its verified historical build is tagged",
-    "archive/ppsa04264-01.005.000.",
+    "Production anchors for PPSA04264 01.010.002; every other build has its own anchors file.",
     "Both the globals base and global indices move between builds; never reuse these values."
   ],
   "analysisInputSha256": "2a3419b404a5d10f2d36d8056916e65afad6352b78489365e5f1003f8e953c0d",
@@ -36,7 +34,7 @@
       "macro": "GTAV_SCRIPT_TABLE_ADDR",
       "addr": null,
       "verifiedLive": false,
-      "lead": "Current 01.010 IDA re-audit: ScriptStore string live 0x3bbb1bd, sole xref live 0x1ca59ce, fwAssetStore object live 0x5984dd8. NOT yet the Menyoo {Header*,hash}[] table -- follow the store pool to the program array. See docs/script-globals-design.md s8.",
+      "lead": "Current 01.010 IDA re-audit: ScriptStore string live 0x3bbb1bd, sole xref live 0x1ca59ce, fwAssetStore object live 0x5984dd8. NOT yet the Menyoo {Header*,hash}[] table -- follow the store pool to the program array.",
       "method": [
         "PC-Enhanced FindScript pattern 48 03 05 <disp32> 4c 85 c0 0f 84 returns",
         "0 hits on PS5 (separately compiled). Located g_ScriptStore via the",

@@ -880,7 +880,7 @@ static uint32_t cycle_kit_part(uint32_t param) {
 }
 
 // ---------------------------------------------------------------------------
-// Plates & Livery > Livery (2026-10-08 session 3): the car's texture liveries (SET_VEHICLE_LIVERY,
+// Plates & Livery > Livery: the car's texture liveries (SET_VEHICLE_LIVERY,
 // GET_VEHICLE_LIVERY_COUNT), then its kit liveries (VMT_LIVERY_MOD parts of mod slot 48, named by
 // the kit like LS Customs > Part Type: Livery and fitted with the same SET_VEHICLE_MOD). One CHOICE
 // domain -1..textures+kit-1: -1 None (removes both), then the textures, then the kit parts.

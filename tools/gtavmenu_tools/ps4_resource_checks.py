@@ -20,7 +20,7 @@ computed ones, and the packed allocation size at object +0x40 equal to that stor
 other format is not checked (a warning).
 
 The walks are read-only and bounded (asset_formats.Limits); structure offsets follow the pinned
-CodeWalker layouts asset_materials uses. A member that cannot be read or walked is an error.
+CodeWalker structure layouts. A member that cannot be read or walked is an error.
 """
 
 from __future__ import annotations

@@ -118,8 +118,8 @@ int gtav_proc_write(int pid, uintptr_t addr, const void* buf, size_t n);
 // Read/write target memory WITHOUT stopping it: the debug-memory path (mdbg), which copies through
 // the kernel and never PT_ATTACHes. Measured on 01.010.002: a handful of PT_ATTACH/PT_DETACH cycles
 // against a live GTA permanently jams its streaming I/O ring (reads stay submitted, completions
-// never arrive), while hundreds of mdbg reads from the host disturb nothing -- see
-// docs/ptrace-free-injection.md. These also ignore page protections, so a caller reading
+// never arrive), while hundreds of mdbg reads from the host disturb nothing.
+// These also ignore page protections, so a caller reading
 // execute-only .text needs no gtav_proc_protect first. Returns 0 on success, -1 if the debug-memory
 // path is unavailable or the transfer failed; callers decide whether to fall back.
 int gtav_proc_read_nostop(int pid, uintptr_t addr, void* buf, size_t n);

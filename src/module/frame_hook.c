@@ -476,7 +476,7 @@ static int capture_probe_context(GtavFrameHookProbeSnapshot* sample) {
 
 // Start the worker thread from inside the game, on the first hook fire, instead of having the
 // loader inject a thread by ptrace. PT_ATTACH permanently breaks GTA's streaming I/O on
-// ppsa04264-01.010.002 (docs/ptrace-free-injection.md), and gtav_elf_start_thread was the last
+// ppsa04264-01.010.002, and gtav_elf_start_thread was the last
 // ptrace site in an inject; with the ptrace-free lane supplying the worker's memory from the cave
 // bootstrap, this removes the other one. The worker keeps its own thread afterwards, so rendering
 // and scePad input are unchanged -- only who calls pthread_create moves.

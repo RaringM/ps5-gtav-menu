@@ -152,7 +152,7 @@ extern "C" void gtav_menu_frame_tick(void);
 #endif
 
 // Only spawn ALREADY-RESIDENT models; never request a cold one. Defaults to 1 -- see
-// make/config.mk and docs/ptrace-free-injection.md: a single cold request freezes the streamer's
+// make/config.mk: a single cold request freezes the streamer's
 // I/O ring for the rest of the session and starves the game's own streaming. This is the one
 // streaming gate whose SAFE value is on.
 #ifndef GTAV_MENU_STREAM_RESIDENT_ONLY

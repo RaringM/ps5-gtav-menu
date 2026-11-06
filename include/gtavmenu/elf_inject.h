@@ -59,7 +59,7 @@ int gtav_elf_map_and_relocate_staged(int pid, const uint8_t* elf, size_t len,
                                      GtavElfInjectResult* out);
 
 // Map and relocate into memory the caller already owns in the target, skipping allocation
-// entirely. On firmware where PT_ATTACH breaks the game (docs/ptrace-free-injection.md) the base
+// entirely. On firmware where PT_ATTACH breaks the game the base
 // comes from the cave bootstrap, and with GTAV_PROC_NOSTOP_IO the segment and relocation writes go
 // through the kernel too, so the whole map runs without ever stopping the target. `base` must be at
 // least image_size bytes and writable+executable. `reserved` is the size of that region: the image

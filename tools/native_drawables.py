@@ -1,4 +1,7 @@
-"""Bounded vehicle format reading and graph construction; no native code or reference source execution."""
+"""Read, rebuild and verify native drawables: joints, models and child links.
+
+Bounded parsing; no native code or reference source runs.
+"""
 
 from __future__ import annotations
 

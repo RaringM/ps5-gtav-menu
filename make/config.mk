@@ -6,8 +6,8 @@ GTAV_ALLOW_UNVALIDATED_TOOLCHAIN ?= 0
 
 # Does the installed SDK provide kernel_proc_copyin/copyout? Those try the debug-memory path and
 # then fall back to a page-table walk + kernel direct-map write. That fallback is mandatory on
-# firmware >= 8.40, where the debug-memory WRITE service is refused outright (EPERM) -- see
-# docs/ptrace-free-injection.md. Older SDKs only ship mdbg_copyin/copyout, so this is detected
+# firmware >= 8.40, where the debug-memory WRITE service is refused outright (EPERM; see
+# src/payload_loader/main.c). Older SDKs only ship mdbg_copyin/copyout, so this is detected
 # rather than assumed: the loader keeps building against either, and CI's SDK release decides
 # which path it gets.
 GTAV_SDK_HAS_PROC_COPYIO := $(shell grep -qs 'kernel_proc_copyin' \
@@ -31,7 +31,6 @@ ONIONHEN_PACKAGE_DIR ?= build/pkg/$(GTAV_TARGET)/onionhen
 ETAHEN_PLUGIN_VERSION ?= 1.00
 ETAHEN_RUNTIME_VERSION ?= $(ETAHEN_PLUGIN_VERSION)
 ETAHEN_PACKAGE_DIR ?= build/pkg/$(GTAV_TARGET)/etahen
-NEXHEN_PACKAGE_DIR ?= build/pkg/$(GTAV_TARGET)/nexhen
 ETAHEN_RUNTIME ?= 0
 
 # The primary target remains 01.010.002. Other exact targets are admitted only by a schema-2 JSON

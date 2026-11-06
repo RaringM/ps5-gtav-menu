@@ -5,7 +5,6 @@
   ],
   "gameBuild": "GTA V Enhanced (PS5) PPSA04264 / 01.005.000",
   "targetId": "ppsa04264-01.005.000",
-  "ebootRef": "research/artifacts/ppsa04264/01.005.000/eboot.normalized.elf",
   "despawnGlobalIndex": {
     "macro": "GTAV_DESPAWN_GLOBAL_INDEX",
     "value": 4540731,

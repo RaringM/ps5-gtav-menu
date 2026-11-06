@@ -366,7 +366,7 @@ static const GtavBootPoolProfile gtav_boot_pool_profiles[1];
 // Read the build-pin signature without stopping the game. The ptrace read path PT_ATTACHes (and
 // resumes) every thread in GTA per call; the stage ladder showed a handful of those cycles is
 // enough to jam the streaming I/O ring for good, while the same reads over the debug-memory path
-// disturb nothing (docs/ptrace-free-injection.md). mdbg also ignores page protections, so the
+// disturb nothing. mdbg also ignores page protections, so the
 // probe's .text protect becomes unnecessary too. 0 = the original ptrace+protect probe.
 #ifndef GTAV_LOADER_PROBE_NOSTOP
 #define GTAV_LOADER_PROBE_NOSTOP 0

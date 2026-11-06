@@ -32,7 +32,7 @@
     "scriptGlobals": {
       "json": "data/script_globals/anchors.json",
       "header": "gtavmenu/script_globals_addresses_generated.h",
-      "sha256": "4c945345d2f2d2e33c8d09877be7646ae17dd170cabfcb29c56a79fc09e7fb4f"
+      "sha256": "7c3cf66de2c20f8a8fd80b31a41b450d505af2a91e8679c45aa43ed009bec952"
     },
     "features": {
       "nativeFeatures": true,

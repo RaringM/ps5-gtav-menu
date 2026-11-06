@@ -1,4 +1,7 @@
-"""Bounded vehicle format reading and graph construction; no native code or reference source execution."""
+"""Plan, build and read back a native vehicle fragment resource, flat or paged.
+
+Bounded parsing; no native code or reference source runs.
+"""
 
 from __future__ import annotations
 

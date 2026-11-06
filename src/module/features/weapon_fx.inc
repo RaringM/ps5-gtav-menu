@@ -216,7 +216,7 @@ static int last_weapon_impact(int ped, Vec3* out) {
 // frame the menu is visible (the old worker-thread call missed the radio/context controls
 // and raced the game's own per-frame read). We disable only the menu-navigation buttons and
 // the per-context inputs they map to; walk/run/look/aim/fire stay enabled so the player can
-// still move with the menu open. IDs are GTA V INPUT_* (ref/.../Enums.h); group 0 = PLAYER,
+// still move with the menu open. IDs are GTA V INPUT_* control IDs; group 0 = PLAYER,
 // group 2 = FRONTEND.
 static void suppress_menu_input_controls(void) {
   if (!g_n.disable_control_action) return;

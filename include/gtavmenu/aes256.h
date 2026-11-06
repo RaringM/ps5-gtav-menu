@@ -10,7 +10,7 @@
 // No key material lives here or in the matching source: the RPF TOC keys are read by the caller
 // from the game's own key table at run time.
 //
-// Every function returns 0 on success and -1 on invalid arguments (AGENTS.md), except the pure
+// Every function returns 0 on success and -1 on invalid arguments, except the pure
 // hash helper, which cannot fail.
 
 #include <stddef.h>

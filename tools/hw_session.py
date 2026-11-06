@@ -187,7 +187,7 @@ def load_plan(path: Path) -> dict:
 
 
 def plan_name(path: Path) -> str:
-    """research/runs/hw-phasef-5/plan.json -> hw-phasef-5 (a plan named otherwise: its file stem)."""
+    """runs/hw-phasef-5/plan.json -> hw-phasef-5 (a plan named otherwise: its file stem)."""
     name = path.resolve().parent.name if path.name == "plan.json" else path.stem
     if not NAME.match(name):
         raise PlanError(f"{path}: the plan's directory name {name!r} is no usable session name")

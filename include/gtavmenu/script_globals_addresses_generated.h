@@ -15,7 +15,7 @@
 // being compiled is a hard error, not a fallback -- see script_globals.h.
 #define GTAV_SCRIPT_GLOBALS_ANCHOR_TARGET_ID "ppsa04264-01.010.002"
 
-// SCRIPT_TABLE: TODO -- not yet reverse-engineered.
+// SCRIPT_TABLE: unresolved on this build (0: the feature stays off).
 #ifndef GTAV_SCRIPT_TABLE_ADDR
 #define GTAV_SCRIPT_TABLE_ADDR 0ull
 #endif

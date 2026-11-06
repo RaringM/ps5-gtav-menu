@@ -1,6 +1,6 @@
 #pragma once
 
-// Bootstrap stub assembler for the ptrace-free injection route (docs/ptrace-free-injection.md).
+// Bootstrap stub assembler for the ptrace-free injection route.
 //
 // PT_ATTACH permanently breaks GTA's streaming I/O, so the loader cannot use a remote mmap driven
 // by ptrace register injection to obtain memory. Instead it writes this stub into the executable

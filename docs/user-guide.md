@@ -1,97 +1,91 @@
-# User guide: custom packs
+# User guide
 
-This guide is for players: how to install the menu, how to put custom packs on the console, and how
-to load them in game. To make packs, read the [pack author guide](pack-author-guide.md). The
-[pack reference](pack-reference.md) covers the full `pack.cfg` format, commands and refusal messages.
-
-Custom packs are **experimental**. They work on the 01.010.002 game builds (PPSA04263 and
-PPSA04264) and on PPSA04264 01.011.001. The supported 01.005.000 build runs the ordinary menu with
-custom packs disabled.
-
-On a PS4, GTA V Legacy CUSA00411 01.57 runs the menu as a plugin for GoldHEN 2.3+ or nexHEN PS4
-v1.00 (`gtav_menu.prx`), and custom packs load there too (experimental). Install it as described in
-the [PS4 plugin guide](ps4-plugin.md); the rest of this guide covers the PS5 deliveries.
+This guide is for players on a PS5: installing, updating and removing the menu, fixing common
+problems, and loading custom packs in game. On a PS4, install the plugin as described in the
+[PS4 plugin guide](ps4-plugin.md); its custom packs work as sections 5 to 11 describe. To make
+packs, read the [pack author guide](pack-author-guide.md); the [pack reference](pack-reference.md)
+covers the `pack.cfg` format, the host commands and every refusal message.
 
 ## 1. What you need
 
-- A jailbroken PS5 with a payload launcher, and GTA V at content version 01.010.002 (PPSA04263 or
-  PPSA04264) or 01.011.001 (PPSA04264).
-- ShadowMountPlus or a HEN setup that shares the console's `/data` folder with GTA. This is required
-  for custom assets, whether the game is installed from an exFAT image or a native `.pkg`.
-- A PC (Linux is the tested host) with Python 3.11 or newer, `curl` and this repository, on the same
-  network as the console.
-- The console's FTP server. Run `export PS5_HOST=<console-ip>` once in your shell: console
-  commands require this address. `PS5_FTP_PORT` defaults to 2121.
+- A jailbroken PS5 with a payload launcher, or OnionHEN or etaHEN, and GTA V at one of the
+  versions in the README's [supported games](../README.md#supported-games) table.
+- For custom packs only:
+  - ShadowMountPlus or a HEN setup that shares the console's `/data` folder with GTA, whether the
+    game is installed from an exFAT image or a native `.pkg`.
+  - A PC on the same network (Linux is the tested host) with Python 3.11 or newer, `curl` and a
+    copy of this repository: the pack tools are in the repository, not in the release ZIPs.
+  - The console's FTP server. Run `export PS5_HOST=<console-ip>` once in your shell; `PS5_FTP_PORT`
+    defaults to 2121.
+
+Custom packs are **experimental**. They work on 01.010.002 (PPSA04263 and PPSA04264) and
+01.011.001 (PPSA04264); 01.005.000 runs the ordinary menu with custom packs off.
 
 ## 2. Install the menu
 
-For a release ZIP, follow [Install a package](../README.md#install-a-package), then load Story Mode
-and open the menu with **R1 + D-pad Left**. Universal packages detect the supported title/version
-automatically and do not require a host compiler. Custom packs remain unavailable on 01.005.000.
+Download one PS5 package from the release (the README's [download](../README.md#download) table
+lists them). To check the download on a PC, put `SHA256SUMS` next to the ZIP and run
+`sha256sum --ignore-missing -c SHA256SUMS`. Every package supports all the PS5 builds in the table
+and picks the right one at launch.
 
-To deploy from a source checkout, follow the README's
-[build prerequisites](../README.md#build-and-package) and [Run from source](../README.md#run-from-source):
+| Delivery | Steps |
+| --- | --- |
+| Standalone | Send `gtav-menu-daemon.elf` with your payload launcher **before** starting GTA. The worker for every build is embedded; nothing else is uploaded. |
+| OnionHEN | Copy `GTAV00001.elf` to `/data/OnionHEN/plugins/`. In Toolbox, open **Payloads & Kernel > Plugins > GTAV Menu** and enable **Running** (and **Auto-start** to start it with the launcher). Targets OnionHEN v0.0.13. |
+| etaHEN | Copy `GTAV00001.plugin` to `/data/etaHEN/plugins/` (only that file; its helper is embedded). Enable **Running** under **Toolbox > Plugins**. Targets the etaHEN 2.5B plugin interface. |
 
-1. Select your exact title ID and game version, then build the menu (`make all`).
-2. Start GTA V and load Story Mode, then inject from the PC:
+Start GTA and load Story Mode. After the **GTAVMenu injected** notification, press
+**R1 + D-pad Left**. The loader keeps watching and injects again after every GTA
+relaunch, so you install once per console boot (or never again, with **Auto-start**).
 
-   ```sh
-   export GTAV_TARGET=ppsa04264-01.010.002  # ppsa04263-01.010.002 for EU, ppsa04264-01.011.001
-   export PS5_HOST=<console-ip>
-   ./menu-ctl.sh cave-inject
-   ./menu-ctl.sh doctor
-   ```
+**Bigger tables on 01.011.001.** When the loader is running before GTA starts, it enlarges the
+game's vehicle, ped and asset tables at launch, which leaves room for many more add-on vehicles
+and peds (section 10). Started after GTA, it keeps the stock tables. If the loader cannot undo its
+startup patch cleanly, it does not inject the menu into that GTA process; restart GTA. The
+01.010.002 and 01.005.000 builds keep their stock tables.
 
-   Or arm the loader before you start GTA: `./menu-ctl.sh watch` (one launch)
-   or `watch --persist` (every launch, until `./menu-ctl.sh daemon-stop`). The OnionHEN and etaHEN
-   deliveries inject the same menu.
-3. In game, **R1 + D-pad Left** opens or hides the menu. D-pad Up/Down moves, Left/Right changes a
-   value, Cross selects, Circle goes back.
+**Tested setups.** Standalone and OnionHEN are tested on 01.010.002 (US and EU), and standalone on
+01.011.001 (including relaunches and the bigger tables). Not yet tested on a console: automatic
+selection of 01.005.000 and 01.011.001 by a package, and OnionHEN and etaHEN on 01.011.001. The
+etaHEN package was tested on etaHEN Beta2.6A only, not on stock 2.5B.
 
-Use a fresh GTA process after a failed or interrupted injection.
+To build the menu yourself or inject it from a PC, see [Building from source](building.md).
 
-On 01.011.001 the loader also enlarges the game's vehicle, ped and asset tables (boot-time pool
-growth) as GTA starts, which leaves room for many more add-on vehicles and peds (section 8). It can
-do that only when it runs before GTA starts: send a universal package's loader, run `watch` or
-`watch --persist`, or turn the OnionHEN or etaHEN plugin's **Running** on before you launch the
-game. `cave-inject` into a running game, or a loader started after GTA, keeps the stock tables.
-`./menu-ctl.sh watch --no-boot-pools` skips the growth. If the loader cannot undo its startup patch
-cleanly, it does not inject the menu into that GTA process; restart GTA. The 01.010.002 and
-01.005.000 builds keep their stock tables.
+## 3. Update, stop or uninstall
 
-### Delivery compatibility and updates
+- **Stop a plugin:** turn **Auto-start** and **Running** off in its Toolbox, then wait until
+  `/data/GTAVMenu/daemon.lock` disappears. **Stop the standalone loader:** create an empty file
+  `/data/GTAVMenu/daemon.stop`. Run only one loader at a time.
+- **Update:** stop the loader, replace the file you installed with the new release's, and start it
+  again. After replacing an etaHEN plugin, reboot and reload etaHEN before enabling it: Toolbox can
+  keep the previous plugin's code in memory. The startup notification names the running release.
+- **Uninstall:** stop the loader and delete the file you installed (`GTAV00001.elf` or
+  `GTAV00001.plugin`); for standalone, stop sending the ELF. `/data/GTAVMenu/` holds the menu's
+  settings, saved vehicles and scenes, installed packs and its log; delete it too to remove
+  everything.
 
-Standalone and OnionHEN have passed US/EU 01.010.002 selection and shutdown checks. Standalone
-also works without a HEN when a compatible payload launcher is available. On 01.011.001 the
-exact-target standalone loader has passed one-shot, persistent (relaunch), pool growth and shutdown
-checks. Automatic selection of PPSA04264 01.005.000 and 01.011.001, and the OnionHEN and etaHEN
-deliveries on 01.011.001, are implemented but have not been tested on hardware.
+## 4. Troubleshooting
 
-The etaHEN package targets the 2.5B plugin interface. Console checks used Beta2.6A with a custom
-lifecycle implementation; compatibility with stock 2.5B has not been verified on hardware.
-Only install `GTAV00001.plugin`; its helper is embedded.
+| Problem | What to do |
+| --- | --- |
+| No **GTAVMenu injected** notification | Make sure the loader runs (plugin **Running** on, or the standalone ELF sent) and that your game is a supported title and version: other builds are refused. Then restart GTA. |
+| The notification appeared but the menu does not open | Press **R1 + D-pad Left** in Story Mode free roam; the menu starts hidden. |
+| Injection failed or was partial | Close GTA and start a fresh Story Mode session. Do not inject twice into the same game process. |
+| **Custom Packs** says custom assets are unavailable | Share `/data` with GTA (section 5), then restart GTA. The rest of the menu works without it. |
+| Anything else | The loader writes `/data/GTAVMenu/gtav-menu.log`; include it when you report a problem. |
 
-Before replacing either plugin, turn **Auto-start** and **Running** off in Toolbox and wait for
-`/data/GTAVMenu/daemon.lock` to disappear. After replacing an etaHEN plugin, reboot and reload
-etaHEN before enabling it: Toolbox can retain the previous plugin's code in memory. The startup
-notification identifies the running menu by its release tag or source commit.
-
-## 3. Shared game storage
+## 5. Custom packs: shared game storage
 
 Packs live at `/data/GTAVMenu/custom/packs/<id>/` on the console. GTA must see that same `/data`
-folder through ShadowMountPlus or the HEN setup. The loader does not mount or copy pack files into
-the game. This direct route has passed asset testing on both 01.010.002 titles and on 01.011.001.
+folder through ShadowMountPlus or the HEN setup; the loader does not mount or copy pack files into
+the game.
 
 If GTA cannot access shared `/data`, the regular menu still starts. **Custom Packs** reports that
 custom assets are unavailable; loading packs and exporting templates are refused. Saved maps and
-profiles also require writable game access to their `/data` paths. Enable the shared folder in
-your HEN/mount setup and restart GTA before retrying custom assets. Existing console packs remain
-installed.
+profiles also need writable game access to their `/data` paths. Enable the shared folder in your
+HEN or mount setup and restart GTA before retrying. Installed packs stay installed.
 
-Missing-`/data` refusal and normal menu/gameplay have been verified on PPSA04264 01.010.002
-without a HEN or ShadowMountPlus.
-
-## 4. Install a pack
+## 6. Install a pack
 
 A pack is a folder whose `resources/` subfolder holds a `pack.cfg` file, one to four `.rpf` archives
 and sometimes `.meta` data files. To install one from the PC:
@@ -119,9 +113,9 @@ Other host commands:
 
 The full list is in the reference's [menu-ctl.sh pack commands](pack-reference.md#menu-ctlsh-pack-commands).
 
-## 5. Select and load packs in game
+## 7. Select and load packs in game
 
-1. Load Story Mode, inject the menu, and stay in free roam.
+1. Load Story Mode, wait for the menu, and stay in free roam.
 2. Open **Custom Packs > Manage Packs**. Its first rows are the controls (**Load N selected
    packs**, **Uninstall**, and **Revert overrides** once overrides are loaded); below them
    **Installed packs** lists every installed pack, up to 128. Press Cross on a pack to select or
@@ -182,7 +176,7 @@ While such a car is near you, the load waits instead of failing:
 - After 3 minutes it stops with `Tuned car nearby (parked ones too)`. Restart GTA, then load
   somewhere without tuned cars (the Maze Bank roof works).
 
-## 6. When a load is refused
+## 8. When a load is refused
 
 A refused load shows on the first row of **Custom Packs** (`Load failed: <reason>`) and as a toast.
 When one pack caused it, the text starts with that pack's id. The most common ones:
@@ -193,7 +187,7 @@ When one pack caused it, the text starts with that pack's id. The most common on
 | `Load packs (none selected)` | Select a pack in **Manage Packs** first. |
 | `Deselect <pack>: same <kind> <name>`, `Load blocked: packs clash` | Two packs use the same name. Select only one of them. |
 | `Limit reached: too many <rows>; deselect a pack`, `16 packs selected; deselect one first` | The selection is over a limit. Deselect a pack. |
-| `Load blocked: Vehicle slots full`, `Ped model slots full (<n> free, need <m>): deselect <packs>` | The game has room for a limited number of add-on vehicles and peds per process (01.010.002: about 7 vehicles and 4 peds; 01.011.001: up to about 203 and 105 when the loader started before GTA, else 3 and 5; see section 8). Deselect the named packs, or restart GTA if packs already loaded. |
+| `Load blocked: Vehicle slots full`, `Ped model slots full (<n> free, need <m>): deselect <packs>` | The game has room for a limited number of add-on vehicles and peds per process (section 10). Deselect the named packs, or restart GTA if packs already loaded. |
 | `Load blocked: Ped metadata slots full`, `<Store> slots full (<n> free, need <m>): deselect <packs>` | The selected packs add more of that kind (archive files, texture or drawable slots, models, weapon components or weapon files) than the game has free. Deselect the named packs; **Manage Packs** marks each of them with `Load blocked`, starts each pack's line with what it needs (`Needs 12 frag, 31 txd, 1 vehicle.`) and shows the game's free slots below the **Load** row. |
 | `Load failed: <Store> slots full`, `<Store> slots full (<n> free, need <m>); restart GTA` | The game used up slots between the check and the load, or a data file declared more models than expected. Restart GTA and load again; `./menu-ctl.sh pack-notes` shows each store's need and free slots (`pack store need ...`). |
 | `<id>: pack.cfg invalid; reinstall it`, `Pack files damaged; reinstall it`, `Pack file missing; reinstall it` | Reinstall the pack with `pack-install`. |
@@ -207,9 +201,9 @@ When one pack caused it, the text starts with that pack's id. The most common on
 
 The pack reference's [Troubleshooting](pack-reference.md#troubleshooting) table lists every message.
 
-## 7. What works
+## 9. What works
 
-Everything below has passed on a console. Each item says which menu rows to use.
+Each item says which menu rows to use.
 
 - **Vehicles.** Converted PC add-on cars and motorbikes, including emergency vehicles with their own
   sirens and a wheelchair. Each has its make and model name, handling, mod kit and LS Customs parts
@@ -223,42 +217,31 @@ Everything below has passed on a console. Each item says which menu rows to use.
   **Wheel Type** to the wheels' type, then step **Wheels**: the pack's wheels are the last designs
   of that type, shown with their position and name (for example `51/54 Chiron Classique`).
 - **Replacing a stock car.** A PC "replace" mod becomes the body of a game car (for example every
-  Adder), with its textures. Its handling and sirens stay stock.
+  Adder, traffic included), with its textures. Its handling and sirens stay stock.
 - **Props and maps.** New props with collision, map placements of up to several hundred objects
-  each, whole PC map mods (villas, parks) split into several packs, new interiors, collision
-  converted from PC mods, stock world objects hidden around a spot, and **Locations** teleports.
+  each, whole PC map mods (villas, parks) split into several packs, new interiors (each with a
+  **Locations** teleport inside), collision converted from PC mods, and stock world objects hidden
+  around a spot.
 - **Peds and clothing.** Add-on peds, including multi-part peds with hats and glasses, hair, and
   female peds, worn from **Self > Appearance > Skin Changer > Custom** and dressed with
   **Self > Appearance > Wardrobe** (Cross applies the highlighted style). New clothing for story
   characters (replacing one of their outfits) and new styles for the online characters' freemode
   peds, which Wardrobe lists after the game's own.
 - **Weapons.** New weapons with their own models and attachments, each cloned from a game weapon
-  that decides its class (pistols, SMGs, rifles and a knife and a katana have been tested), with a
+  that decides its class (pistols, SMGs, rifles, a knife and a katana have been tested), with a
   weapon wheel icon borrowed from a game weapon in the same slot. Pack weapons are in the **Weapon
-  Browser** (Custom). Its footer names the weapon wheel slot, the borrowed icon and how many
-  components the weapon takes.
+  Browser** (Custom). Its footer names the weapon wheel slot, the borrowed icon, how many
+  components the weapon takes and whether it can be tinted (`Tints: 8` or `Tints: none`).
   **Weapons > Attachments > Component** works on the weapon in hand, pack or stock: Left/Right
   picks one of the parts it takes (a default part reads `(default)`), and Cross fits or removes it.
   The older per-slot rows for stock weapons are under **Attachments > Quick Slots (retail)**.
-  **Weapon Tint** recolours converted weapons like stock ones, and **Give Max Ammo** also fills
-  pack weapons.
+  **Weapon Tint** recolours converted weapons like stock ones (a weapon without a tint palette
+  shows `no tint palette`), and **Give Max Ammo** also fills pack weapons.
 - **Textures, screen effects and particles.** Texture replacements, new screen-effect (timecycle)
   modifiers and copies of existing particle effects.
+- **Saved scenes with pack props** (section 7).
 
-The following have also passed console checks:
-
-- **Save Map / Load Map with pack props** (section 5).
-- **Tint status of pack weapons.** The Weapon Browser footer also says whether a pack weapon can be
-  tinted (`Tints: 8` or `Tints: none`), and **Weapon Tint** on a weapon without a tint palette shows
-  the toast `no tint palette` instead of doing nothing.
-- **Clothing packs made with the new clothing converter** (the same kinds of clothing as above).
-- **A Locations teleport inside every converted interior**, also when the pack author named none.
-
-Freemode clothing acceptance used full-body suit inputs. A typical downloaded freemode clothing
-mod remains an input-coverage gap; supported stock slots are listed in
-[stock conversion coverage](stock-conversion.md).
-
-## 8. Known limits
+## 10. Known limits
 
 - **16 active packs, 128 installed.** At most 16 packs can be selected at once, and the menu lists
   up to 128 installed packs. Together, the active packs also share limits on archives, maps, collision
@@ -283,18 +266,18 @@ mod remains an input-coverage gap; supported stock slots are listed in
   engine sound, optionally the engine of another game car.
 - **Mods for GTA V Enhanced (PC):** their texture files convert, but their models do not yet. Use the
   mod's "Legacy" build, which most of them ship as well.
+- **Freemode clothing mods** may use slots the converter does not cover yet; the
+  [reviewed stock inputs](pack-author-guide.md#9-reviewed-stock-inputs) list what is covered.
 - **Not supported:** streaming large city-scale content from disk instead of
   memory, more than 16 active or 128 installed packs, new vehicle sound recordings, brand-new particle
   effects, new weapon wheel artwork, whole replacement maps (a full city, level or water swap),
-  game versions other than those in section 1, and peds with non-standard skeletons (animals, extra
-  bones).
+  game versions other than those in the README, and peds with non-standard skeletons (animals,
+  extra bones).
 
-## 9. Known issues
+## 11. Known issues
 
-- **If injection fails or reports a partial injection,** close GTA and start a fresh Story Mode
-  session before retrying. Do not inject again into the same game process. Selected packs stay selected.
-- **Kit liveries need packs built from 2026-10-08 on.** A car converted earlier shows its kit
-  liveries in the list, but they draw nothing on the car. Convert the car again.
-- **Packs with a `tints` row need the current menu build.** Weapons converted with the current
-  tools carry that row, and an older menu refuses their `pack.cfg` (`<id>: pack.cfg invalid;
-  reinstall it`). Inject the current menu build.
+- **Kit liveries need cars converted with v0.2.0 or later tools.** A car converted earlier shows
+  its kit liveries in the list, but they draw nothing on the car. Convert the car again.
+- **Packs with a `tints` row need a current menu.** Weapons converted with the current tools carry
+  that row, and an older menu refuses their `pack.cfg` (`<id>: pack.cfg invalid; reinstall it`).
+  Install the current release.

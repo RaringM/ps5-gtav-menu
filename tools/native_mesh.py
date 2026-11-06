@@ -1,4 +1,7 @@
-"""Bounded vehicle format reading and graph construction; no native code or reference source execution."""
+"""Check and verify native mesh conversions against the retail layouts.
+
+Bounded parsing; no native code or reference source runs.
+"""
 
 from __future__ import annotations
 

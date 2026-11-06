@@ -3,8 +3,7 @@
     "Script-globals anchors for the PS4 Legacy build CUSA00411 01.57 (consumed by",
     "devtools/generators/generate_script_globals_header.py through the PS4 target manifest).",
     "Addresses are absolute live virtual addresses: the executable maps at its fixed base",
-    "(normalized ELF vaddr + 0x400000, no ASLR). PS5 and PC values must not be reused.",
-    "Evidence: research/docs/cusa00411-01.57-script-globals.md."
+    "(normalized ELF vaddr + 0x400000, no ASLR). PS5 and PC values must not be reused."
   ],
   "gameBuild": "GTA V Legacy (PS4) CUSA00411 / 01.57",
   "targetId": "cusa00411-01.57",

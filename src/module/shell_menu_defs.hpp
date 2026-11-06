@@ -601,7 +601,7 @@ static const ShellItem kWeaponItems[] = {
      nullptr, 0},
 };
 
-// Weapons > Attachments (2026-10-08 session 3 fix): "Component" first, the one row that works for
+// Weapons > Attachments: "Component" first, the one row that works for
 // every weapon -- it picks any component the equipped weapon's meta lists (a pack weapon's own,
 // else the kWAttach table) and Cross fits or removes it; a default part reads "(default)". Then the
 // retail per-slot rows in their own page. The one deliberate leaf-before-submenu page
@@ -1038,8 +1038,7 @@ static const ShellItem kWardrobeItems[] = {
 // TOGGLE: enabling one turns off any other (single active mode). They run their per-frame work
 // on the game thread via the frame hook, so each refuses with a toast until the hook is live
 // (same as Noclip). Blackout, Zombie Outbreak and Flood were the former "Phase B" set; their
-// natives are now resolved and pinned, so they are live toggles like the rest (see
-// docs/MINIGAMES.md).
+// natives are now resolved and pinned, so they are live toggles like the rest.
 static const ShellItem kMinigamesItems[] = {
     {"Riot Mode", SHELL_ROW_TOGGLE, SHELL_MENU_NONE, GTAV_NATIVE_SHELL_ACTION_TOGGLE_MINIGAME_RIOT,
      nullptr, 0},

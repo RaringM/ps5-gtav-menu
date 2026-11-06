@@ -1,7 +1,6 @@
 """Gen9 (PS5) mesh components: declaration, vertex/index buffers and views, written and read back.
 
-The build/read half of native_mesh.py, split from the derivation of its contract: the layouts arrive as
-data (`contract`: the `mesh` entry of the drawable contracts, frozen in data/drawable_contracts and
+The layouts arrive as data (`contract`: the `mesh` entry of the drawable contracts, frozen in data/drawable_contracts and
 loaded by gtavmenu_tools.drawable_contracts; devtools/generators/generate_drawable_contracts.py rebuilds
 that file from its pinned sources). Nothing here reads a reference source, a game executable or a
 third-party package.

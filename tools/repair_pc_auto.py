@@ -111,7 +111,7 @@ def ps4_name_materials(payload: bytes, header: dict, limits=None) -> dict:
     """Admit name repair only when every explicit drawable inherits the main shader group.
 
     Legacy FragType/EnvironmentCloth/FragPhysicsLOD/FragPhysTypeChild slots follow
-    the pinned CodeWalker layouts also used by asset_materials (the bounded walk is
+    the pinned CodeWalker structure layouts (the bounded walk is
     gtavmenu_tools.ps4_resource_checks.fragment_drawables). No mesh pointers or
     arbitrary words are scanned. Independent groups need a separate repair.
     """

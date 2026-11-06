@@ -1,4 +1,7 @@
-"""Bounded vehicle format reading and graph construction; no native code or reference source execution."""
+"""Inspect a PC drawable's geometry layout: models, geometries and their buffers.
+
+Bounded parsing; no native code or reference source runs.
+"""
 
 from __future__ import annotations
 

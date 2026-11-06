@@ -33,7 +33,7 @@
 // .text". Hardware showed a 16 KB protect is sufficient: the stub ran, allocated and published with
 // only its own pages flipped. So the narrow scope is both enough and preferable -- the page holding
 // the hooked native is never touched. The RWX (aux) rows a maps diff shows after a run are an
-// artifact of the kernel write path, not of this protect; see docs/ptrace-free-injection.md.
+// artifact of the kernel write path, not of this protect.
 #define CAVE_PAGE_MASK 0x3fffu
 
 static uintptr_t cave_page_base(uint64_t cave) {
@@ -72,7 +72,7 @@ int gtav_cave_protect_retry(int pid, uintptr_t addr, size_t n, int prot, const c
 }
 
 // mdbg reports success when writing memory that has no backing, so a write is only believed after a
-// readback (docs/ptrace-free-injection.md).
+// readback.
 int gtav_cave_write_verified(int pid, uintptr_t addr, const uint8_t* buf, uint32_t n,
                              const char* what) {
   uint8_t check[GTAV_CAVE_STUB_MAX];

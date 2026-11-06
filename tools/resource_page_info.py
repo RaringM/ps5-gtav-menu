@@ -1,4 +1,7 @@
-"""Bounded vehicle format reading and graph construction; no native code or reference source execution."""
+"""Resource page info: the page-size counts serialized in an RSC7 header.
+
+Bounded parsing; no native code or reference source runs.
+"""
 
 from __future__ import annotations
 

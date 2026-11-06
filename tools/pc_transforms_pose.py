@@ -1,4 +1,7 @@
-"""Bounded vehicle format reading and graph construction; no native code or reference source execution."""
+"""Evaluate and compare a PC fragment's local transforms and pose.
+
+Bounded parsing; no native code or reference source runs.
+"""
 
 from __future__ import annotations
 

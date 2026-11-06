@@ -288,7 +288,7 @@ console commands refuse when it is unset. Offline conversion and validation do n
 | Command | What it does |
 | --- | --- |
 | `pack-validate DIR [--against DIR ...]` | Check a pack directory on the host (files, sizes, hashes, row limits, merge rules, stock vehicle names in spawn rows and `<handlingName>`, and the game tables of `GTAV_TARGET`: without a target each table's strictest known build; for 01.011.001 including boot-time pool growth unless `BOOT_POOLS=0`); nothing is uploaded. |
-| `pack-install DIR [--activate\|--activate-add]` | Validate, upload with readback, add the pack to the installed list and print the in-game step; `--activate` makes it the only selected pack, `--activate-add` adds it (max 8). |
+| `pack-install DIR [--activate\|--activate-add]` | Validate, upload with readback, add the pack to the installed list and print the in-game step; `--activate` makes it the only selected pack, `--activate-add` adds it (up to 16 active packs). |
 | `pack-upload DIR [--activate\|--activate-add]` | The same validated upload without the summary. |
 | `convert-map MOD --id ID --template T.pmap [...]` | Convert a PC map mod that places stock models into a validated pack, optionally installed (see [Converting PC mods](#converting-pc-mods)). |
 | `convert-replace MOD --id ID [--model NAME] [--repair NAME ...] [--game DIR] [...]` | Convert a PC "replace" vehicle mod (a car shipped under a stock name) into a stock override pack (reviewed stock names; see [Converting PC mods](#converting-pc-mods)). |
@@ -312,7 +312,6 @@ console commands refuse when it is unset. Offline conversion and validation do n
 | `pack-notes` | Print this session's detailed `GTAVMenu pack ...` lines (the reasons behind a refusal). |
 | `pack-notes --follow [--out FILE]` | Keep every pack line in a local log while you load (the console keeps only the last 128); run it before pressing Load. |
 | `pack-check EXPECT [NOTES]` | Check the pack lines (the console's, or a followed log) against an expectation file of `pass:` / `pass>=N:` / `fail:` regex rules; prints PASS / MISSING / FAIL per rule. |
-| `session stage\|next\|go\|check\|stop PLAN [NAME] [...]` | Developer hardware test sessions from a plan file (processes, their packs, in-game steps and expectation files; `tools/hw_session.py`): `stage` uploads the plan's packs, `next` selects a process's packs, `go` waits until GTA is in single-player, injects with the pack-notes follower (`--klog`: also the kernel log) already running and says when to press Load, `check` stops the followers and checks the run's lines. `stage --dry-run` reads inventory when `PS5_HOST` is set; without it, it only lists pack/uninstall candidates. `next --dry-run` and `go --dry-run` work offline. |
 | `pack-unhide` | Bring back the stock entities the loaded packs' `hide` rows hid. |
 | `pack-revert` | Put the loaded packs' stock overrides back (in game: **Manage Packs > Revert overrides**); while an overridden asset is still in use it waits (asks again every 2 s for up to 3 min). |
 | `fetch-templates [--source URL] [--cache DIR]` | Fetch the retail templates from the game image (default: the console over FTP while GTA V runs; `--source file:///path/to/app0` reads a local copy) into `build/retail-templates`, verified. EU 01.010.002 sources are checked against the US 01.010.002 resource pins; 01.011.001 has no pins of its own. Existing verified cache entries are reused. The `convert-*` commands read their templates from there. |
@@ -646,7 +645,7 @@ The remaining `pack-*` commands (`pack-register`, `pack-up`, `pack-load-archive`
   refuses with `<member> in use; restart GTA`. A `handling.meta` in the mod is reported but not applied
   (pack handling files only add new names); other metas are ignored.
   `--repair` names the exporter-quirk repairs the car needs, in order (as for new vehicles).
-  This release covers Police3; see [reviewed stock input coverage](stock-conversion.md). Needs numpy:
+  This release covers Police3; see [reviewed stock input coverage](pack-author-guide.md#9-reviewed-stock-inputs). Needs numpy:
 
   ```sh
   ./menu-ctl.sh convert-replace ~/Downloads/PrototipoPoliceCar/Replace --id replace-police3-v1 \
@@ -673,7 +672,7 @@ The remaining `pack-*` commands (`pack-register`, `pack-up`, `pack-load-archive`
   any name), `--max-texture-size N` (default 1024, 0 keeps every mip). It prints where the stock asset may
   already be loaded (a drawn weapon, worn clothing, nearby map objects): load the pack before it is, or the
   menu refuses with `<member> in use; restart GTA`. A PC fragment (`.yft`) of a non-vehicle model is
-  refused (no converter yet). Needs numpy. Only the [reviewed stock names](stock-conversion.md)
+  refused (no converter yet). Needs numpy. Only the [reviewed stock names](pack-author-guide.md#9-reviewed-stock-inputs)
   are enabled: Combat Pistol, Police3, Franklin Torso 14 / Legs 6 and MP Male Legs apparel.
   Unknown names refuse. `--stock-cache DIR` can supply verified stock inputs without `--game`.
   `--target TARGET` selects the single supported catalog (`ppsa04264-01.010.002`), and
@@ -739,8 +738,8 @@ selected.
 | `Custom wheels are not supported`, `Custom wheels unsupported on PS4` | The selected build cannot add custom wheels; remove them from the pack's `carcols.meta` (the PS4 converter requires `--drop-wheels`). |
 | `Carcols kits unavailable on PS4` | The PS4 carcols render-pool growth lane is not available; remove mod kits/custom wheels or use fewer vehicle additions. |
 | `Overrides not supported on PS4` | Older PS4 plugin builds refused every `override` row. Current builds replace the PS4 forms of stock members (`.otd`, `.oft`, `.odr`, `.odd`) and put them back with **Revert overrides**; a PS4 pack whose rows name PS5 forms (`.p*`) is refused when its `pack.cfg` is read. |
-| `Maps and typs unsupported on PS4`, `Not a PS4 pack (no .o* files)` | The PS4 build loads vehicles, peds, their data files and stock overrides only: a pack with `typ`, `map` or `bounds` rows, or an archive with PS5 (`.p*`) resources instead of PS4 (`.o*`) ones, is refused before anything loads. Deselect it, or convert the pack for PS4. |
-| `Model already in game; restart GTA` | PS4 plugin builds up to `d6bb1147` gave this for a model the game already had. Current builds say `Packs already loaded; restart GTA` when an earlier Load in this game process (also before a plugin reload) has the pack, and `Model name already used` for a stock or another pack's model name. |
+| `Maps and typs unsupported on PS4`, `Not a PS4 pack (no .o* files)` | The PS4 build loads vehicles, their data files and stock overrides only: a pack with `typ`, `map` or `bounds` rows, or an archive with PS5 (`.p*`) resources instead of PS4 (`.o*`) ones, is refused before anything loads. Deselect it, or convert the pack for PS4. |
+| `Model already in game; restart GTA` | Older PS4 plugin builds gave this for a model the game already had. Current builds say `Packs already loaded; restart GTA` when an earlier Load in this game process (also before a plugin reload) has the pack, and `Model name already used` for a stock or another pack's model name. |
 | `Audio file damaged or wrong format`, `Audio file has a reserved object` | An `AUDIO_GAMEDATA` file is not a game-data chunk the game can take (`make_audio_gamedata.py check` names the problem), or it defines the audio object the game re-initialises on every load (copy only the objects you need with `make_audio_gamedata.py car`). |
 | `Audio name in use; rename it` | The game (or a pack loaded earlier in this process) already has an audio chunk of that name: rename the file's `<chunk>`, or restart GTA. |
 | `Game refused some text labels`, `Pack has no labels` | The game refused some `label` rows (`pack-notes` gives the counts; a key the game already has is kept, not refused), or the pack has no `label` rows (host `pack-labels`). |

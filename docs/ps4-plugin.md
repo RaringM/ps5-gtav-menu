@@ -1,31 +1,21 @@
-# PS4 Legacy plugin
+# PS4 (GTA V Legacy) plugin
 
-`gtav_menu.prx` runs the menu in GTA V Legacy on a PS4: **CUSA00411, game version 01.57**. It is
-a fake-signed SELF PRX plugin for **GoldHEN 2.3 or newer** and for **nexHEN PS4 v1.00**. It is a
-plugin, not a payload: it needs no payload loader or debugger. Other title IDs and game versions
-are refused before the plugin touches the game. Open the menu with **R1 + D-pad Left**.
+`gtav_menu.prx` runs the menu in GTA V Legacy on a PS4: **CUSA00411, game version 01.57**. It is a
+plugin for **GoldHEN 2.3 or newer** and for **nexHEN PS4 v1.00**, not a payload: it needs no payload
+loader or debugger. Other title IDs and game versions are refused before the plugin touches the
+game. Open the menu with **R1 + D-pad Left**.
 
-## What has been checked
-
-All checks ran on firmware 9.00, one fresh Story Mode process per run.
-
-- **GoldHEN:** an earlier build of this plugin passed load, the menu, a benign action, profile save
-  and load, the touchpad, unload and a game relaunch.
-- **nexHEN PS4 v1.00:** load at game start, the menu, unload with the original hook and pad import
-  restored, several unload and reload cycles in one game process, relaunch, a custom vehicle pack
-  load and spawn, and the ped and vehicle capacity growth (vehicle models 640 to 840, peds 440 to
-  540).
-
-A newly built PRX has passed host checks only; treat every rebuild as a hardware candidate.
+It is **experimental**. It has been tested on firmware 9.00 under GoldHEN and nexHEN PS4 v1.00:
+loading at game start, the menu, profiles, the touchpad, custom vehicle packs (including stock car
+replacements), unloading and reloading in one game, and relaunches.
 
 ## Install
 
-Never load a second copy of the menu into the same game (for example through a debugger) while
-the plugin is loaded. Install the plugin under one host, and merge its entry into that host's
-existing `plugins.ini`: add the line under the `[CUSA00411]` section, or add the section if it is
-missing. Keep the file and its other plugins, and comment out (`;`) any other GTA V menu plugin in
-that section. The release package carries both entries as `goldhen-plugins.ini.example` and
-`nexhen-plugins.ini.example`.
+Download `GTAVMenu-PS4-CUSA00411-v01.57-plugin.zip` from the release. Install the plugin under
+one host, and merge its entry into that host's existing `plugins.ini`: add the line under the
+`[CUSA00411]` section, or add the section if it is missing. Keep the file and its other plugins, and
+comment out (`;`) any other GTA V menu plugin in that section. The package carries both entries as
+`goldhen-plugins.ini.example` and `nexhen-plugins.ini.example`.
 
 ### GoldHEN 2.3 or newer
 
@@ -51,68 +41,61 @@ that section. The release package carries both entries as `goldhen-plugins.ini.e
 
 3. Cold-launch GTA V Legacy.
 
-Copy only the PRX from the release package. A file read back from the console over FTP is a
-decrypted copy, not the signed PRX, unless the FTP server's `SELF` mode was used, and the decrypted
-copy does not load. Some FTP servers (GoldHEN's among them) have no `SELF` mode: check an upload
-there by its size, and never install a file read back from the console.
+Copy the PRX from the release package. A file read back from the console over FTP is a decrypted
+copy that does not load, unless the FTP server's `SELF` mode was used; never install such a copy.
+
+To update, replace the PRX and relaunch GTA. To uninstall, remove its line from `plugins.ini` and
+delete the PRX; `/data/GTAVMenu/` holds the menu's settings, packs and logs.
 
 ## At launch
 
-The plugin waits for Story Mode, verifies the exact game fingerprints, then installs its
-`PLAYER_PED_ID` game-thread hook; the menu becomes available about two minutes into a cold launch.
-Diagnostics, one timestamped section per launch, go to `/data/GTAVMenu/ps4-plugin.log`.
+The plugin waits for Story Mode, checks the exact game build, then hooks the game; the menu becomes
+available about two minutes into a cold launch. It writes one timestamped section per launch to
+`/data/GTAVMenu/ps4-plugin.log`.
 
-**Boot pools.** When the plugin loads before the game sizes its asset stores, it grows them and
-the ped and vehicle model capacities at boot. When it loads after that but before the first
-session creates the model factories (nexHEN loads it about 10 to 14 seconds into the launch), it
-grows only the ped and vehicle capacities. Later than that, for example after a reload into a
-running game, it writes nothing. Every write is checked against the stock value first, and the
-menu starts either way. The `boot-pool:` lines in the log say what happened; creating
-`/data/GTAVMenu/boot-pools.off` turns boot pools off.
+**Bigger tables.** Loaded early in the launch, the plugin enlarges the game's asset stores and its
+ped and vehicle model capacities (vehicle models 640 to 840, peds 440 to 540), which leaves room
+for more add-on vehicles and peds. GoldHEN loads it early enough for all of that; nexHEN loads it
+about 10 to 14 seconds into the launch, in time for the ped and vehicle capacities only. Loaded into
+a running game, it changes nothing. Every change is checked against the stock value first, and the
+menu starts either way; the log's `boot-pool:` lines say what happened. Creating
+`/data/GTAVMenu/boot-pools.off` keeps the stock tables.
 
-If GTA stays on "Loading Story Mode" with the screen flashing, check the console clock first: a
-console whose clock reset (for example after a dead CMOS battery) has been seen to stall there
-before the plugin did anything.
+## Custom packs
+
+Packs work as on the PS5 (the [user guide](user-guide.md), sections 5 to 11), with three
+differences:
+
+- A PS4 pack needs the PS4 forms of game resources (`.oft`, `.otd`, `.odr`, `.odd`); a PS5 pack is
+  refused. The [pack author guide](pack-author-guide.md) shows how to convert for PS4.
+- Install a pack with the uploader directly, from a copy of this repository:
+
+  ```sh
+  python3 tools/upload_runtime_pack.py --host <ps4-ip> --port 2121 --target cusa00411-01.57 \
+    --activate-add path/to/my-pack
+  ```
+
+- Packs stay in the game after the plugin unloads. When the plugin is loaded again into the same
+  game, **Load** takes them over instead of asking for a restart ("Custom packs kept from before the
+  reload"); newly selected packs then load with **Add N selected packs**. Packs with maps, typs,
+  collision or stock replacements are not kept that way: restart GTA to load more after those.
 
 ## Unload
 
-Unload through the host's plugin menu with the menu closed (nexHEN; GoldHEN cannot unload a plugin
-while the game runs, so there use the menu's **Settings > Runtime > Stop Runtime**). The plugin
-stops its features, restores the original hook and the pad import, and unloads; gameplay continues
-and a "GTAV Menu unloaded" notification confirms it ("GTAV Menu stopped" after Stop Runtime). An
-unload that arrives while the menu is busy on the game thread (a custom pack Load) waits for it to
-finish first, so it can take several seconds.
+Unload through the host's plugin menu with the menu closed (nexHEN). GoldHEN cannot unload a plugin
+while the game runs; there, use the menu's **Settings > Runtime > Stop Runtime**. The plugin stops
+its features, restores the game's own code, and a "GTAV Menu unloaded" notification confirms it
+("GTAV Menu stopped" after Stop Runtime); gameplay continues. An unload during a custom pack Load
+waits for the Load to finish, so it can take several seconds.
 
-Custom packs stay in the game after an unload. When the plugin is loaded again into the same game,
-**Load** takes them over instead of asking for a restart ("Custom packs kept from before the
-reload"): the plugin recorded them in `/data/GTAVMenu/state/packs-loaded` when their load finished,
-and the new instance checks the game still holds each archive and model first. Newly selected packs
-then load with **Add N selected packs**. Packs with maps, typs, collision or overrides are not kept
-this way: restart GTA to load more after those.
+## Troubleshooting
 
-If the game is suspended at that moment (for example while a system menu is open), the log
-reports `cooperative shutdown timed out (-1009)` and `gateway kept mapped (frames stalled)`: the
-restore still completes, and the plugin leaves a small marker (`/data/GTAVMenu/state/unclean-stop`)
-so the next load into the same game turns the features off and reclaims that memory. Stop at the
-first crash, hang, wrong fingerprint, failed restoration or duplicate hook, and keep the log.
+| Problem | What to do |
+| --- | --- |
+| GTA stays on "Loading Story Mode" with the screen flashing | Check the console clock first: a console whose clock reset (for example after a dead CMOS battery) has stalled there before the plugin did anything. Set the clock and relaunch. |
+| The plugin does not load | Check the `plugins.ini` entry and the PRX path, and that you copied the PRX from the release package, not a copy read back over FTP. |
+| The menu never appears | It appears about two minutes into a cold launch, in Story Mode. Check `/data/GTAVMenu/ps4-plugin.log`: a different game build is refused there. |
+| The game was suspended during an unload (a system menu was open) | The log says `cooperative shutdown timed out` and `gateway kept mapped`. The unload still completes; the next load into the same game cleans up. |
+| A crash or hang | Keep `/data/GTAVMenu/ps4-plugin.log` and include it when you report it. |
 
-## Build from source
-
-The plugin builds with clang and ld.lld from LLVM 20 and the OpenOrbis PS4 toolchain **v0.5.4**
-(`toolchain-llvm-18.tar.gz`, SHA-256
-`3c7cd5bb593ca74fa1c13fd59f3938dc0fc07985167f7275063019e63abe4526`):
-
-```sh
-make ps4-plugin-release OO_PS4_TOOLCHAIN=/path/to/OpenOrbis/PS4Toolchain
-```
-
-The package lands in `build/pkg/cusa00411-01.57/ps4-plugin/` with `validation.json` and
-`package-manifest.json` (hashes, source commit, boot-pool mode). The PRX bytes do not depend on
-where the checkout or the toolchain is installed.
-
-`validation.json` also records the toolchain: the compiler and linker lines the build left in the
-ELF, and the sha256 of the OpenOrbis files that shape the PRX (`link.x`, the `libkernel` and
-`libSceLibcInternal` stubs, `create-fself` and the headers), with `pinned` true when they are the
-v0.5.4 release's. `tools/release.py` ships a PRX only when those are the pinned OpenOrbis files and
-LLVM 20 compiled and linked it. The plugin links only the console's libc and kernel stubs, never
-OpenOrbis's static `libc.a`.
+To build the plugin yourself, see [Building from source](building.md#ps4-plugin).

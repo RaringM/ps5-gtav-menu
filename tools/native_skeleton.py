@@ -1,4 +1,4 @@
-"""Bounded vehicle format reading and graph construction; no native code or reference source execution."""
+"""Encode, rebuild and read native skeleton fields. Bounded parsing; no native code or reference source runs."""
 
 from __future__ import annotations
 

@@ -11,7 +11,7 @@
 //
 // The blessed path for injected code is the libkernel export sceKernelDebugOutText(channel,
 // text): it routes through libkernel (valid syscall origin) and is what injected game plugins
-// use for debug output (see ref/etaHEN-Plugins Game_Plugin_Loader). It resolves from the same
+// use for debug output (see etaHEN-Plugins' Game_Plugin_Loader). It resolves from the same
 // libkernel.so stub that gives notify.c its sceKernelSendNotificationRequest -- which already
 // works from this worker -- so it links implicitly and is safe to call at init.
 //

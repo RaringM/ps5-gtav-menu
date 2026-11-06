@@ -21,7 +21,7 @@
 // Meteor, Storm, Inferno, Ragdoll, Blackout, Zombies; Flood is experimental).
 // minigame_natives_ready() is a defensive runtime gate: if any native a mode needs fails
 // to resolve on a given build its g_n.* field is 0, so the mode reports unavailable and the
-// menu row renders locked -- never a crash. See docs/MINIGAMES.md.
+// menu row renders locked -- never a crash.
 
 // Map a menu action to the internal minigame id (GTAV_MINIGAME_*). Used by the toggle handler.
 [[maybe_unused]] static int minigame_id_for_action(uint32_t action) {
